@@ -262,11 +262,37 @@ async function callBestModel(userPrompt: string, systemPrompt: string): Promise<
   const data = await response.json();
   const content = data.choices[0]?.message?.content || '';
   
+  // Clean the content to extract JSON
+  let cleanedContent = content.trim();
+  
+  // Remove markdown code blocks if present
+  if (cleanedContent.startsWith('```json')) {
+    cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (cleanedContent.startsWith('```')) {
+    cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+  
   try {
-    return JSON.parse(content);
+    return JSON.parse(cleanedContent);
   } catch (parseError) {
-    console.warn('Failed to parse analysis result as JSON, returning as text');
-    return { analysis_result: content };
+    console.warn('Failed to parse analysis result as JSON, attempting to extract JSON from text');
+    
+    // Try to extract JSON from the text
+    const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (secondParseError) {
+        console.warn('Failed to parse extracted JSON:', secondParseError);
+      }
+    }
+    
+    // Return as structured text if JSON parsing fails
+    return { 
+      analysis_result: cleanedContent,
+      error: 'Failed to parse as JSON',
+      raw_content: content.substring(0, 200) + '...'
+    };
   }
 }
 

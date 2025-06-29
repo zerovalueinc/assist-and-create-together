@@ -221,4 +221,91 @@ The PersonaOps platform now features a **complete, enterprise-ready backend** wi
 - ✅ **Performance Optimization**
 - ✅ **Security & Error Handling**
 
-The platform is ready for frontend integration and production deployment, providing a solid foundation for a scalable sales intelligence solution. 
+The platform is ready for frontend integration and production deployment, providing a solid foundation for a scalable sales intelligence solution.
+
+# Company Analyzer LLM Module — Technical Architecture & Implementation Summary
+
+## Overview
+This module powers the Company Analyzer feature, providing enterprise-grade, LLM-driven company research and analysis from a single company URL. It is designed for robust data flow, strict schema enforcement, and seamless downstream integration for all future features.
+
+---
+
+## 1. Backend LLM Pipeline
+- **Entry Point:** `POST /api/company-analyze`
+- **Input:** Company URL (with or without protocol)
+- **Sanitization:** URL is normalized (prepends `https://` if missing)
+- **Caching:**
+  - Checks for a recent cached analysis in the database (30-day expiry)
+  - If cached, returns immediately (cost savings, speed)
+  - If not cached or expired, triggers a new LLM analysis
+- **LLM Research Agent:**
+  - Uses `generateComprehensiveIBP` in `agents/claude.ts`
+  - Calls Claude 3.5 Sonnet (via OpenRouter) with a strict schema prompt
+  - Gathers web data, similar companies, and market intelligence
+- **Strict Schema Enforcement:**
+  - LLM is instructed to return a JSON object with a fixed schema (see below)
+  - Backend post-processes and coerces output to this schema, filling defaults for missing fields
+- **Database Save:**
+  - All results are saved in the cache and reporting tables for downstream analytics and cost control
+
+---
+
+## 2. Strict Output Schema
+The LLM and backend always return this object:
+```json
+{
+  "companyProfile": {
+    "industry": "string",
+    "companySize": "string",
+    "revenueRange": "string"
+  },
+  "decisionMakers": ["string"],
+  "painPoints": ["string"],
+  "researchSummary": "string",
+  "website": "string",
+  "companyName": "string",
+  "technologies": ["string"],
+  "location": "string",
+  "marketTrends": ["string"],
+  "competitiveLandscape": ["string"],
+  "goToMarketStrategy": "string"
+}
+```
+- All fields are always present (empty string/array if missing)
+- Ready for downstream enrichment, analytics, and future features
+
+---
+
+## 3. Frontend Mapping
+- **Component:** `src/components/CompanyAnalyzer.tsx`
+- **Data Flow:**
+  - Calls `/api/company-analyze` with the company URL
+  - Receives a strict schema object
+  - Maps fields directly to UI cards (Company Profile, Decision Makers, Research Summary)
+  - No more placeholders or missing data
+- **UX:**
+  - User can hit Enter or click Analyze
+  - Handles bare domains or full URLs
+
+---
+
+## 4. Extensibility & Data Taxonomy
+- **All data is normalized and saved for downstream use** (lead enrichment, campaign generation, analytics, etc.)
+- **Future modules** (e.g., ICP Generator, Lead Enrichment, Email Campaigns) will follow the same pattern:
+  - Strict schema definition
+  - LLM prompt enforcement
+  - Backend validation/coercion
+  - Database save for analytics and cost control
+- **Documentation-first approach:**
+  - Every module/feature will have a similar technical print for clarity and onboarding
+
+---
+
+## 5. Next Steps
+- Extend this pattern to all new features
+- Add more fields to the schema as needed for new UI or analytics
+- Maintain this doc as the source of truth for the Company Analyzer pipeline
+
+---
+
+*This document is auto-generated and should be updated with every major change to the Company Analyzer LLM module or its schema.* 

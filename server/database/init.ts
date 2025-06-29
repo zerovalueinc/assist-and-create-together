@@ -374,6 +374,20 @@ export async function saveToCache(
   icpId: number
 ): Promise<void> {
   try {
+    // Log the icpId/reportId being used
+    console.log(`[CACHE] Attempting to cache for url: ${url}, icpId/reportId: ${icpId}`);
+    // Retry logic: check for parent existence, retry up to 3 times with delay
+    let parent;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      parent = await getRow('SELECT id FROM sales_intelligence_reports WHERE id = ?', [icpId]);
+      if (parent) break;
+      console.warn(`[CACHE] Parent report with icpId ${icpId} not found (attempt ${attempt}). Retrying in 100ms...`);
+      await new Promise(res => setTimeout(res, 100));
+    }
+    if (!parent) {
+      console.error(`❌ Cannot cache result for ${url}: parent report with icpId ${icpId} does not exist after retries.`);
+      return;
+    }
     // Always upsert, never delete
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -488,6 +502,16 @@ export async function createSalesIntelligenceReport(
   reportData: any
 ): Promise<number> {
   try {
+    // Check for existing report with the same websiteUrl
+    const existingReport = await getRow(
+      'SELECT id FROM sales_intelligence_reports WHERE websiteUrl = ?',
+      [websiteUrl]
+    );
+    if (existingReport) {
+      console.log(`♻️  Reusing existing Sales Intelligence Report for ${companyName} (ID: ${existingReport.id})`);
+      return existingReport.id;
+    }
+    
     const domain = new URL(websiteUrl).hostname.replace('www.', '');
     
     // Calculate scores
@@ -634,11 +658,16 @@ function calculateICPFitScore(data: any): number {
   
   // Technology Stack Compatibility (0-10)
   if (data.technologyStack?.integrations) {
-    const integrations = JSON.parse(data.technologyStack.integrations || '[]');
-    if (integrations.length >= 3) {
-      score += weights.technologyStackCompatibility * 8;
-    } else if (integrations.length >= 1) {
-      score += weights.technologyStackCompatibility * 6;
+    let integrations = data.technologyStack.integrations;
+    if (typeof integrations === 'string') {
+      try { integrations = JSON.parse(integrations); } catch { integrations = []; }
+    }
+    if (Array.isArray(integrations)) {
+      if (integrations.length >= 3) {
+        score += weights.technologyStackCompatibility * 8;
+      } else if (integrations.length >= 1) {
+        score += weights.technologyStackCompatibility * 6;
+      }
     }
   }
   
@@ -649,8 +678,13 @@ function calculateICPFitScore(data: any): number {
   
   // Identified Pain Points (0-10)
   if (data.salesOpportunityInsights?.identifiedPainPoints) {
-    const painPoints = JSON.parse(data.salesOpportunityInsights.identifiedPainPoints || '[]');
-    score += weights.identifiedPainPoints * Math.min(10, painPoints.length * 2);
+    let painPoints = data.salesOpportunityInsights.identifiedPainPoints;
+    if (typeof painPoints === 'string') {
+      try { painPoints = JSON.parse(painPoints); } catch { painPoints = []; }
+    }
+    if (Array.isArray(painPoints)) {
+      score += weights.identifiedPainPoints * Math.min(10, painPoints.length * 2);
+    }
   }
   
   // Engagement Level (0-10)
@@ -666,13 +700,21 @@ function calculateIBPMaturityScore(data: any): number {
   
   // IBP Processes (0-4 points)
   if (data.ibpCapabilityMaturity?.ibpProcesses) {
-    const processes = JSON.parse(data.ibpCapabilityMaturity.ibpProcesses || '[]');
-    score += Math.min(4, processes.length);
+    let processes = data.ibpCapabilityMaturity.ibpProcesses;
+    if (typeof processes === 'string') {
+      try { processes = JSON.parse(processes); } catch { processes = []; }
+    }
+    if (Array.isArray(processes)) {
+      score += Math.min(4, processes.length);
+    }
   }
   
   // Data Integration (0-3 points)
   if (data.ibpCapabilityMaturity?.dataIntegration) {
-    const integration = JSON.parse(data.ibpCapabilityMaturity.dataIntegration || '{}');
+    let integration = data.ibpCapabilityMaturity.dataIntegration;
+    if (typeof integration === 'string') {
+      try { integration = JSON.parse(integration); } catch { integration = {}; }
+    }
     if (integration.dataCentralizationPercentage > 80) {
       score += 3;
     } else if (integration.dataCentralizationPercentage > 50) {
@@ -684,7 +726,10 @@ function calculateIBPMaturityScore(data: any): number {
   
   // Analytics & Forecasting (0-3 points)
   if (data.ibpCapabilityMaturity?.analyticsForecasting) {
-    const analytics = JSON.parse(data.ibpCapabilityMaturity.analyticsForecasting || '{}');
+    let analytics = data.ibpCapabilityMaturity.analyticsForecasting;
+    if (typeof analytics === 'string') {
+      try { analytics = JSON.parse(analytics); } catch { analytics = {}; }
+    }
     if (analytics.useOfAdvancedAnalytics) {
       score += 2;
     }
@@ -701,13 +746,21 @@ function calculateSalesTriggerScore(data: any): number {
   
   // Buying Signals (0-4 points)
   if (data.salesOpportunityInsights?.buyingSignals) {
-    const signals = JSON.parse(data.salesOpportunityInsights.buyingSignals || '[]');
-    score += Math.min(4, signals.length);
+    let signals = data.salesOpportunityInsights.buyingSignals;
+    if (typeof signals === 'string') {
+      try { signals = JSON.parse(signals); } catch { signals = []; }
+    }
+    if (Array.isArray(signals)) {
+      score += Math.min(4, signals.length);
+    }
   }
   
   // Intent Data (0-3 points)
   if (data.salesOpportunityInsights?.intentData) {
-    const intent = JSON.parse(data.salesOpportunityInsights.intentData || '{}');
+    let intent = data.salesOpportunityInsights.intentData;
+    if (typeof intent === 'string') {
+      try { intent = JSON.parse(intent); } catch { intent = {}; }
+    }
     if (intent.websiteVisits > 1000) {
       score += 2;
     } else if (intent.websiteVisits > 100) {
@@ -720,7 +773,10 @@ function calculateSalesTriggerScore(data: any): number {
   
   // Engagement Metrics (0-3 points)
   if (data.salesOpportunityInsights?.engagementMetrics) {
-    const engagement = JSON.parse(data.salesOpportunityInsights.engagementMetrics || '{}');
+    let engagement = data.salesOpportunityInsights.engagementMetrics;
+    if (typeof engagement === 'string') {
+      try { engagement = JSON.parse(engagement); } catch { engagement = {}; }
+    }
     if (engagement.emailOpenRate > 25) {
       score += 1;
     }
