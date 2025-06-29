@@ -102,10 +102,12 @@ export async function initDatabase(): Promise<void> {
           icpData TEXT,
           comprehensiveData TEXT,
           icpId INTEGER,
+          reportId INTEGER,
           expiresAt DATETIME,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           lastAccessed DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (icpId) REFERENCES icps(id)
+          FOREIGN KEY (icpId) REFERENCES icps(id),
+          FOREIGN KEY (reportId) REFERENCES sales_intelligence_reports(id)
         )
       `);
 
@@ -352,6 +354,7 @@ export async function getCachedResult(url: string, isComprehensive: boolean = fa
         icpData: cacheEntry.icpData ? JSON.parse(cacheEntry.icpData) : null,
         comprehensiveData: cacheEntry.comprehensiveData ? JSON.parse(cacheEntry.comprehensiveData) : null,
         icpId: cacheEntry.icpId,
+        reportId: cacheEntry.reportId,
         isCached: !expired,
         isExpired: expired,
         cachedAt: cacheEntry.createdAt,
@@ -371,21 +374,21 @@ export async function saveToCache(
   isComprehensive: boolean,
   icpData: any,
   comprehensiveData: any = null,
-  icpId: number
+  icpId: number | null = null,
+  reportId: number | null = null
 ): Promise<void> {
   try {
     // Log the icpId/reportId being used
-    console.log(`[CACHE] Attempting to cache for url: ${url}, icpId/reportId: ${icpId}`);
+    console.log(`[CACHE] Attempting to cache for url: ${url}, icpId: ${icpId}, reportId: ${reportId}`);
     // Retry logic: check for parent existence, retry up to 3 times with delay
-    let parent;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      parent = await getRow('SELECT id FROM sales_intelligence_reports WHERE id = ?', [icpId]);
-      if (parent) break;
-      console.warn(`[CACHE] Parent report with icpId ${icpId} not found (attempt ${attempt}). Retrying in 100ms...`);
-      await new Promise(res => setTimeout(res, 100));
+    let parentExists = true;
+    if (icpId) {
+      parentExists = !!(await getRow('SELECT id FROM icps WHERE id = ?', [icpId]));
+    } else if (reportId) {
+      parentExists = !!(await getRow('SELECT id FROM sales_intelligence_reports WHERE id = ?', [reportId]));
     }
-    if (!parent) {
-      console.error(`❌ Cannot cache result for ${url}: parent report with icpId ${icpId} does not exist after retries.`);
+    if (!parentExists) {
+      console.error(`❌ Cannot cache result for ${url}: parent row does not exist (icpId: ${icpId}, reportId: ${reportId})`);
       return;
     }
     // Always upsert, never delete
@@ -393,14 +396,15 @@ export async function saveToCache(
     expiresAt.setDate(expiresAt.getDate() + 30);
     await runQuery(
       `INSERT OR REPLACE INTO cache 
-       (url, isComprehensive, icpData, comprehensiveData, icpId, expiresAt, lastAccessed) 
-       VALUES (?, ?, ?, ?, ?, ?, datetime("now"))`,
+       (url, isComprehensive, icpData, comprehensiveData, icpId, reportId, expiresAt, lastAccessed) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now"))`,
       [
         url,
         isComprehensive ? 1 : 0,
         JSON.stringify(icpData),
         comprehensiveData ? JSON.stringify(comprehensiveData) : null,
         icpId,
+        reportId,
         expiresAt.toISOString()
       ]
     );

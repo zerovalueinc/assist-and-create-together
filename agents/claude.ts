@@ -241,170 +241,399 @@ async function researchMarketIntelligence(domain: string, similarCompanies: any[
 // Generate comprehensive IBP using high-quality analysis
 async function generateIBPWithClaude(websiteUrl: string, similarCompanies: any[], marketIntelligence: any): Promise<any> {
   console.log(`🧠 Using high-quality analysis for IBP generation`);
-  // Prepare data for analysis
-  const analysisData = {
-    websiteUrl,
-    similarCompanies,
-    marketIntelligence,
-    timestamp: new Date().toISOString()
+  
+  // Extract domain for research
+  const domain = extractDomain(websiteUrl);
+  
+  // Multi-stage research pipeline
+  console.log(`🔬 Starting comprehensive research pipeline for: ${domain}`);
+  
+  // Stage 1: Competitor Analysis
+  console.log(`📊 Stage 1: Competitor Analysis`);
+  const competitors = await researchCompetitors(domain);
+  
+  // Stage 2: Customer Tech Stack Research
+  console.log(`🔧 Stage 2: Customer Tech Stack Research`);
+  const customerTechStack = await researchCustomerTechStack(domain, competitors);
+  
+  // Stage 3: Decision Maker Research
+  console.log(`👥 Stage 3: Decision Maker Research`);
+  const decisionMakers = await researchDecisionMakers(domain, competitors);
+  
+  // Stage 4: Pain Point Research
+  console.log(`💡 Stage 4: Pain Point Research`);
+  const painPoints = await researchPainPoints(domain, competitors);
+  
+  // Stage 5: Market Trends Research
+  console.log(`📈 Stage 5: Market Trends Research`);
+  const marketTrends = await researchMarketTrends(domain);
+  
+  // Stage 6: Company Profile Research
+  console.log(`🏢 Stage 6: Company Profile Research`);
+  const companyProfile = await researchCompanyProfile(websiteUrl);
+  
+  // Stage 7: Go-to-Market Strategy Research
+  console.log(`🎯 Stage 7: Go-to-Market Strategy Research`);
+  const goToMarketStrategy = await researchGoToMarketStrategy(websiteUrl);
+  
+  // Compile all research into final analysis
+  const comprehensiveAnalysis = {
+    companyProfile,
+    decisionMakers,
+    painPoints,
+    technologies: customerTechStack,
+    competitiveLandscape: competitors,
+    marketTrends,
+    goToMarketStrategy,
+    website: websiteUrl,
+    companyName: companyProfile.companyName || 'Research in Progress',
+    location: companyProfile.location || 'Research in Progress',
+    researchSummary: generateResearchSummary({
+      companyProfile,
+      decisionMakers,
+      painPoints,
+      customerTechStack,
+      competitors,
+      marketTrends,
+      goToMarketStrategy
+    })
   };
-  // Strict schema prompt
-  const strictSchemaPrompt = `You are an enterprise B2B research agent. You MUST return ONLY a valid JSON object with the following schema. Do not add any explanations, comments, markdown, or extra text. If a value is missing, use an empty string or empty array as appropriate.
-
-SCHEMA:
-{
-  "companyProfile": {
-    "industry": "string",
-    "companySize": "string", 
-    "revenueRange": "string"
-  },
-  "decisionMakers": ["string"],
-  "painPoints": ["string"],
-  "researchSummary": "string",
-  "website": "string",
-  "companyName": "string",
-  "technologies": ["string"],
-  "location": "string",
-  "marketTrends": ["string"],
-  "competitiveLandscape": ["string"],
-  "goToMarketStrategy": "string"
+  
+  console.log(`✅ Comprehensive research pipeline completed`);
+  return comprehensiveAnalysis;
 }
 
-Given this company data, fill in as many fields as possible:
-${JSON.stringify(analysisData, null, 2)}
+// Stage 1: Competitor Analysis
+async function researchCompetitors(domain: string): Promise<string[]> {
+  const prompt = `You are a competitive intelligence analyst specializing in B2B SaaS.
 
-Return ONLY the JSON object above, strictly following the schema. No other text.`;
-  
+Research and identify the top 5-8 direct competitors to ${domain}.
+
+Focus on:
+- Companies offering similar products/services
+- Companies targeting the same customer base
+- Companies in the same market segment
+
+Return ONLY a JSON array of competitor company names (no URLs, no descriptions, just names).
+
+Example: ["Competitor A", "Competitor B", "Competitor C"]
+
+Research ${domain} and return the most relevant competitors:`;
+
   try {
-    // Use the best model for analysis
     const result = await analyzeWithBestModel({
-      type: 'ibp_analysis',
-      data: analysisData,
-      context: strictSchemaPrompt
+      type: 'competitor_research',
+      data: { domain },
+      context: prompt
     });
     
-    let output = result.success ? result.data : {};
-    
-    // Try to parse as JSON if it's a string
-    if (typeof output === 'string') {
-      try {
-        output = JSON.parse(output);
-      } catch (parseError) {
-        console.warn('Failed to parse LLM output as JSON:', parseError);
-        output = {};
+    if (result.success && result.data) {
+      let competitors = result.data;
+      if (typeof competitors === 'string') {
+        try {
+          competitors = JSON.parse(competitors);
+        } catch (e) {
+          competitors = [];
+        }
       }
-    }
-    
-    // MVP fallback: if output is empty or missing key fields, return a mock object
-    if (!output || !output.companyProfile || !output.companyName) {
-      console.log('Using fallback mock data');
-      return {
-        companyProfile: {
-          industry: 'Software',
-          companySize: '51-200',
-          revenueRange: '$10M-$50M'
-        },
-        decisionMakers: ['VP of Sales', 'Head of Marketing', 'Revenue Operations'],
-        painPoints: ['Manual processes', 'Scaling issues', 'Lead qualification'],
-        researchSummary: 'This is a comprehensive analysis of the company based on available data. The company appears to be a technology-focused organization with strong market positioning.',
-        website: websiteUrl,
-        companyName: 'Demo Company',
-        technologies: ['Node.js', 'React', 'PostgreSQL'],
-        location: 'San Francisco, CA',
-        marketTrends: ['AI adoption', 'Remote work', 'Digital transformation'],
-        competitiveLandscape: ['Competitor A', 'Competitor B', 'Competitor C'],
-        goToMarketStrategy: 'Product-led growth with targeted outbound.'
-      };
-    }
-    
-    // Coerce to strict schema
-    output = coerceToCompanyAnalysisSchema(output);
-    if (result.success) {
-      console.log(`✅ High-quality IBP generated using ${result.model_used} (${result.cost_estimate})`);
-      return output;
-    } else {
-      console.warn('⚠️ High-quality analysis failed, falling back to basic generation');
-      return coerceToCompanyAnalysisSchema(await generateBasicIBP(websiteUrl, similarCompanies, marketIntelligence));
+      return Array.isArray(competitors) ? competitors : [];
     }
   } catch (error) {
-    console.error('Error in generateIBPWithClaude:', error);
-    // Return fallback data
-    return {
-      companyProfile: {
-        industry: 'Software',
-        companySize: '51-200',
-        revenueRange: '$10M-$50M'
-      },
-      decisionMakers: ['VP of Sales', 'Head of Marketing', 'Revenue Operations'],
-      painPoints: ['Manual processes', 'Scaling issues', 'Lead qualification'],
-      researchSummary: 'Analysis completed with fallback data due to processing error.',
-      website: websiteUrl,
-      companyName: 'Demo Company',
-      technologies: ['Node.js', 'React', 'PostgreSQL'],
-      location: 'San Francisco, CA',
-      marketTrends: ['AI adoption', 'Remote work', 'Digital transformation'],
-      competitiveLandscape: ['Competitor A', 'Competitor B', 'Competitor C'],
-      goToMarketStrategy: 'Product-led growth with targeted outbound.'
-    };
+    console.error('Error in competitor research:', error);
   }
+  
+  return [];
 }
 
-// Fallback basic IBP generation
-async function generateBasicIBP(websiteUrl: string, similarCompanies: any[], marketIntelligence: any): Promise<any> {
-  const systemMessage = `You are a Sales Intelligence Research Analyst specializing in B2B market analysis and Ideal Business Persona (IBP) development.`;
+// Stage 2: Customer Tech Stack Research
+async function researchCustomerTechStack(domain: string, competitors: string[]): Promise<string[]> {
+  const competitorList = competitors.join(', ');
+  
+  const prompt = `You are a technology stack analyst specializing in B2B SaaS integrations.
 
-  const userMessage = `Analyze the following data to create a comprehensive Ideal Business Persona (IBP) for sales intelligence:
+Research what technologies and tools are commonly used by customers of ${domain} and its competitors (${competitorList}).
 
-**Target Company:** ${websiteUrl}
+Focus on:
+- CRM systems (Salesforce, HubSpot, Pipedrive, etc.)
+- Marketing tools (Marketo, Mailchimp, etc.)
+- Sales tools (Apollo, ZoomInfo, etc.)
+- Analytics platforms (Google Analytics, Mixpanel, etc.)
+- Communication tools (Slack, Teams, etc.)
+- Other relevant B2B SaaS tools
 
-**Similar Companies Research:**
-${JSON.stringify(similarCompanies, null, 2)}
+These will be used for Apollo search targeting to find similar companies.
 
-**Market Intelligence:**
-${JSON.stringify(marketIntelligence, null, 2)}
+Return ONLY a JSON array of technology names (no descriptions, just names).
 
-Create a comprehensive IBP that includes:
+Example: ["Salesforce", "HubSpot", "Apollo", "Slack", "Google Analytics"]
 
-1. **Quantitative Market Analysis**
-2. **Enhanced Buyer Personas**
-3. **Sales Intelligence**
-4. **Competitive Intelligence**
-5. **Revenue Optimization**
-
-Return as a structured JSON object with detailed, actionable insights for sales teams.`;
+Research and return the most relevant technologies:`;
 
   try {
-    const response = await callClaude3(userMessage);
-    return JSON.parse(response);
-  } catch (error) {
-    console.error('Error generating basic IBP:', error);
-    return {
-      quantitativeMarketAnalysis: {
-        marketSize: "To be researched",
-        growthRate: "To be researched",
-        marketMaturity: "To be researched"
-      },
-      buyerPersonas: {
-        decisionMaker: { role: "To be analyzed" },
-        influencer: { role: "To be analyzed" },
-        economicBuyer: { role: "To be analyzed" }
-      },
-      salesIntelligence: {
-        buyingTriggers: ["To be analyzed"],
-        decisionTimeline: "To be analyzed",
-        riskFactors: ["To be analyzed"]
-      },
-      competitiveIntelligence: {
-        directCompetitors: ["To be analyzed"],
-        competitiveAdvantages: ["To be analyzed"]
-      },
-      revenueOptimization: {
-        pricingStrategy: "To be analyzed",
-        salesCycle: "To be analyzed",
-        customerLifetimeValue: "To be analyzed"
+    const result = await analyzeWithBestModel({
+      type: 'tech_stack_research',
+      data: { domain, competitors },
+      context: prompt
+    });
+    
+    if (result.success && result.data) {
+      let technologies = result.data;
+      if (typeof technologies === 'string') {
+        try {
+          technologies = JSON.parse(technologies);
+        } catch (e) {
+          technologies = [];
+        }
       }
-    };
+      return Array.isArray(technologies) ? technologies : [];
+    }
+  } catch (error) {
+    console.error('Error in tech stack research:', error);
   }
+  
+  return [];
+}
+
+// Stage 3: Decision Maker Research
+async function researchDecisionMakers(domain: string, competitors: string[]): Promise<string[]> {
+  const competitorList = competitors.join(', ');
+  
+  const prompt = `You are a B2B sales intelligence analyst specializing in buyer personas.
+
+Research the most common job titles and roles of decision makers who purchase products from ${domain} and its competitors (${competitorList}).
+
+Focus on:
+- VP/Director level roles
+- Head of Department roles
+- Manager level roles
+- Specific job titles (not generic descriptions)
+
+These will be used for Apollo search targeting to find the right contacts.
+
+Return ONLY a JSON array of job titles (no descriptions, just titles).
+
+Example: ["VP of Sales", "Head of Marketing", "Revenue Operations Manager", "Sales Director"]
+
+Research and return the most relevant job titles:`;
+
+  try {
+    const result = await analyzeWithBestModel({
+      type: 'decision_maker_research',
+      data: { domain, competitors },
+      context: prompt
+    });
+    
+    if (result.success && result.data) {
+      let decisionMakers = result.data;
+      if (typeof decisionMakers === 'string') {
+        try {
+          decisionMakers = JSON.parse(decisionMakers);
+        } catch (e) {
+          decisionMakers = [];
+        }
+      }
+      return Array.isArray(decisionMakers) ? decisionMakers : [];
+    }
+  } catch (error) {
+    console.error('Error in decision maker research:', error);
+  }
+  
+  return [];
+}
+
+// Stage 4: Pain Point Research
+async function researchPainPoints(domain: string, competitors: string[]): Promise<string[]> {
+  const competitorList = competitors.join(', ');
+  
+  const prompt = `You are a customer success analyst specializing in B2B SaaS pain points.
+
+Research the most common pain points and challenges that lead companies to purchase products from ${domain} and its competitors (${competitorList}).
+
+Focus on:
+- Operational challenges
+- Growth-related problems
+- Efficiency issues
+- Specific business problems (not generic descriptions)
+
+These will be used for sales messaging and targeting.
+
+Return ONLY a JSON array of pain points (no descriptions, just the pain points).
+
+Example: ["Manual lead qualification", "Low conversion rates", "Lack of sales intelligence", "Inefficient prospecting"]
+
+Research and return the most relevant pain points:`;
+
+  try {
+    const result = await analyzeWithBestModel({
+      type: 'pain_point_research',
+      data: { domain, competitors },
+      context: prompt
+    });
+    
+    if (result.success && result.data) {
+      let painPoints = result.data;
+      if (typeof painPoints === 'string') {
+        try {
+          painPoints = JSON.parse(painPoints);
+        } catch (e) {
+          painPoints = [];
+        }
+      }
+      return Array.isArray(painPoints) ? painPoints : [];
+    }
+  } catch (error) {
+    console.error('Error in pain point research:', error);
+  }
+  
+  return [];
+}
+
+// Stage 5: Market Trends Research
+async function researchMarketTrends(domain: string): Promise<string[]> {
+  const prompt = `You are a market intelligence analyst specializing in B2B SaaS trends.
+
+Research the key market trends and industry developments that are driving adoption of products like ${domain}.
+
+Focus on:
+- Technology trends
+- Business model shifts
+- Market dynamics
+- Industry-specific trends
+
+These will be used for market positioning and messaging.
+
+Return ONLY a JSON array of market trends (no descriptions, just the trends).
+
+Example: ["AI-powered sales automation", "Remote work adoption", "Digital transformation", "Revenue operations focus"]
+
+Research and return the most relevant market trends:`;
+
+  try {
+    const result = await analyzeWithBestModel({
+      type: 'market_trends_research',
+      data: { domain },
+      context: prompt
+    });
+    
+    if (result.success && result.data) {
+      let marketTrends = result.data;
+      if (typeof marketTrends === 'string') {
+        try {
+          marketTrends = JSON.parse(marketTrends);
+        } catch (e) {
+          marketTrends = [];
+        }
+      }
+      return Array.isArray(marketTrends) ? marketTrends : [];
+    }
+  } catch (error) {
+    console.error('Error in market trends research:', error);
+  }
+  
+  return [];
+}
+
+// Stage 6: Company Profile Research
+async function researchCompanyProfile(websiteUrl: string): Promise<any> {
+  const prompt = `You are a company intelligence analyst specializing in B2B SaaS companies.
+
+Research and analyze the company at ${websiteUrl} to determine:
+- Industry classification
+- Estimated company size (employee count range)
+- Estimated revenue range
+- Company name
+- Location/headquarters
+
+Focus on publicly available information and reasonable estimates based on company stage and market.
+
+Return ONLY a JSON object with this structure:
+{
+  "industry": "string",
+  "companySize": "string (e.g., '11-50', '51-200', '201-1000')",
+  "revenueRange": "string (e.g., '$1M-$10M', '$10M-$50M', '$50M-$100M')",
+  "companyName": "string",
+  "location": "string"
+}
+
+Research ${websiteUrl} and return the company profile:`;
+
+  try {
+    const result = await analyzeWithBestModel({
+      type: 'company_profile_research',
+      data: { websiteUrl },
+      context: prompt
+    });
+    
+    if (result.success && result.data) {
+      let profile = result.data;
+      if (typeof profile === 'string') {
+        try {
+          profile = JSON.parse(profile);
+        } catch (e) {
+          profile = {};
+        }
+      }
+      return profile;
+    }
+  } catch (error) {
+    console.error('Error in company profile research:', error);
+  }
+  
+  return {
+    industry: 'Software',
+    companySize: '51-200',
+    revenueRange: '$10M-$50M',
+    companyName: 'Research in Progress',
+    location: 'Research in Progress'
+  };
+}
+
+// Stage 7: Go-to-Market Strategy Research
+async function researchGoToMarketStrategy(websiteUrl: string): Promise<string> {
+  const prompt = `You are a go-to-market strategy analyst specializing in B2B SaaS.
+
+Research and analyze the go-to-market strategy of the company at ${websiteUrl}.
+
+Look for:
+- Sales model (inbound, outbound, product-led growth, etc.)
+- Marketing channels
+- Target customer approach
+- Pricing strategy indicators
+
+Return ONLY a concise description of their go-to-market strategy (1-2 sentences max).
+
+Example: "Product-led growth with targeted outbound sales and content marketing."
+
+Research ${websiteUrl} and return the go-to-market strategy:`;
+
+  try {
+    const result = await analyzeWithBestModel({
+      type: 'gtm_strategy_research',
+      data: { websiteUrl },
+      context: prompt
+    });
+    
+    if (result.success && result.data) {
+      return typeof result.data === 'string' ? result.data : 'Research in Progress';
+    }
+  } catch (error) {
+    console.error('Error in GTM strategy research:', error);
+  }
+  
+  return 'Research in Progress';
+}
+
+// Generate research summary from all findings
+function generateResearchSummary(research: any): string {
+  const { companyProfile, decisionMakers, painPoints, customerTechStack, competitors, marketTrends, goToMarketStrategy } = research;
+  
+  return `Comprehensive analysis of ${companyProfile.companyName || 'the company'} reveals a ${companyProfile.industry} company targeting ${companyProfile.companySize} organizations with ${companyProfile.revenueRange} revenue. 
+
+Key decision makers include ${decisionMakers.slice(0, 3).join(', ')} roles, while common pain points include ${painPoints.slice(0, 3).join(', ')}. 
+
+The company's customers typically use ${customerTechStack.slice(0, 3).join(', ')} alongside their solution, competing with ${competitors.slice(0, 3).join(', ')} in a market driven by ${marketTrends.slice(0, 2).join(', ')} trends.
+
+Their go-to-market approach focuses on ${goToMarketStrategy}.`;
 }
 
 // Generate ICP from website URL (enhanced version)

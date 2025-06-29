@@ -134,7 +134,7 @@ router.post('/', async (req, res) => {
         );
         
         console.log('[API] Saving to cache...');
-        await saveToCache(sanitizedUrl, true, analysis, analysis, reportId);
+        await saveToCache(sanitizedUrl, true, analysis, analysis, null, reportId);
         
         console.log('[API] Fetching full report...');
         const newReport = await getSalesIntelligenceReport(sanitizedUrl);
@@ -234,7 +234,7 @@ router.post('/', async (req, res) => {
           fallbackReportData
         );
         
-        await saveToCache(sanitizedUrl, true, fallbackAnalysis, fallbackAnalysis, reportId);
+        await saveToCache(sanitizedUrl, true, fallbackAnalysis, fallbackAnalysis, null, reportId);
         
         return { analysis: fallbackAnalysis, report: fallbackAnalysis };
       }

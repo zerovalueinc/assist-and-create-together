@@ -3,7 +3,9 @@
 // Processes raw web crawling data into actionable intelligence reports
 
 interface AnalysisTask {
-  type: 'icp_generation' | 'ibp_analysis' | 'sales_intelligence' | 'market_analysis' | 'competitive_intelligence';
+  type: 'icp_generation' | 'ibp_analysis' | 'sales_intelligence' | 'market_analysis' | 'competitive_intelligence' | 
+        'competitor_research' | 'tech_stack_research' | 'decision_maker_research' | 'pain_point_research' | 
+        'market_trends_research' | 'company_profile_research' | 'gtm_strategy_research';
   data: any;
   context?: string;
 }
@@ -49,6 +51,17 @@ export async function analyzeWithBestModel(task: AnalysisTask): Promise<Analysis
         
       case 'competitive_intelligence':
         result = await analyzeCompetitionWithBestModel(task.data);
+        modelUsed = 'claude-3.5-sonnet';
+        break;
+        
+      case 'competitor_research':
+      case 'tech_stack_research':
+      case 'decision_maker_research':
+      case 'pain_point_research':
+      case 'market_trends_research':
+      case 'company_profile_research':
+      case 'gtm_strategy_research':
+        result = await callBestModel(task.context || '', 'You are a specialized research analyst.');
         modelUsed = 'claude-3.5-sonnet';
         break;
         
