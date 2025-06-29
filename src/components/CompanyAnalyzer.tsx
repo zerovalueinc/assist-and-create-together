@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Globe, Building, Users, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useCompany } from "@/context/CompanyContext";
 
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { setResearch } = useCompany();
+  const [report, setReport] = useState(null);
 
   const analyzeCompany = async () => {
     if (!url) {
@@ -26,22 +28,21 @@ const CompanyAnalyzer = () => {
 
     setLoading(true);
     try {
-      // This will connect to your /api/icp endpoint
-      const response = await fetch('/api/icp', {
+      const response = await fetch('/api/company-analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
-
       if (!response.ok) {
         throw new Error('Analysis failed');
       }
-
       const data = await response.json();
-      setAnalysis(data);
-      
+      if (!data.success || !data.analysis) {
+        throw new Error('No analysis returned');
+      }
+      setAnalysis(data.analysis);
+      setReport(data.report || null);
+      setResearch(data.analysis); // Store in context for ICP Generator
       toast({
         title: "Analysis Complete",
         description: "Company analysis has been generated successfully.",
@@ -75,6 +76,11 @@ const CompanyAnalyzer = () => {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                analyzeCompany();
+              }
+            }}
           />
           <Button onClick={analyzeCompany} disabled={loading}>
             {loading ? (
@@ -91,53 +97,55 @@ const CompanyAnalyzer = () => {
           </Button>
         </div>
 
-        {analysis && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {report && (
+          <div className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center">
-                    <Building className="h-4 w-4 mr-2" />
-                    Company Info
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <Building className="h-5 w-5 mr-2" />
+                    Company Profile
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p className="text-sm"><strong>Industry:</strong> {analysis.industry || 'Technology'}</p>
-                    <p className="text-sm"><strong>Size:</strong> {analysis.size || '100-500 employees'}</p>
-                    <p className="text-sm"><strong>Location:</strong> {analysis.location || 'San Francisco, CA'}</p>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Industry</p>
+                    <Badge variant="outline">{report.companyOverview?.industryClassification || 'N/A'}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Company Size</p>
+                    <p className="text-sm">{report.companyOverview?.employeeRange || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Revenue Range</p>
+                    <p className="text-sm flex items-center">
+                      <span className="mr-1">$</span>
+                      {report.financialPerformance?.estimatedAnnualRevenue || 'N/A'}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
-                    Target Audience
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Decision Makers
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    {['SMB', 'Enterprise', 'Startups'].map((segment) => (
-                      <Badge key={segment} variant="secondary">{segment}</Badge>
+                    {(report.salesMarketingStrategy?.targetAudience?.keyPersonas || ['N/A']).map((dm: string) => (
+                      <Badge key={dm} variant="secondary">{dm}</Badge>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Growth Signals
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    <Badge variant="outline" className="text-green-600">Hiring</Badge>
-                    <Badge variant="outline" className="text-blue-600">Funding</Badge>
-                    <Badge variant="outline" className="text-purple-600">Product Launch</Badge>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pain Points</p>
+                    <ul className="text-sm text-gray-600 list-disc list-inside">
+                      {(report.salesOpportunityInsights?.identifiedPainPoints || ['N/A']).map((pp: string) => (
+                        <li key={pp}>{pp}</li>
+                      ))}
+                    </ul>
                   </div>
                 </CardContent>
               </Card>
@@ -145,11 +153,79 @@ const CompanyAnalyzer = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Analysis Summary</CardTitle>
+                <CardTitle>Research Summary</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
-                  value={analysis.summary || "AI-powered analysis will appear here with detailed insights about the company's business model, target market, competitive landscape, and growth opportunities."}
+                  value={report.reportData?.summary || analysis?.summary || "AI-powered research summary will appear here with detailed insights about the company's business model, target market, competitive landscape, and growth opportunities."}
+                  readOnly
+                  className="min-h-[120px]"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {!report && analysis && (
+          <div className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <Building className="h-5 w-5 mr-2" />
+                    Company Profile
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Industry</p>
+                    <Badge variant="outline">{analysis.industry || 'SaaS Technology'}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Company Size</p>
+                    <p className="text-sm">{analysis.companySize || '50-200 employees'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Revenue Range</p>
+                    <p className="text-sm flex items-center">
+                      <span className="mr-1">$</span>
+                      {analysis.funding || '$5M - $50M ARR'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Decision Makers
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    {(analysis.jobTitles || ['VP of Sales', 'Head of Marketing', 'Revenue Operations']).map((dm: string) => (
+                      <Badge key={dm} variant="secondary">{dm}</Badge>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pain Points</p>
+                    <ul className="text-sm text-gray-600 list-disc list-inside">
+                      {(analysis.painPoints || ['Manual lead qualification','Low conversion rates','Lack of sales intelligence']).map((pp: string) => (
+                        <li key={pp}>{pp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Research Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={analysis.summary || "AI-powered research summary will appear here with detailed insights about the company's business model, target market, competitive landscape, and growth opportunities."}
                   readOnly
                   className="min-h-[120px]"
                 />

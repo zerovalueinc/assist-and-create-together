@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,18 +6,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Target, Users, Building2, MapPin, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useCompany } from "@/context/CompanyContext";
 
 const ICPGenerator = () => {
   const [companyInfo, setCompanyInfo] = useState('');
   const [icp, setICP] = useState(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { research } = useCompany();
 
   const generateICP = async () => {
-    if (!companyInfo) {
+    if (!companyInfo && !research) {
       toast({
         title: "Company Information Required",
-        description: "Please provide company information to generate ICP.",
+        description: "Please provide company information or analyze a company first.",
         variant: "destructive",
       });
       return;
@@ -26,13 +27,13 @@ const ICPGenerator = () => {
 
     setLoading(true);
     try {
-      // Connect to your ICP generation endpoint
-      const response = await fetch('/api/icp', {
+      // Send both research and user input to the backend
+      const response = await fetch('/api/icp/deep-analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ companyInfo }),
+        body: JSON.stringify({ research, userInput: companyInfo }),
       });
 
       if (!response.ok) {
@@ -40,8 +41,7 @@ const ICPGenerator = () => {
       }
 
       const data = await response.json();
-      setICP(data);
-      
+      setICP(data.icp || data);
       toast({
         title: "ICP Generated",
         description: "Ideal Customer Profile has been created successfully.",
@@ -104,17 +104,17 @@ const ICPGenerator = () => {
                 <CardContent className="space-y-3">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Industry</p>
-                    <Badge variant="outline">SaaS Technology</Badge>
+                    <Badge variant="outline">{icp.companyProfile?.industry || 'SaaS Technology'}</Badge>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">Company Size</p>
-                    <p className="text-sm">50-200 employees</p>
+                    <p className="text-sm">{icp.companyProfile?.size || '50-200 employees'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">Revenue Range</p>
                     <p className="text-sm flex items-center">
                       <DollarSign className="h-4 w-4 mr-1" />
-                      $5M - $50M ARR
+                      {icp.companyProfile?.revenue || '$5M - $50M ARR'}
                     </p>
                   </div>
                 </CardContent>
@@ -129,16 +129,16 @@ const ICPGenerator = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <Badge variant="secondary">VP of Sales</Badge>
-                    <Badge variant="secondary">Head of Marketing</Badge>
-                    <Badge variant="secondary">Revenue Operations</Badge>
+                    {(icp.decisionMakers || ['VP of Sales', 'Head of Marketing', 'Revenue Operations']).map((dm: string) => (
+                      <Badge key={dm} variant="secondary">{dm}</Badge>
+                    ))}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">Pain Points</p>
                     <ul className="text-sm text-gray-600 list-disc list-inside">
-                      <li>Manual lead qualification</li>
-                      <li>Low conversion rates</li>
-                      <li>Lack of sales intelligence</li>
+                      {(icp.painPoints || ['Manual lead qualification','Low conversion rates','Lack of sales intelligence']).map((pp: string) => (
+                        <li key={pp}>{pp}</li>
+                      ))}
                     </ul>
                   </div>
                 </CardContent>
