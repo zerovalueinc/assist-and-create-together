@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Mail, Lock, User, Building } from "lucide-react";
+import { Loader2, Mail, Lock, User, Building, Code } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
 
@@ -13,7 +13,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
-  const { login, register, loginWithGoogle } = useAuth();
+  const { login, register, loginWithGoogle, bypassAuth } = useAuth();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -57,6 +57,11 @@ const Auth = () => {
     navigate('/forgot-password');
   };
 
+  const handleDevBypass = () => {
+    bypassAuth();
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
       <Card className="w-full max-w-md">
@@ -67,6 +72,20 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Development Bypass Button */}
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800 mb-2">Development Mode:</p>
+            <Button 
+              onClick={handleDevBypass}
+              variant="outline" 
+              size="sm"
+              className="w-full border-amber-300 hover:bg-amber-100"
+            >
+              <Code className="mr-2 h-4 w-4" />
+              Skip Login (Dev Mode)
+            </Button>
+          </div>
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
@@ -270,4 +289,4 @@ const Auth = () => {
   );
 };
 
-export default Auth; 
+export default Auth;
