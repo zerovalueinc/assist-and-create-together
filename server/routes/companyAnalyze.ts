@@ -256,4 +256,16 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/company-analyze/reports - List all saved company analysis reports for the user
+router.get('/reports', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const reports = await require('../database/init').getSavedReports(userId);
+    res.json({ success: true, reports });
+  } catch (error) {
+    console.error('Error fetching saved company analysis reports:', error);
+    res.status(500).json({ error: 'Failed to fetch saved reports' });
+  }
+});
+
 export default router; 

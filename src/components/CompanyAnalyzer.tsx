@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,24 @@ const CompanyAnalyzer = () => {
   const { setResearch } = useCompany();
   const [report, setReport] = useState(null);
   const { user, token } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+
+  // Fetch recent reports on mount
+  useEffect(() => {
+    async function fetchReports() {
+      if (!token) return;
+      try {
+        const response = await fetch('http://localhost:3001/api/company-analyze/reports', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) setReports(data.reports);
+      } catch (err) {
+        // Optionally handle error
+      }
+    }
+    fetchReports();
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,6 +159,41 @@ const CompanyAnalyzer = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* My Recent Company Analyses */}
+      <div>
+        <h2 className="text-xl font-semibold mt-8 mb-2">My Recent Company Analyses</h2>
+        <div className="bg-muted rounded-lg p-4">
+          {reports.length === 0 ? (
+            <p className="text-muted-foreground">No reports yet. Run an analysis to see it here.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="text-left">Company</th>
+                  <th className="text-left">URL</th>
+                  <th className="text-left">Date</th>
+                  <th className="text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reports.slice(0, 5).map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td>{r.companyName}</td>
+                    <td><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a></td>
+                    <td>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ''}</td>
+                    <td>
+                      <Button size="sm" variant="outline" onClick={() => setUrl(r.url)}>
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
 
       {/* Results */}
       {analysis && (
