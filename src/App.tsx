@@ -1,9 +1,11 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import Auth from "./components/Auth";
 import EmailVerification from "./components/EmailVerification";
@@ -47,6 +49,14 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <Index />
+        </ProtectedRoute>
+      } 
+    />
+    <Route 
+      path="/account" 
+      element={
+        <ProtectedRoute>
+          <Account />
         </ProtectedRoute>
       } 
     />

@@ -1,12 +1,14 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Target, Users, Mail, BarChart3, Upload, Globe, Zap, LogOut, User } from "lucide-react";
+import { Search, Target, Users, Mail, BarChart3, Upload, Globe, Zap, LogOut, User, Settings } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
 import CompanyAnalyzer from "@/components/CompanyAnalyzer";
 import ICPGenerator from "@/components/ICPGenerator";
 import LeadEnrichment from "@/components/LeadEnrichment";
@@ -17,6 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 const Index = () => {
   const [activeTab, setActiveTab] = useState("analyzer");
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
@@ -83,6 +86,10 @@ const Index = () => {
                       )}
                     </div>
                   </div>
+                  <DropdownMenuItem onClick={() => navigate('/account')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Account Settings</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
