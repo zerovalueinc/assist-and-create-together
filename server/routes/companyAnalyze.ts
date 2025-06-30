@@ -1,6 +1,6 @@
 import express from 'express';
 import { generateComprehensiveIBP } from '../../agents/claude';
-import { getCachedResult, saveToCache, createSalesIntelligenceReport, getSalesIntelligenceReport } from '../database/init';
+import { getCachedResult, saveToCache, createSalesIntelligenceReport, getSalesIntelligenceReport, saveReport } from '../database/init';
 import { coerceToCompanyAnalysisSchema } from '../../agents/claude';
 import { authenticateToken } from '../middleware/auth';
 
@@ -26,6 +26,10 @@ router.post('/', authenticateToken, async (req, res) => {
   const cachedResult = await getCachedResult(sanitizedUrl, true, userId);
   if (cachedResult && !cachedResult.isExpired) {
     console.log(`[API] Returning cached result for ${sanitizedUrl} (userId: ${userId})`);
+    // Always save to report history, even if already present
+    if (cachedResult.comprehensiveData) {
+      await saveReport(userId, cachedResult.comprehensiveData.companyName || sanitizedUrl, sanitizedUrl, null);
+    }
     return res.json({ 
       success: true, 
       analysis: cachedResult.comprehensiveData, 
@@ -141,6 +145,11 @@ router.post('/', authenticateToken, async (req, res) => {
         console.log('[API] Fetching full report for userId:', userId);
         const newReport = await getSalesIntelligenceReport(userId, sanitizedUrl);
         
+        // Save to report history (after new analysis)
+        if (analysis.companyName) {
+          await saveReport(userId, analysis.companyName, sanitizedUrl, null);
+        }
+        
         return { analysis, report: newReport || analysis };
       } catch (llmError) {
         console.error('[API] LLM analysis failed:', llmError);
@@ -239,6 +248,11 @@ router.post('/', authenticateToken, async (req, res) => {
         
         await saveToCache(sanitizedUrl, true, fallbackAnalysis, fallbackAnalysis, null, fallbackReportId);
         
+        // Save to report history (after fallback analysis)
+        if (fallbackAnalysis.companyName) {
+          await saveReport(userId, fallbackAnalysis.companyName, sanitizedUrl, null);
+        }
+        
         return { analysis: fallbackAnalysis, report: fallbackAnalysis };
       }
     })();
@@ -260,6 +274,20 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/reports', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+    // Backfill saved_reports from cache for this user
+    const { getRows } = require('../database/init');
+    const cacheEntries = await getRows('SELECT url, comprehensiveData, createdAt FROM cache WHERE userId = ? AND comprehensiveData IS NOT NULL', [userId]);
+    for (const entry of cacheEntries) {
+      let companyName = null;
+      try {
+        const data = typeof entry.comprehensiveData === 'string' ? JSON.parse(entry.comprehensiveData) : entry.comprehensiveData;
+        companyName = data.companyName || entry.url;
+      } catch (e) {
+        companyName = entry.url;
+      }
+      await require('../database/init').saveReport(userId, companyName, entry.url, null);
+    }
+    // Now return all saved reports
     const reports = await require('../database/init').getSavedReports(userId);
     res.json({ success: true, reports });
   } catch (error) {

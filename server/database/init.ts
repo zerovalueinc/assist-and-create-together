@@ -998,11 +998,15 @@ async function insertSalesOpportunityInsights(reportId: number, data: any): Prom
 }
 
 // Helper to save a report
-export async function saveReport(userId: string, companyName: string, url: string, icpId: number): Promise<void> {
-  await runQuery(
-    `INSERT OR IGNORE INTO saved_reports (userId, companyName, url, icpId) VALUES (?, ?, ?, ?)`,
-    [userId, companyName, url, icpId]
-  );
+export async function saveReport(userId: string, companyName: string, url: string, icpId: number | null): Promise<void> {
+  try {
+    await runQuery(
+      `INSERT OR IGNORE INTO saved_reports (userId, companyName, url, icpId) VALUES (?, ?, ?, ?)`,
+      [userId, companyName, url, icpId]
+    );
+  } catch (error) {
+    console.error('Error saving report to saved_reports:', error);
+  }
 }
 
 // Helper to get all saved reports
