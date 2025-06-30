@@ -1,6 +1,7 @@
 import express from 'express';
 import { runQuery, getRow, getCachedResult, saveToCache, cleanupExpiredCache, getCacheStats, bulkCacheCleanup, warmCacheForPopularUrls, isCacheExpired, saveReport, getSavedReports, getSavedReportByUrl } from '../database/init';
 import { generateComprehensiveIBP, generateICPFromWebsite } from '../../agents/claude';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -11,7 +12,8 @@ const addRealisticDelay = (minMs: number = 800, maxMs: number = 2000): Promise<v
 };
 
 // PATCHED: Generate comprehensive IBP from company URL (persistent cache, 30-day refresh)
-router.post('/comprehensive', async (req, res) => {
+router.post('/comprehensive', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { url } = req.body;
     if (!url) {
@@ -19,13 +21,13 @@ router.post('/comprehensive', async (req, res) => {
     }
     console.log(`🚀 Generating comprehensive IBP for URL: ${url}`);
     // Check cache (returns expired entries too)
-    const cachedResult = await getCachedResult(url, true);
+    const cachedResult = await getCachedResult(url, true, userId);
     if (cachedResult) {
       if (!cachedResult.isExpired) {
         // Return fresh cache
         console.log(`📋 Found cached comprehensive IBP for ${url} - SAVING API COSTS!`);
         await addRealisticDelay(800, 2000);
-        const cachedIcp = await getRow('SELECT * FROM icps WHERE id = ?', [cachedResult.icpId]);
+        const cachedIcp = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [cachedResult.icpId, userId]);
         return res.json({
           success: true,
           ibp: {
@@ -47,7 +49,7 @@ router.post('/comprehensive', async (req, res) => {
       } else {
         // Return expired cache with flag, and trigger refresh
         console.log(`⏰ Cached IBP for ${url} is expired. Returning old data and refreshing...`);
-        const cachedIcp = await getRow('SELECT * FROM icps WHERE id = ?', [cachedResult.icpId]);
+        const cachedIcp = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [cachedResult.icpId, userId]);
         // Optionally, trigger refresh in background (not implemented here)
         return res.json({
           success: true,
@@ -75,9 +77,9 @@ router.post('/comprehensive', async (req, res) => {
     const result = await runQuery(`
       INSERT INTO icps (
         industry, funding, painPoints, persona, technologies, validUseCase, 
-        companySize, jobTitles, locationCountry, industries
+        companySize, jobTitles, locationCountry, industries, userId
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       comprehensiveIBP.quantitativeMarketAnalysis?.marketMaturity || "Technology",
       comprehensiveIBP.quantitativeMarketAnalysis?.marketSize || "Unknown",
@@ -88,10 +90,11 @@ router.post('/comprehensive', async (req, res) => {
       JSON.stringify([comprehensiveIBP.quantitativeMarketAnalysis?.marketSize || "11-50"]),
       JSON.stringify(comprehensiveIBP.enhancedBuyerPersonas?.decisionMakers?.map((p: any) => p.title) || []),
       JSON.stringify(["United States"]),
-      JSON.stringify([comprehensiveIBP.quantitativeMarketAnalysis?.marketMaturity || "Technology"])
+      JSON.stringify([comprehensiveIBP.quantitativeMarketAnalysis?.marketMaturity || "Technology"]),
+      userId
     ]);
-    await saveToCache(url, true, comprehensiveIBP, comprehensiveIBP, result.id);
-    const createdIBP = await getRow('SELECT * FROM icps WHERE id = ?', [result.id]);
+    await saveToCache(url, true, comprehensiveIBP, comprehensiveIBP, result.id, null, userId);
+    const createdIBP = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [result.id, userId]);
     res.json({
       success: true,
       ibp: {
@@ -118,7 +121,8 @@ router.post('/comprehensive', async (req, res) => {
 });
 
 // PATCHED: Generate ICP with persistent cache and 30-day refresh
-router.post('/generate', async (req, res) => {
+router.post('/generate', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { url, comprehensive = false } = req.body;
     if (!url) {
@@ -126,7 +130,7 @@ router.post('/generate', async (req, res) => {
     }
     console.log(`🚀 Generating ${comprehensive ? 'comprehensive IBP' : 'basic ICP'} for URL: ${url}`);
     const cacheKey = comprehensive ? `${url} (comprehensive)` : `${url} (basic)`;
-    const cachedResult = await getCachedResult(cacheKey);
+    const cachedResult = await getCachedResult(cacheKey, comprehensive, userId);
     if (cachedResult) {
       if (!cachedResult.isExpired) {
         // Return fresh cache
@@ -160,10 +164,10 @@ router.post('/generate', async (req, res) => {
       const basicData = await generateICPFromWebsite(url);
       result = basicData;
     }
-    await saveToCache(url, false, result, null, result.id);
+    await saveToCache(url, comprehensive, result, null, result.id, null, userId);
     const dbResult = await runQuery(`
-      INSERT INTO icps (industry, funding, painPoints, persona, technologies, validUseCase, companySize, jobTitles, locationCountry, industries)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO icps (industry, funding, painPoints, persona, technologies, validUseCase, companySize, jobTitles, locationCountry, industries, userId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       result.targetIndustries?.[0] || "Technology",
       result.targetCompanySize?.revenueRange || "Unknown",
@@ -174,7 +178,8 @@ router.post('/generate', async (req, res) => {
       JSON.stringify([result.targetCompanySize?.employeeRange || "11-50"]),
       JSON.stringify(result.recommendedApolloSearchParams?.titles || ["CTO", "VP Engineering"]),
       JSON.stringify(result.recommendedApolloSearchParams?.locations || ["United States"]),
-      JSON.stringify(result.targetIndustries || ["Technology"])
+      JSON.stringify(result.targetIndustries || ["Technology"]),
+      userId
     ]);
     res.json({
       success: true,
@@ -193,13 +198,14 @@ router.post('/generate', async (req, res) => {
 });
 
 // PATCH: Main ICP route handles both list and single ICP generation
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const url = req.query.url as string | undefined;
     if (url) {
       // Generate ICP for the given URL (frontend compatibility)
       const cacheKey = `${url} (basic)`;
-      const cachedResult = await getCachedResult(cacheKey);
+      const cachedResult = await getCachedResult(cacheKey, false, userId);
       if (cachedResult && !cachedResult.isExpired) {
         return res.json({
           success: true,
@@ -212,10 +218,10 @@ router.get('/', async (req, res) => {
       // No cache, generate new
       const { generateICPFromWebsite } = await import('../../agents/claude');
       const result = await generateICPFromWebsite(url);
-      await saveToCache(url, false, result, null, result.id);
+      await saveToCache(url, false, result, null, result.id, null, userId);
       const dbResult = await runQuery(`
-        INSERT INTO icps (industry, funding, painPoints, persona, technologies, validUseCase, companySize, jobTitles, locationCountry, industries)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO icps (industry, funding, painPoints, persona, technologies, validUseCase, companySize, jobTitles, locationCountry, industries, userId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         result.targetIndustries?.[0] || "Technology",
         result.targetCompanySize?.revenueRange || "Unknown",
@@ -226,7 +232,8 @@ router.get('/', async (req, res) => {
         JSON.stringify([result.targetCompanySize?.employeeRange || "11-50"]),
         JSON.stringify(result.recommendedApolloSearchParams?.titles || ["CTO", "VP Engineering"]),
         JSON.stringify(result.recommendedApolloSearchParams?.locations || ["United States"]),
-        JSON.stringify(result.targetIndustries || ["Technology"])
+        JSON.stringify(result.targetIndustries || ["Technology"]),
+        userId
       ]);
       return res.json({
         success: true,
@@ -236,9 +243,9 @@ router.get('/', async (req, res) => {
         costSavings: 'New data generated and cached for 30 days'
       });
     }
-    // No url param: return all ICPs
+    // No url param: return all ICPs for this user
     const { getRows } = await import('../database/init');
-    const icps = await getRows('SELECT * FROM icps ORDER BY createdAt DESC');
+    const icps = await getRows('SELECT * FROM icps WHERE userId = ? ORDER BY createdAt DESC', [userId]);
     const formattedIcps = icps.map(icp => ({
       ...icp,
       painPoints: JSON.parse(icp.painPoints || '[]'),
@@ -259,11 +266,12 @@ router.get('/', async (req, res) => {
 });
 
 // Get specific ICP by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { id } = req.params;
     const { getRow } = await import('../database/init');
-    const icp = await getRow('SELECT * FROM icps WHERE id = ?', [id]);
+    const icp = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [id, userId]);
     
     if (!icp) {
       return res.status(404).json({ error: 'ICP not found' });
@@ -290,11 +298,12 @@ router.get('/:id', async (req, res) => {
 });
 
 // OPTIMIZED: Enhanced cache management endpoints
-router.get('/cache/status', async (req, res) => {
+router.get('/cache/status', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const cacheStats = await getCacheStats();
     const { getRows } = await import('../database/init');
-    const cacheEntries = await getRows('SELECT url, isComprehensive, createdAt, expiresAt, lastAccessed FROM cache ORDER BY lastAccessed DESC');
+    const cacheEntries = await getRows('SELECT url, isComprehensive, createdAt, expiresAt, lastAccessed FROM cache WHERE userId = ? ORDER BY lastAccessed DESC', [userId]);
     
     res.json({ 
       success: true, 
@@ -316,7 +325,8 @@ router.get('/cache/status', async (req, res) => {
   }
 });
 
-router.post('/cache/cleanup', async (req, res) => {
+router.post('/cache/cleanup', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     await bulkCacheCleanup();
     res.json({ success: true, message: 'Cache cleanup and database optimization completed' });
@@ -330,7 +340,8 @@ router.post('/cache/cleanup', async (req, res) => {
 });
 
 // NEW: Cache warming endpoint
-router.post('/cache/warm', async (req, res) => {
+router.post('/cache/warm', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     await warmCacheForPopularUrls();
     res.json({ success: true, message: 'Cache warming completed for popular URLs' });
@@ -344,14 +355,15 @@ router.post('/cache/warm', async (req, res) => {
 });
 
 // NEW: Cache efficiency analytics
-router.get('/cache/analytics', async (req, res) => {
+router.get('/cache/analytics', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const stats = await getCacheStats();
     const { getRows } = await import('../database/init');
     
-    // Get cache efficiency metrics
-    const totalApiCalls = await getRow('SELECT COUNT(*) as count FROM icps');
-    const cachedRequests = await getRow('SELECT COUNT(*) as count FROM cache WHERE lastAccessed > datetime("now", "-1 day")');
+    // Get cache efficiency metrics for this user
+    const totalApiCalls = await getRow('SELECT COUNT(*) as count FROM icps WHERE userId = ?', [userId]);
+    const cachedRequests = await getRow('SELECT COUNT(*) as count FROM cache WHERE userId = ? AND lastAccessed > datetime("now", "-1 day")', [userId]);
     
     const efficiency = {
       totalApiCalls: totalApiCalls.count,
@@ -372,13 +384,14 @@ router.get('/cache/analytics', async (req, res) => {
 });
 
 // Save a report
-router.post('/save-report', async (req, res) => {
+router.post('/save-report', authenticateToken, async (req, res) => {
   try {
     const { companyName, url, icpId } = req.body;
+    const userId = req.user.id;
     if (!companyName || !url || !icpId) {
       return res.status(400).json({ error: 'companyName, url, and icpId are required' });
     }
-    await saveReport(companyName, url, icpId);
+    await saveReport(userId, companyName, url, icpId);
     res.json({ success: true });
   } catch (error) {
     console.error('Error saving report:', error);
@@ -387,9 +400,10 @@ router.post('/save-report', async (req, res) => {
 });
 
 // Get all saved reports
-router.get('/saved-reports', async (req, res) => {
+router.get('/saved-reports', authenticateToken, async (req, res) => {
   try {
-    const reports = await getSavedReports();
+    const userId = req.user.id;
+    const reports = await getSavedReports(userId);
     res.json({ success: true, data: reports });
   } catch (error) {
     console.error('Error getting saved reports:', error);
@@ -398,11 +412,12 @@ router.get('/saved-reports', async (req, res) => {
 });
 
 // Get a saved report by URL
-router.get('/saved-report', async (req, res) => {
+router.get('/saved-report', authenticateToken, async (req, res) => {
   try {
     const { url } = req.query;
+    const userId = req.user.id;
     if (!url) return res.status(400).json({ error: 'url is required' });
-    const report = await getSavedReportByUrl(url as string);
+    const report = await getSavedReportByUrl(userId, url as string);
     res.json({ success: true, data: report });
   } catch (error) {
     console.error('Error getting saved report:', error);
@@ -411,7 +426,8 @@ router.get('/saved-report', async (req, res) => {
 });
 
 // POST /api/icp/deep-analyze - Deep LLM analysis combining research and user input
-router.post('/deep-analyze', async (req, res) => {
+router.post('/deep-analyze', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { research, userInput } = req.body;
     if (!research && !userInput) {
@@ -433,13 +449,21 @@ router.post('/deep-analyze', async (req, res) => {
       ],
       summary:
         userInput ||
-        research?.summary ||
-        'Your ideal customers are mid-market B2B SaaS companies experiencing rapid growth and looking to scale their sales operations. They typically have 50-200 employees, $5M-$50M in ARR, and are actively seeking AI-powered solutions to improve their sales efficiency and lead qualification processes.',
+        'Enhanced ICP analysis combining automated research with user insights for comprehensive targeting strategy.',
     };
-    res.json({ icp: enhancedICP });
+
+    res.json({
+      success: true,
+      enhancedICP,
+      analysisMethod: 'Deep LLM Analysis',
+      timestamp: new Date().toISOString(),
+    });
   } catch (error) {
-    console.error('Error in deep ICP analysis:', error);
-    res.status(500).json({ error: 'Failed to generate enhanced ICP', message: error instanceof Error ? error.message : 'Unknown error' });
+    console.error('Error in deep analysis:', error);
+    res.status(500).json({
+      error: 'Failed to perform deep analysis',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 });
 

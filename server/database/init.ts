@@ -1,6 +1,8 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // Use CommonJS path resolution
 const dbPath = path.join(__dirname, '../../data/personaops.db');
@@ -20,6 +22,7 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS icps (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
           industry TEXT,
           funding TEXT,
           painPoints TEXT,
@@ -30,7 +33,8 @@ export async function initDatabase(): Promise<void> {
           jobTitles TEXT,
           locationCountry TEXT,
           industries TEXT,
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
 
@@ -38,6 +42,7 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS leads (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
           firstName TEXT,
           lastName TEXT,
           fullName TEXT,
@@ -49,7 +54,8 @@ export async function initDatabase(): Promise<void> {
           confidenceScore REAL,
           icpId INTEGER,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (icpId) REFERENCES icps(id)
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (icpId) REFERENCES icps(id) ON DELETE CASCADE
         )
       `);
 
@@ -57,12 +63,14 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS enriched_leads (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
           leadId INTEGER,
           bio TEXT,
           interests TEXT,
           oneSentenceWhyTheyCare TEXT,
           enrichedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (leadId) REFERENCES leads(id)
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (leadId) REFERENCES leads(id) ON DELETE CASCADE
         )
       `);
 
@@ -70,12 +78,14 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS email_templates (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
           leadId INTEGER,
           subject TEXT,
           body TEXT,
           tone TEXT,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (leadId) REFERENCES leads(id)
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (leadId) REFERENCES leads(id) ON DELETE CASCADE
         )
       `);
 
@@ -83,13 +93,15 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS sessions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
           sessionId TEXT UNIQUE,
           icpId INTEGER,
           status TEXT,
           data TEXT,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (icpId) REFERENCES icps(id)
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (icpId) REFERENCES icps(id) ON DELETE CASCADE
         )
       `);
 
@@ -97,7 +109,8 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS cache (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          url TEXT UNIQUE,
+          userId INTEGER NOT NULL,
+          url TEXT,
           isComprehensive BOOLEAN DEFAULT 0,
           icpData TEXT,
           comprehensiveData TEXT,
@@ -106,8 +119,10 @@ export async function initDatabase(): Promise<void> {
           expiresAt DATETIME,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           lastAccessed DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (icpId) REFERENCES icps(id),
-          FOREIGN KEY (reportId) REFERENCES sales_intelligence_reports(id)
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (icpId) REFERENCES icps(id) ON DELETE CASCADE,
+          FOREIGN KEY (reportId) REFERENCES sales_intelligence_reports(id) ON DELETE CASCADE,
+          UNIQUE(userId, url, isComprehensive)
         )
       `);
 
@@ -115,6 +130,7 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS sales_intelligence_reports (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId TEXT,
           companyName TEXT,
           websiteUrl TEXT UNIQUE,
           domain TEXT,
@@ -259,6 +275,7 @@ export async function initDatabase(): Promise<void> {
       db.run(`
         CREATE TABLE IF NOT EXISTS saved_reports (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId TEXT,
           companyName TEXT,
           url TEXT UNIQUE,
           icpId INTEGER,
@@ -278,6 +295,41 @@ export async function initDatabase(): Promise<void> {
           sentAt DATETIME,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (templateId) REFERENCES email_templates(id)
+        )
+      `);
+
+      // Create Users table for authentication
+      db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE NOT NULL,
+          passwordHash TEXT NOT NULL,
+          firstName TEXT,
+          lastName TEXT,
+          company TEXT,
+          role TEXT DEFAULT 'user',
+          isActive BOOLEAN DEFAULT 1,
+          emailVerified BOOLEAN DEFAULT 0,
+          emailVerificationToken TEXT,
+          emailVerificationExpires DATETIME,
+          passwordResetToken TEXT,
+          passwordResetExpires DATETIME,
+          failedLoginAttempts INTEGER DEFAULT 0,
+          lastLogin DATETIME,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create User Sessions table for JWT management
+      db.run(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
+          tokenHash TEXT NOT NULL,
+          expiresAt DATETIME NOT NULL,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
 
@@ -339,14 +391,25 @@ export function isCacheExpired(cacheEntry: any): boolean {
 }
 
 // Updated getCachedResult: returns expired entries with a flag
-export async function getCachedResult(url: string, isComprehensive: boolean = false): Promise<any | null> {
+export async function getCachedResult(url: string, isComprehensive: boolean = false, userId?: number): Promise<any | null> {
   try {
     await runQuery('CREATE INDEX IF NOT EXISTS idx_cache_url_comprehensive ON cache(url, isComprehensive)');
     await runQuery('CREATE INDEX IF NOT EXISTS idx_cache_expires ON cache(expiresAt)');
-    const cacheEntry = await getRow(
-      'SELECT * FROM cache WHERE url = ? AND isComprehensive = ?',
-      [url, isComprehensive ? 1 : 0]
-    );
+    await runQuery('CREATE INDEX IF NOT EXISTS idx_cache_userId ON cache(userId)');
+    
+    let cacheEntry;
+    if (userId) {
+      cacheEntry = await getRow(
+        'SELECT * FROM cache WHERE url = ? AND isComprehensive = ? AND userId = ?',
+        [url, isComprehensive ? 1 : 0, userId]
+      );
+    } else {
+      cacheEntry = await getRow(
+        'SELECT * FROM cache WHERE url = ? AND isComprehensive = ?',
+        [url, isComprehensive ? 1 : 0]
+      );
+    }
+    
     if (cacheEntry) {
       await runQuery('UPDATE cache SET lastAccessed = datetime("now") WHERE id = ?', [cacheEntry.id]);
       const expired = isCacheExpired(cacheEntry);
@@ -375,39 +438,64 @@ export async function saveToCache(
   icpData: any,
   comprehensiveData: any = null,
   icpId: number | null = null,
-  reportId: number | null = null
+  reportId: number | null = null,
+  userId: number | null = null
 ): Promise<void> {
   try {
     // Log the icpId/reportId being used
-    console.log(`[CACHE] Attempting to cache for url: ${url}, icpId: ${icpId}, reportId: ${reportId}`);
+    console.log(`[CACHE] Attempting to cache for url: ${url}, icpId: ${icpId}, reportId: ${reportId}, userId: ${userId}`);
+    
     // Retry logic: check for parent existence, retry up to 3 times with delay
     let parentExists = true;
-    if (icpId) {
-      parentExists = !!(await getRow('SELECT id FROM icps WHERE id = ?', [icpId]));
-    } else if (reportId) {
-      parentExists = !!(await getRow('SELECT id FROM sales_intelligence_reports WHERE id = ?', [reportId]));
+    if (icpId && userId) {
+      parentExists = !!(await getRow('SELECT id FROM icps WHERE id = ? AND userId = ?', [icpId, userId]));
+    } else if (reportId && userId) {
+      parentExists = !!(await getRow('SELECT id FROM sales_intelligence_reports WHERE id = ? AND userId = ?', [reportId, userId]));
     }
+    
     if (!parentExists) {
-      console.error(`❌ Cannot cache result for ${url}: parent row does not exist (icpId: ${icpId}, reportId: ${reportId})`);
+      console.error(`❌ Cannot cache result for ${url}: parent row does not exist (icpId: ${icpId}, reportId: ${reportId}, userId: ${userId})`);
       return;
     }
+    
     // Always upsert, never delete
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
-    await runQuery(
-      `INSERT OR REPLACE INTO cache 
-       (url, isComprehensive, icpData, comprehensiveData, icpId, reportId, expiresAt, lastAccessed) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now"))`,
-      [
-        url,
-        isComprehensive ? 1 : 0,
-        JSON.stringify(icpData),
-        comprehensiveData ? JSON.stringify(comprehensiveData) : null,
-        icpId,
-        reportId,
-        expiresAt.toISOString()
-      ]
-    );
+    
+    if (userId) {
+      await runQuery(
+        `INSERT OR REPLACE INTO cache 
+         (userId, url, isComprehensive, icpData, comprehensiveData, icpId, reportId, expiresAt, lastAccessed) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))`,
+        [
+          userId,
+          url,
+          isComprehensive ? 1 : 0,
+          JSON.stringify(icpData),
+          comprehensiveData ? JSON.stringify(comprehensiveData) : null,
+          icpId,
+          reportId,
+          expiresAt.toISOString()
+        ]
+      );
+    } else {
+      // Fallback for backward compatibility (should not be used in production)
+      await runQuery(
+        `INSERT OR REPLACE INTO cache 
+         (url, isComprehensive, icpData, comprehensiveData, icpId, reportId, expiresAt, lastAccessed) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now"))`,
+        [
+          url,
+          isComprehensive ? 1 : 0,
+          JSON.stringify(icpData),
+          comprehensiveData ? JSON.stringify(comprehensiveData) : null,
+          icpId,
+          reportId,
+          expiresAt.toISOString()
+        ]
+      );
+    }
+    
     console.log(`💾 Cached result for ${url} (${isComprehensive ? 'comprehensive' : 'basic'}) - Expires in 30 days`);
   } catch (error) {
     console.error('Error saving to cache:', error);
@@ -501,41 +589,36 @@ export async function warmCacheForPopularUrls(): Promise<void> {
 
 // Sales Intelligence Report Helper Functions
 export async function createSalesIntelligenceReport(
+  userId: string,
   companyName: string,
   websiteUrl: string,
   reportData: any
 ): Promise<number> {
   try {
-    // Check for existing report with the same websiteUrl
+    // Check for existing report with the same websiteUrl and userId
     const existingReport = await getRow(
-      'SELECT id FROM sales_intelligence_reports WHERE websiteUrl = ?',
-      [websiteUrl]
+      'SELECT id FROM sales_intelligence_reports WHERE websiteUrl = ? AND userId = ?',
+      [websiteUrl, userId]
     );
     if (existingReport) {
       console.log(`♻️  Reusing existing Sales Intelligence Report for ${companyName} (ID: ${existingReport.id})`);
       return existingReport.id;
     }
-    
     const domain = new URL(websiteUrl).hostname.replace('www.', '');
-    
     // Calculate scores
     const icpFitScore = calculateICPFitScore(reportData);
     const ibpMaturityScore = calculateIBPMaturityScore(reportData);
     const salesTriggerScore = calculateSalesTriggerScore(reportData);
     const totalScore = (icpFitScore * 0.4) + (ibpMaturityScore * 0.3) + (salesTriggerScore * 0.3);
-    
     // Determine priority
     const priority = totalScore >= 8 ? 'high' : totalScore >= 6 ? 'medium' : 'low';
-    
     const result = await runQuery(
       `INSERT INTO sales_intelligence_reports 
-       (companyName, websiteUrl, domain, reportData, icpFitScore, ibpMaturityScore, salesTriggerScore, totalScore, priority) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [companyName, websiteUrl, domain, JSON.stringify(reportData), icpFitScore, ibpMaturityScore, salesTriggerScore, totalScore, priority]
+       (userId, companyName, websiteUrl, domain, reportData, icpFitScore, ibpMaturityScore, salesTriggerScore, totalScore, priority) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, companyName, websiteUrl, domain, JSON.stringify(reportData), icpFitScore, ibpMaturityScore, salesTriggerScore, totalScore, priority]
     );
-    
     const reportId = result.id;
-    
     // Insert detailed data into related tables
     await insertCompanyOverview(reportId, reportData.companyOverview);
     await insertMarketIntelligence(reportId, reportData.marketIntelligence);
@@ -544,7 +627,6 @@ export async function createSalesIntelligenceReport(
     await insertSalesMarketingStrategy(reportId, reportData.salesMarketingStrategy);
     await insertIBPCapabilityMaturity(reportId, reportData.ibpCapabilityMaturity);
     await insertSalesOpportunityInsights(reportId, reportData.salesOpportunityInsights);
-    
     console.log(`💾 Created Sales Intelligence Report for ${companyName} (ID: ${reportId})`);
     return reportId;
   } catch (error) {
@@ -553,15 +635,13 @@ export async function createSalesIntelligenceReport(
   }
 }
 
-export async function getSalesIntelligenceReport(websiteUrl: string): Promise<any | null> {
+export async function getSalesIntelligenceReport(userId: string, websiteUrl: string): Promise<any | null> {
   try {
     const report = await getRow(
-      'SELECT * FROM sales_intelligence_reports WHERE websiteUrl = ?',
-      [websiteUrl]
+      'SELECT * FROM sales_intelligence_reports WHERE websiteUrl = ? AND userId = ?',
+      [websiteUrl, userId]
     );
-    
     if (!report) return null;
-    
     // Get related data
     const companyOverview = await getRow('SELECT * FROM company_overview WHERE reportId = ?', [report.id]);
     const marketIntelligence = await getRow('SELECT * FROM market_intelligence WHERE reportId = ?', [report.id]);
@@ -571,7 +651,6 @@ export async function getSalesIntelligenceReport(websiteUrl: string): Promise<an
     const ibpCapabilityMaturity = await getRow('SELECT * FROM ibp_capability_maturity WHERE reportId = ?', [report.id]);
     const salesOpportunityInsights = await getRow('SELECT * FROM sales_opportunity_insights WHERE reportId = ?', [report.id]);
     const apolloLeadMatches = await getRows('SELECT * FROM apollo_lead_matches WHERE reportId = ?', [report.id]);
-    
     return {
       ...report,
       reportData: JSON.parse(report.reportData),
@@ -590,17 +669,10 @@ export async function getSalesIntelligenceReport(websiteUrl: string): Promise<an
   }
 }
 
-export async function getTopSalesIntelligenceReports(limit: number = 10): Promise<any[]> {
+export async function getTopSalesIntelligenceReports(userId: string, limit: number = 10): Promise<any[]> {
   try {
-    const reports = await getRows(
-      'SELECT * FROM sales_intelligence_reports WHERE status = "active" ORDER BY totalScore DESC LIMIT ?',
-      [limit]
-    );
-    
-    return reports.map(report => ({
-      ...report,
-      reportData: JSON.parse(report.reportData)
-    }));
+    const reports = await getRows('SELECT * FROM sales_intelligence_reports WHERE userId = ? AND status = "active" ORDER BY totalScore DESC LIMIT ?', [userId, limit]);
+    return reports.map(report => ({ ...report, reportData: JSON.parse(report.reportData) }));
   } catch (error) {
     console.error('Error getting top sales intelligence reports:', error);
     return [];
@@ -926,21 +998,21 @@ async function insertSalesOpportunityInsights(reportId: number, data: any): Prom
 }
 
 // Helper to save a report
-export async function saveReport(companyName: string, url: string, icpId: number): Promise<void> {
+export async function saveReport(userId: string, companyName: string, url: string, icpId: number): Promise<void> {
   await runQuery(
-    `INSERT OR IGNORE INTO saved_reports (companyName, url, icpId) VALUES (?, ?, ?)`,
-    [companyName, url, icpId]
+    `INSERT OR IGNORE INTO saved_reports (userId, companyName, url, icpId) VALUES (?, ?, ?, ?)`,
+    [userId, companyName, url, icpId]
   );
 }
 
 // Helper to get all saved reports
-export async function getSavedReports(): Promise<any[]> {
-  return getRows('SELECT * FROM saved_reports ORDER BY createdAt DESC');
+export async function getSavedReports(userId: string): Promise<any[]> {
+  return getRows('SELECT * FROM saved_reports WHERE userId = ? ORDER BY createdAt DESC', [userId]);
 }
 
 // Helper to get a saved report by URL
-export async function getSavedReportByUrl(url: string): Promise<any | null> {
-  return getRow('SELECT * FROM saved_reports WHERE url = ?', [url]);
+export async function getSavedReportByUrl(userId: string, url: string): Promise<any | null> {
+  return getRow('SELECT * FROM saved_reports WHERE userId = ? AND url = ?', [userId, url]);
 }
 
 // NEW: Enhanced database operations for sales intelligence platform
@@ -1316,5 +1388,94 @@ export async function backupDatabase(): Promise<string> {
   } catch (error) {
     console.error('Error backing up database:', error);
     throw new Error('Failed to backup database');
+  }
+}
+
+// User Authentication Helper Functions
+export async function createUser(
+  email: string, 
+  password: string, 
+  firstName?: string, 
+  lastName?: string, 
+  company?: string
+): Promise<number> {
+  try {
+    const passwordHash = await bcrypt.hash(password, 12);
+    const result = await runQuery(
+      `INSERT INTO users (email, passwordHash, firstName, lastName, company) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [email, passwordHash, firstName, lastName, company]
+    );
+    console.log(`👤 Created user: ${email} (ID: ${result.id})`);
+    return result.id;
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+}
+
+export async function getUserByEmail(email: string): Promise<any | null> {
+  try {
+    return await getRow('SELECT * FROM users WHERE email = ? AND isActive = 1', [email]);
+  } catch (error) {
+    console.error('Error getting user by email:', error);
+    return null;
+  }
+}
+
+export async function getUserById(userId: number): Promise<any | null> {
+  try {
+    return await getRow('SELECT id, email, firstName, lastName, company, role, lastLogin, createdAt FROM users WHERE id = ? AND isActive = 1', [userId]);
+  } catch (error) {
+    console.error('Error getting user by ID:', error);
+    return null;
+  }
+}
+
+export async function validatePassword(user: any, password: string): Promise<boolean> {
+  try {
+    return await bcrypt.compare(password, user.passwordHash);
+  } catch (error) {
+    console.error('Error validating password:', error);
+    return false;
+  }
+}
+
+export async function updateLastLogin(userId: number): Promise<void> {
+  try {
+    await runQuery(
+      'UPDATE users SET lastLogin = CURRENT_TIMESTAMP, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      [userId]
+    );
+  } catch (error) {
+    console.error('Error updating last login:', error);
+  }
+}
+
+export async function createUserSession(userId: number, tokenHash: string, expiresAt: Date): Promise<void> {
+  try {
+    await runQuery(
+      'INSERT INTO user_sessions (userId, tokenHash, expiresAt) VALUES (?, ?, ?)',
+      [userId, tokenHash, expiresAt.toISOString()]
+    );
+  } catch (error) {
+    console.error('Error creating user session:', error);
+    throw error;
+  }
+}
+
+export async function invalidateUserSession(tokenHash: string): Promise<void> {
+  try {
+    await runQuery('DELETE FROM user_sessions WHERE tokenHash = ?', [tokenHash]);
+  } catch (error) {
+    console.error('Error invalidating user session:', error);
+  }
+}
+
+export async function cleanupExpiredSessions(): Promise<void> {
+  try {
+    await runQuery('DELETE FROM user_sessions WHERE expiresAt < CURRENT_TIMESTAMP');
+  } catch (error) {
+    console.error('Error cleaning up expired sessions:', error);
   }
 } 

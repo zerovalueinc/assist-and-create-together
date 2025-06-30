@@ -1,21 +1,22 @@
 import express from 'express';
 import { runQuery, getRow, getRows } from '../database/init';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
 // Enrich a specific lead
-router.post('/:leadId', async (req, res) => {
+router.post('/:leadId', authenticateToken, async (req, res) => {
   try {
     const { leadId } = req.params;
     
     // Get the lead
-    const lead = await getRow('SELECT * FROM leads WHERE id = ?', [leadId]);
+    const lead = await getRow('SELECT * FROM leads WHERE id = ? AND userId = ?', [leadId, req.user.id]);
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' });
     }
 
     // Get the ICP for context
-    const icp = await getRow('SELECT * FROM icps WHERE id = ?', [lead.icpId]);
+    const icp = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [lead.icpId, req.user.id]);
     if (!icp) {
       return res.status(404).json({ error: 'ICP not found' });
     }
@@ -51,7 +52,7 @@ router.post('/:leadId', async (req, res) => {
     ]);
 
     // Get the enriched lead
-    const enrichedLead = await getRow('SELECT * FROM enriched_leads WHERE id = ?', [result.id]);
+    const enrichedLead = await getRow('SELECT * FROM enriched_leads WHERE id = ? AND userId = ?', [result.id, req.user.id]);
 
     res.json({
       success: true,
@@ -71,10 +72,10 @@ router.post('/:leadId', async (req, res) => {
 });
 
 // Get enrichment for a lead
-router.get('/:leadId', async (req, res) => {
+router.get('/:leadId', authenticateToken, async (req, res) => {
   try {
     const { leadId } = req.params;
-    const enrichedLead = await getRow('SELECT * FROM enriched_leads WHERE leadId = ?', [leadId]);
+    const enrichedLead = await getRow('SELECT * FROM enriched_leads WHERE leadId = ? AND userId = ?', [leadId, req.user.id]);
     
     if (!enrichedLead) {
       return res.status(404).json({ error: 'Enrichment not found' });

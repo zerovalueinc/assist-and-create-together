@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Globe, Building, Users, TrendingUp, Target, AlertTriangle, MapPin, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
+import { useAuth } from "@/context/AuthContext";
 
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
@@ -15,6 +16,7 @@ const CompanyAnalyzer = () => {
   const { toast } = useToast();
   const { setResearch } = useCompany();
   const [report, setReport] = useState(null);
+  const { user, token } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,10 +34,11 @@ const CompanyAnalyzer = () => {
     setReport(null);
 
     try {
-      const response = await fetch('/api/company-analyze', {
+      const response = await fetch('http://localhost:3001/api/company-analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ url: url.trim() }),
       });

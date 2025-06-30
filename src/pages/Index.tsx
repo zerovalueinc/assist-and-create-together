@@ -1,19 +1,33 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Target, Users, Mail, BarChart3, Upload, Globe, Zap } from "lucide-react";
+import { Search, Target, Users, Mail, BarChart3, Upload, Globe, Zap, LogOut, User } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import CompanyAnalyzer from "@/components/CompanyAnalyzer";
 import ICPGenerator from "@/components/ICPGenerator";
 import LeadEnrichment from "@/components/LeadEnrichment";
 import SalesIntelligence from "@/components/SalesIntelligence";
 import EmailCampaigns from "@/components/EmailCampaigns";
+import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("analyzer");
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const getUserInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    return user?.email?.[0]?.toUpperCase() || 'U';
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -24,7 +38,7 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Zap className="h-8 w-8 text-blue-600" />
-                <h1 className="text-2xl font-bold text-slate-900">SalesIQ</h1>
+                <h1 className="text-2xl font-bold text-slate-900">PersonaOps</h1>
               </div>
               <Badge variant="secondary" className="bg-green-100 text-green-800">
                 AI-Powered
@@ -41,6 +55,40 @@ const Index = () => {
               <Button size="sm">
                 Upgrade
               </Button>
+              
+              {/* User Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-blue-100 text-blue-600">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">
+                        {user?.firstName && user?.lastName 
+                          ? `${user.firstName} ${user.lastName}`
+                          : user?.email
+                        }
+                      </p>
+                      {user?.company && (
+                        <p className="w-[200px] truncate text-sm text-muted-foreground">
+                          {user.company}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </nav>
           </div>
         </div>
@@ -147,7 +195,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">156</div>
-              <p className="text-xs text-muted-foreground">+4% from last month</p>
+              <p className="text-xs text-muted-foreground">+15% from last month</p>
             </CardContent>
           </Card>
         </div>

@@ -9,10 +9,14 @@ import { emailRoutes } from './routes/email';
 import { uploadRoutes } from './routes/upload';
 import salesIntelligenceRoutes from './routes/salesIntelligence';
 import companyAnalyzeRoutes from './routes/companyAnalyze';
+import authRoutes from './routes/auth';
 import { initDatabase, runQuery, getCachedResult } from './database/init';
 
 // Load environment variables
 dotenv.config();
+
+console.log('DEBUG: SMTP_USER:', process.env.SMTP_USER);
+console.log('DEBUG: SMTP_PASS:', process.env.SMTP_PASS ? '***' : 'MISSING');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -488,6 +492,7 @@ app.post('/test/load', async (req, res) => {
 });
 
 // API routes with enhanced error handling
+app.use('/api/auth', authRoutes);
 app.use('/api/icp', icpRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/enrich', enrichRoutes);

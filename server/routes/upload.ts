@@ -1,11 +1,12 @@
 import express from 'express';
 import { getRows, getRow } from '../database/init';
 import { importLeadsBulk } from '../../agents/researchAgent';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
 // Upload leads to Instantly
-router.post('/instantly', async (req, res) => {
+router.post('/instantly', authenticateToken, async (req, res) => {
   try {
     const { icpId, listName } = req.body;
     
@@ -13,8 +14,8 @@ router.post('/instantly', async (req, res) => {
       return res.status(400).json({ error: 'ICP ID is required' });
     }
 
-    // Get all leads for this ICP
-    const leads = await getRows('SELECT * FROM leads WHERE icpId = ?', [icpId]);
+    // Get all leads for this ICP and user
+    const leads = await getRows('SELECT * FROM leads WHERE icpId = ? AND userId = ?', [icpId, req.user.id]);
     
     if (leads.length === 0) {
       return res.status(400).json({ error: 'No leads found for this ICP' });
@@ -70,25 +71,25 @@ router.post('/instantly', async (req, res) => {
 });
 
 // Get upload status
-router.get('/status/:icpId', async (req, res) => {
+router.get('/status/:icpId', authenticateToken, async (req, res) => {
   try {
     const { icpId } = req.params;
     
-    // Get leads count for this ICP
-    const leads = await getRows('SELECT * FROM leads WHERE icpId = ?', [icpId]);
+    // Get leads count for this ICP and user
+    const leads = await getRows('SELECT * FROM leads WHERE icpId = ? AND userId = ?', [icpId, req.user.id]);
     const enrichedLeads = await getRows(`
       SELECT COUNT(*) as count 
       FROM enriched_leads el 
       JOIN leads l ON el.leadId = l.id 
-      WHERE l.icpId = ?
-    `, [icpId]);
+      WHERE l.icpId = ? AND l.userId = ?
+    `, [icpId, req.user.id]);
     
     const emailTemplates = await getRows(`
       SELECT COUNT(*) as count 
       FROM email_templates et 
       JOIN leads l ON et.leadId = l.id 
-      WHERE l.icpId = ?
-    `, [icpId]);
+      WHERE l.icpId = ? AND l.userId = ?
+    `, [icpId, req.user.id]);
 
     res.json({
       success: true,

@@ -2,6 +2,7 @@ import express from 'express';
 import { runQuery, getRow, getRows } from '../database/init';
 import { generatePersonalizedEmail } from '../../agents/claude';
 import { uploadToInstantly } from '../../agents/emailAgent';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -38,7 +39,8 @@ function trackClaudeCall(): void {
 }
 
 // Generate email template for a lead
-router.post('/generate/:leadId', async (req, res) => {
+router.post('/generate/:leadId', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   const startTime = Date.now();
   console.log(`📧 Email generation request for lead ${req.params.leadId}`);
   
@@ -56,7 +58,7 @@ router.post('/generate/:leadId', async (req, res) => {
     }
 
     // Get the lead with enhanced error handling
-    const lead = await getRow('SELECT * FROM leads WHERE id = ?', [leadId]);
+    const lead = await getRow('SELECT * FROM leads WHERE id = ? AND userId = ?', [leadId, userId]);
     if (!lead) {
       return res.status(404).json({ 
         error: 'Lead not found',
@@ -66,7 +68,7 @@ router.post('/generate/:leadId', async (req, res) => {
     }
 
     // Get the ICP for context
-    const icp = await getRow('SELECT * FROM icps WHERE id = ?', [lead.icpId]);
+    const icp = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [lead.icpId, userId]);
     if (!icp) {
       return res.status(404).json({ 
         error: 'ICP not found',
@@ -76,7 +78,7 @@ router.post('/generate/:leadId', async (req, res) => {
     }
 
     // Get enrichment data if available
-    const enrichment = await getRow('SELECT * FROM enriched_leads WHERE leadId = ?', [leadId]);
+    const enrichment = await getRow('SELECT * FROM enriched_leads WHERE leadId = ? AND userId = ?', [leadId, userId]);
 
     console.log(`📊 Generating email for ${lead.fullName} at ${lead.companyName}`);
 
@@ -145,17 +147,18 @@ router.post('/generate/:leadId', async (req, res) => {
     }
     
     const result = await runQuery(`
-      INSERT INTO email_templates (leadId, subject, body, tone)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO email_templates (leadId, subject, body, tone, userId)
+      VALUES (?, ?, ?, ?, ?)
     `, [
       leadId,
       emailTemplate.subject,
       emailTemplate.body,
-      tone
+      tone,
+      userId
     ]);
 
     // Get the created template
-    const createdTemplate = await getRow('SELECT * FROM email_templates WHERE id = ?', [result.id]);
+    const createdTemplate = await getRow('SELECT * FROM email_templates WHERE id = ? AND userId = ?', [result.id, userId]);
 
     console.log(`✅ Email template generated in ${Date.now() - startTime}ms`);
 
@@ -183,7 +186,7 @@ router.post('/generate/:leadId', async (req, res) => {
 });
 
 // Upload campaign to Instantly
-router.post('/upload/:templateId', async (req, res) => {
+router.post('/upload/:templateId', authenticateToken, async (req, res) => {
   const startTime = Date.now();
   console.log(`📤 Uploading campaign for template ${req.params.templateId}`);
   
@@ -192,7 +195,7 @@ router.post('/upload/:templateId', async (req, res) => {
     const { campaignName, sequenceSteps = 1 } = req.body;
     
     // Get the email template
-    const template = await getRow('SELECT * FROM email_templates WHERE id = ?', [templateId]);
+    const template = await getRow('SELECT * FROM email_templates WHERE id = ? AND userId = ?', [templateId, req.user.id]);
     if (!template) {
       return res.status(404).json({ 
         error: 'Email template not found',
@@ -201,7 +204,7 @@ router.post('/upload/:templateId', async (req, res) => {
     }
 
     // Get the lead for context
-    const lead = await getRow('SELECT * FROM leads WHERE id = ?', [template.leadId]);
+    const lead = await getRow('SELECT * FROM leads WHERE id = ? AND userId = ?', [template.leadId, req.user.id]);
     if (!lead) {
       return res.status(404).json({ 
         error: 'Lead not found',
@@ -267,7 +270,7 @@ router.post('/upload/:templateId', async (req, res) => {
 });
 
 // Bulk email generation
-router.post('/bulk-generate', async (req, res) => {
+router.post('/bulk-generate', authenticateToken, async (req, res) => {
   const startTime = Date.now();
   console.log(`📧 Bulk email generation request`);
   
@@ -300,21 +303,21 @@ router.post('/bulk-generate', async (req, res) => {
     for (const leadId of leadIds) {
       try {
         // Get lead and ICP data
-        const lead = await getRow('SELECT * FROM leads WHERE id = ?', [leadId]);
+        const lead = await getRow('SELECT * FROM leads WHERE id = ? AND userId = ?', [leadId, req.user.id]);
         if (!lead) {
           errorCount++;
           results.push({ leadId, error: 'Lead not found' });
           continue;
         }
 
-        const icp = await getRow('SELECT * FROM icps WHERE id = ?', [lead.icpId]);
+        const icp = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [lead.icpId, req.user.id]);
         if (!icp) {
           errorCount++;
           results.push({ leadId, error: 'ICP not found' });
           continue;
         }
 
-        const enrichment = await getRow('SELECT * FROM enriched_leads WHERE leadId = ?', [leadId]);
+        const enrichment = await getRow('SELECT * FROM enriched_leads WHERE leadId = ? AND userId = ?', [leadId, req.user.id]);
 
         // Parse ICP data
         const icpData = {
@@ -344,11 +347,11 @@ router.post('/bulk-generate', async (req, res) => {
 
         // Store template
         const result = await runQuery(`
-          INSERT INTO email_templates (leadId, subject, body, tone)
-          VALUES (?, ?, ?, ?)
-        `, [leadId, emailTemplate.subject, emailTemplate.body, tone]);
+          INSERT INTO email_templates (leadId, subject, body, tone, userId)
+          VALUES (?, ?, ?, ?, ?)
+        `, [leadId, emailTemplate.subject, emailTemplate.body, tone, req.user.id]);
 
-        const createdTemplate = await getRow('SELECT * FROM email_templates WHERE id = ?', [result.id]);
+        const createdTemplate = await getRow('SELECT * FROM email_templates WHERE id = ? AND userId = ?', [result.id, req.user.id]);
         
         results.push({ leadId, success: true, template: createdTemplate });
         successCount++;
@@ -388,13 +391,13 @@ router.post('/bulk-generate', async (req, res) => {
 });
 
 // Get email templates for a lead with enhanced filtering
-router.get('/:leadId', async (req, res) => {
+router.get('/:leadId', authenticateToken, async (req, res) => {
   try {
     const { leadId } = req.params;
     const { tone, limit = 10 } = req.query;
     
-    let sql = 'SELECT * FROM email_templates WHERE leadId = ?';
-    let params: any[] = [leadId];
+    let sql = 'SELECT * FROM email_templates WHERE leadId = ? AND userId = ?';
+    let params: any[] = [leadId, req.user.id];
     
     if (tone) {
       sql += ' AND tone = ?';
@@ -421,7 +424,7 @@ router.get('/:leadId', async (req, res) => {
 });
 
 // Update email template
-router.put('/:templateId', async (req, res) => {
+router.put('/:templateId', authenticateToken, async (req, res) => {
   try {
     const { templateId } = req.params;
     const { subject, body, tone } = req.body;
@@ -429,14 +432,14 @@ router.put('/:templateId', async (req, res) => {
     const result = await runQuery(`
       UPDATE email_templates 
       SET subject = ?, body = ?, tone = ?
-      WHERE id = ?
-    `, [subject, body, tone, templateId]);
+      WHERE id = ? AND userId = ?
+    `, [subject, body, tone, templateId, req.user.id]);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Email template not found' });
     }
 
-    const updatedTemplate = await getRow('SELECT * FROM email_templates WHERE id = ?', [templateId]);
+    const updatedTemplate = await getRow('SELECT * FROM email_templates WHERE id = ? AND userId = ?', [templateId, req.user.id]);
     res.json({ success: true, emailTemplate: updatedTemplate });
   } catch (error) {
     console.error('Error updating email template:', error);
@@ -448,11 +451,11 @@ router.put('/:templateId', async (req, res) => {
 });
 
 // Delete email template
-router.delete('/:templateId', async (req, res) => {
+router.delete('/:templateId', authenticateToken, async (req, res) => {
   try {
     const { templateId } = req.params;
     
-    const result = await runQuery('DELETE FROM email_templates WHERE id = ?', [templateId]);
+    const result = await runQuery('DELETE FROM email_templates WHERE id = ? AND userId = ?', [templateId, req.user.id]);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Email template not found' });

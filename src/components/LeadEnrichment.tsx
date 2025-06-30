@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Upload, Download, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { token } = useAuth();
 
   const searchLeads = async () => {
     if (!searchQuery) {
@@ -26,10 +27,11 @@ const LeadEnrichment = () => {
     setLoading(true);
     try {
       // Connect to your /api/leads endpoint
-      const response = await fetch('/api/leads', {
+      const response = await fetch('http://localhost:3001/api/leads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ query: searchQuery }),
       });
@@ -58,10 +60,11 @@ const LeadEnrichment = () => {
 
   const enrichLead = async (leadId) => {
     try {
-      const response = await fetch('/api/enrich', {
+      const response = await fetch('http://localhost:3001/api/enrich', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ leadId }),
       });

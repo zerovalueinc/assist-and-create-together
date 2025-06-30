@@ -2,11 +2,13 @@ import express from 'express';
 import { generateComprehensiveIBP } from '../../agents/claude';
 import { getCachedResult, saveToCache, createSalesIntelligenceReport, getSalesIntelligenceReport } from '../database/init';
 import { coerceToCompanyAnalysisSchema } from '../../agents/claude';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
 // POST /api/company-analyze
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   const { url } = req.body;
   console.log(`[API] /api/company-analyze called with url:`, url);
   if (!url || typeof url !== 'string') {
@@ -19,10 +21,11 @@ router.post('/', async (req, res) => {
     sanitizedUrl = 'https://' + sanitizedUrl;
   }
 
-  // Check cache first
-  const cachedResult = await getCachedResult(sanitizedUrl, true);
+  // Check cache first (user-specific)
+  console.log(`[API] Checking cache for userId: ${userId}, url: ${sanitizedUrl}`);
+  const cachedResult = await getCachedResult(sanitizedUrl, true, userId);
   if (cachedResult && !cachedResult.isExpired) {
-    console.log(`[API] Returning cached result for ${sanitizedUrl}`);
+    console.log(`[API] Returning cached result for ${sanitizedUrl} (userId: ${userId})`);
     return res.json({ 
       success: true, 
       analysis: cachedResult.comprehensiveData, 
@@ -66,19 +69,16 @@ router.post('/', async (req, res) => {
             domain: new URL(sanitizedUrl).hostname.replace('www.', ''),
             headquarters: analysis.location || 'Unknown',
             foundingYear: 2020, // Default
-            employeeRange: analysis.companyProfile?.companySize || 'Unknown',
-            industryClassification: analysis.companyProfile?.industry || 'Technology',
-            executiveTeam: []
+            industry: analysis.companyProfile?.industry || 'Technology',
+            companySize: analysis.companyProfile?.companySize || 'Unknown',
+            revenueRange: analysis.companyProfile?.revenueRange || 'Unknown'
           },
           marketIntelligence: {
             totalAddressableMarket: 'To be researched',
             customerSegments: analysis.decisionMakers || [],
-            positioningStatement: analysis.goToMarketStrategy || '',
-            competitiveLandscape: {
-              directCompetitors: analysis.competitiveLandscape || [],
-              differentiators: [],
-              marketTrends: analysis.marketTrends || []
-            }
+            positioningStatement: analysis.goToMarketStrategy || 'Unknown',
+            competitiveLandscape: analysis.competitiveLandscape || {},
+            marketTrends: analysis.marketTrends || []
           },
           financialPerformance: {
             estimatedAnnualRevenue: analysis.companyProfile?.revenueRange || 'Unknown',
@@ -95,7 +95,7 @@ router.post('/', async (req, res) => {
             uniqueSellingPropositions: []
           },
           salesMarketingStrategy: {
-            goToMarketStrategy: analysis.goToMarketStrategy || '',
+            goToMarketStrategy: analysis.goToMarketStrategy || 'Unknown',
             targetAudience: {
               icpCharacteristics: {
                 companySize: [analysis.companyProfile?.companySize || 'Unknown'],
@@ -108,36 +108,38 @@ router.post('/', async (req, res) => {
               inboundOutboundRatio: 'Unknown',
               salesCycleLength: 'Unknown',
               averageDealSize: 'Unknown'
-            }
+            },
+            icpCharacteristics: {}
           },
           ibpCapabilityMaturity: {
             ibpProcesses: [],
-            dataIntegration: {},
-            analyticsForecasting: {},
-            maturityLevel: 1,
-            maturityScore: 5
+            dataIntegration: 'Unknown',
+            analyticsForecasting: 'Unknown',
+            maturityLevel: 'Unknown',
+            maturityScore: 0
           },
           salesOpportunityInsights: {
             buyingSignals: [],
             intentData: {},
             engagementMetrics: {},
             identifiedPainPoints: analysis.painPoints || [],
-            triggerScore: 5
+            triggerScore: 0
           }
         };
 
-        console.log('[API] Creating sales intelligence report...');
+        console.log('[API] Creating sales intelligence report for userId:', userId);
         const reportId = await createSalesIntelligenceReport(
+          userId,
           analysis.companyName || 'Unknown Company',
           sanitizedUrl,
           reportData
         );
         
-        console.log('[API] Saving to cache...');
-        await saveToCache(sanitizedUrl, true, analysis, analysis, null, reportId);
+        console.log('[API] Saving to cache for userId:', userId);
+        await saveToCache(sanitizedUrl, true, analysis, analysis, null, reportId, userId);
         
-        console.log('[API] Fetching full report...');
-        const newReport = await getSalesIntelligenceReport(sanitizedUrl);
+        console.log('[API] Fetching full report for userId:', userId);
+        const newReport = await getSalesIntelligenceReport(userId, sanitizedUrl);
         
         return { analysis, report: newReport || analysis };
       } catch (llmError) {
@@ -228,13 +230,14 @@ router.post('/', async (req, res) => {
           }
         };
 
-        const reportId = await createSalesIntelligenceReport(
+        const fallbackReportId = await createSalesIntelligenceReport(
+          userId,
           'Demo Company',
           sanitizedUrl,
           fallbackReportData
         );
         
-        await saveToCache(sanitizedUrl, true, fallbackAnalysis, fallbackAnalysis, null, reportId);
+        await saveToCache(sanitizedUrl, true, fallbackAnalysis, fallbackAnalysis, null, fallbackReportId);
         
         return { analysis: fallbackAnalysis, report: fallbackAnalysis };
       }

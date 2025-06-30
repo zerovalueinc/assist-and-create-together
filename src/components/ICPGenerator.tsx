@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Target, Users, Building2, MapPin, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
+import { useAuth } from "@/context/AuthContext";
 
 const ICPGenerator = () => {
   const [companyInfo, setCompanyInfo] = useState('');
@@ -14,6 +15,7 @@ const ICPGenerator = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { research } = useCompany();
+  const { token } = useAuth();
 
   const generateICP = async () => {
     if (!companyInfo && !research) {
@@ -28,10 +30,11 @@ const ICPGenerator = () => {
     setLoading(true);
     try {
       // Send both research and user input to the backend
-      const response = await fetch('/api/icp/deep-analyze', {
+      const response = await fetch('http://localhost:3001/api/icp/deep-analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ research, userInput: companyInfo }),
       });

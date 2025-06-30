@@ -9,6 +9,7 @@ import {
   optimizeDatabase, 
   backupDatabase 
 } from '../database/init';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -45,7 +46,8 @@ function trackApolloCall(): void {
 }
 
 // Enhanced lead search with comprehensive error handling
-router.post('/search', async (req, res) => {
+router.post('/search', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   const startTime = Date.now();
   console.log(`🔍 Lead search request received:`, { icpId: req.body.icpId, limit: req.body.limit });
   
@@ -69,7 +71,7 @@ router.post('/search', async (req, res) => {
     }
 
     // Get ICP from database with enhanced error handling
-    const icp = await getRow('SELECT * FROM icps WHERE id = ?', [icpId]);
+    const icp = await getRow('SELECT * FROM icps WHERE id = ? AND userId = ?', [icpId, userId]);
     if (!icp) {
       return res.status(404).json({ 
         error: 'ICP not found',
@@ -159,8 +161,8 @@ router.post('/search', async (req, res) => {
         
         // Check if lead already exists (avoid duplicates)
         const existingLead = await getRow(
-          'SELECT id FROM leads WHERE email = ? AND icpId = ?', 
-          [mappedLead.email, icpId]
+          'SELECT id FROM leads WHERE email = ? AND icpId = ? AND userId = ?', 
+          [mappedLead.email, icpId, userId]
         );
         
         if (existingLead && !forceRefresh) {
@@ -170,8 +172,8 @@ router.post('/search', async (req, res) => {
         
         // Store lead in database
         const result = await runQuery(`
-          INSERT INTO leads (firstName, lastName, fullName, title, email, linkedInUrl, companyName, companyWebsite, confidenceScore, icpId)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO leads (firstName, lastName, fullName, title, email, linkedInUrl, companyName, companyWebsite, confidenceScore, icpId, userId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
           mappedLead.firstName,
           mappedLead.lastName,
@@ -182,11 +184,12 @@ router.post('/search', async (req, res) => {
           mappedLead.companyName,
           mappedLead.companyWebsite,
           apolloLead.confidence_score || 0.5,
-          icpId
+          icpId,
+          userId
         ]);
 
         // Get the stored lead
-        const storedLead = await getRow('SELECT * FROM leads WHERE id = ?', [result.id]);
+        const storedLead = await getRow('SELECT * FROM leads WHERE id = ? AND userId = ?', [result.id, userId]);
         storedLeads.push(storedLead);
         successCount++;
         
@@ -230,7 +233,8 @@ router.post('/search', async (req, res) => {
 });
 
 // Enhanced lead retrieval with pagination and filtering
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { 
       icpId, 
@@ -243,8 +247,8 @@ router.get('/', async (req, res) => {
       sortOrder = 'DESC'
     } = req.query;
     
-    let sql = 'SELECT * FROM leads WHERE 1=1';
-    let params: any[] = [];
+    let sql = 'SELECT * FROM leads WHERE userId = ? AND 1=1';
+    let params: any[] = [userId];
     let conditions: string[] = [];
 
     if (icpId) {
@@ -287,8 +291,8 @@ router.get('/', async (req, res) => {
     const leads = await getRows(sql, params);
     
     // Get total count for pagination
-    let countSql = 'SELECT COUNT(*) as total FROM leads WHERE 1=1';
-    let countParams: any[] = [];
+    let countSql = 'SELECT COUNT(*) as total FROM leads WHERE userId = ? AND 1=1';
+    let countParams: any[] = [userId];
     if (conditions.length > 0) {
       countSql += ' AND ' + conditions.join(' AND ');
       countParams = [...params.slice(0, -2)]; // Copy params without LIMIT and OFFSET
@@ -326,7 +330,8 @@ router.get('/', async (req, res) => {
 // NEW: Enhanced lead operations endpoints (must come before /:id routes)
 
 // Get lead analytics and statistics
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const timeframe = req.query.timeframe as string || '30d';
     const analytics = await getAnalyticsData(timeframe);
@@ -345,7 +350,8 @@ router.get('/analytics', async (req, res) => {
 });
 
 // Get database statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const stats = await getDatabaseStats();
     
@@ -363,7 +369,8 @@ router.get('/stats', async (req, res) => {
 });
 
 // Export leads data
-router.get('/export', async (req, res) => {
+router.get('/export', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const exportType = req.query.type as string || 'leads';
     const filters = req.query.filters ? JSON.parse(req.query.filters as string) : {};
@@ -384,7 +391,8 @@ router.get('/export', async (req, res) => {
 });
 
 // Get agent usage statistics
-router.get('/agent-stats', async (req, res) => {
+router.get('/agent-stats', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { getClaudeUsageStats } = await import('../../agents/claude');
     const { getApolloUsageStats } = await import('../../agents/apolloAgent');
@@ -410,15 +418,16 @@ router.get('/agent-stats', async (req, res) => {
 });
 
 // Get specific lead by ID with enrichment data
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { id } = req.params;
     const lead = await getRow(`
       SELECT l.*, e.bio, e.interests, e.oneSentenceWhyTheyCare, e.enrichedAt
       FROM leads l
       LEFT JOIN enriched_leads e ON l.id = e.leadId
-      WHERE l.id = ?
-    `, [id]);
+      WHERE l.id = ? AND userId = ?
+    `, [id, userId]);
     
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' });
@@ -435,18 +444,19 @@ router.get('/:id', async (req, res) => {
 });
 
 // Delete lead with cascade cleanup
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { id } = req.params;
     
     // Delete enriched data first
-    await runQuery('DELETE FROM enriched_leads WHERE leadId = ?', [id]);
+    await runQuery('DELETE FROM enriched_leads WHERE leadId = ? AND userId = ?', [id, userId]);
     
     // Delete email templates
-    await runQuery('DELETE FROM email_templates WHERE leadId = ?', [id]);
+    await runQuery('DELETE FROM email_templates WHERE leadId = ? AND userId = ?', [id, userId]);
     
     // Delete the lead
-    const result = await runQuery('DELETE FROM leads WHERE id = ?', [id]);
+    const result = await runQuery('DELETE FROM leads WHERE id = ? AND userId = ?', [id, userId]);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Lead not found' });
@@ -463,7 +473,8 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Bulk operations
-router.post('/bulk', async (req, res) => {
+router.post('/bulk', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { action, leadIds } = req.body;
     
@@ -475,9 +486,9 @@ router.post('/bulk', async (req, res) => {
     switch (action) {
       case 'delete':
         // Delete enriched data and email templates first
-        await runQuery('DELETE FROM enriched_leads WHERE leadId IN (' + leadIds.map(() => '?').join(',') + ')', leadIds);
-        await runQuery('DELETE FROM email_templates WHERE leadId IN (' + leadIds.map(() => '?').join(',') + ')', leadIds);
-        result = await runQuery('DELETE FROM leads WHERE id IN (' + leadIds.map(() => '?').join(',') + ')', leadIds);
+        await runQuery('DELETE FROM enriched_leads WHERE leadId IN (' + leadIds.map(() => '?').join(',') + ') AND userId = ?', [...leadIds, userId]);
+        await runQuery('DELETE FROM email_templates WHERE leadId IN (' + leadIds.map(() => '?').join(',') + ') AND userId = ?', [...leadIds, userId]);
+        result = await runQuery('DELETE FROM leads WHERE id IN (' + leadIds.map(() => '?').join(',') + ') AND userId = ?', [...leadIds, userId]);
         break;
       default:
         return res.status(400).json({ error: 'Invalid action' });
@@ -498,7 +509,8 @@ router.post('/bulk', async (req, res) => {
 });
 
 // Optimize database
-router.post('/optimize', async (req, res) => {
+router.post('/optimize', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     console.log('🔧 Starting database optimization...');
     
@@ -518,7 +530,8 @@ router.post('/optimize', async (req, res) => {
 });
 
 // Backup database
-router.post('/backup', async (req, res) => {
+router.post('/backup', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     console.log('💾 Starting database backup...');
     
@@ -541,7 +554,8 @@ router.post('/backup', async (req, res) => {
 });
 
 // Reset agent usage tracking
-router.post('/reset-agent-stats', async (req, res) => {
+router.post('/reset-agent-stats', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
   try {
     const { resetClaudeUsage } = await import('../../agents/claude');
     const { resetApolloUsage } = await import('../../agents/apolloAgent');

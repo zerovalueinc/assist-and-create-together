@@ -6,11 +6,12 @@ import {
   updateApolloLeadMatches
 } from '../database/init';
 import { generateSalesIntelligenceReport } from '../../agents/salesIntelligenceAgent';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
 // Generate comprehensive Sales Intelligence Report
-router.post('/generate', async (req, res) => {
+router.post('/generate', authenticateToken, async (req, res) => {
   try {
     const { websiteUrl } = req.body;
     
@@ -23,8 +24,10 @@ router.post('/generate', async (req, res) => {
 
     console.log(`🚀 Generating Sales Intelligence Report for: ${websiteUrl}`);
     
+    const userId = req.user.id;
+
     // Check if report already exists
-    const existingReport = await getSalesIntelligenceReport(websiteUrl);
+    const existingReport = await getSalesIntelligenceReport(userId, websiteUrl);
     if (existingReport) {
       console.log(`📋 Found existing Sales Intelligence Report for ${websiteUrl}`);
       return res.json({
@@ -40,13 +43,14 @@ router.post('/generate', async (req, res) => {
     
     // Save to database
     const reportId = await createSalesIntelligenceReport(
+      userId,
       reportData.companyOverview.companyName,
       websiteUrl,
       reportData
     );
 
     // Get the complete report with all related data
-    const completeReport = await getSalesIntelligenceReport(websiteUrl);
+    const completeReport = await getSalesIntelligenceReport(userId, websiteUrl);
 
     console.log(`✅ Sales Intelligence Report generated and saved (ID: ${reportId})`);
 
@@ -68,25 +72,22 @@ router.post('/generate', async (req, res) => {
 });
 
 // Get Sales Intelligence Report by URL
-router.get('/report/:url', async (req, res) => {
+router.get('/report/:url', authenticateToken, async (req, res) => {
   try {
     const { url } = req.params;
     const websiteUrl = decodeURIComponent(url);
-    
-    const report = await getSalesIntelligenceReport(websiteUrl);
-    
+    const userId = req.user.id;
+    const report = await getSalesIntelligenceReport(userId, websiteUrl);
     if (!report) {
       return res.status(404).json({
         success: false,
         error: 'Sales Intelligence Report not found'
       });
     }
-
     res.json({
       success: true,
       data: report
     });
-
   } catch (error) {
     console.error('Error retrieving sales intelligence report:', error);
     res.status(500).json({
@@ -98,10 +99,11 @@ router.get('/report/:url', async (req, res) => {
 });
 
 // Get top Sales Intelligence Reports
-router.get('/top', async (req, res) => {
+router.get('/top', authenticateToken, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
-    const reports = await getTopSalesIntelligenceReports(limit);
+    const userId = req.user.id;
+    const reports = await getTopSalesIntelligenceReports(userId, limit);
 
     res.json({
       success: true,
@@ -120,7 +122,7 @@ router.get('/top', async (req, res) => {
 });
 
 // Update Apollo.io lead matches for a report
-router.post('/apollo-matches', async (req, res) => {
+router.post('/apollo-matches', authenticateToken, async (req, res) => {
   try {
     const { 
       reportId, 
@@ -137,6 +139,8 @@ router.post('/apollo-matches', async (req, res) => {
         error: 'Report ID, Apollo Company ID, and Company Name are required'
       });
     }
+
+    const userId = req.user.id;
 
     await updateApolloLeadMatches(
       reportId,
@@ -163,9 +167,10 @@ router.post('/apollo-matches', async (req, res) => {
 });
 
 // Get Sales Intelligence Report analytics
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', authenticateToken, async (req, res) => {
   try {
-    const topReports = await getTopSalesIntelligenceReports(20);
+    const userId = req.user.id;
+    const topReports = await getTopSalesIntelligenceReports(userId, 20);
     
     // Calculate analytics
     const analytics = {
@@ -199,13 +204,15 @@ router.get('/analytics', async (req, res) => {
 });
 
 // Search Sales Intelligence Reports
-router.get('/search', async (req, res) => {
+router.get('/search', authenticateToken, async (req, res) => {
   try {
     const { query, industry, priority, minScore } = req.query;
     
+    const userId = req.user.id;
+
     // This would implement search functionality
     // For now, return top reports
-    const reports = await getTopSalesIntelligenceReports(50);
+    const reports = await getTopSalesIntelligenceReports(userId, 50);
     
     let filteredReports = reports;
     
@@ -243,6 +250,27 @@ router.get('/search', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to search sales intelligence reports',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get all reports for a user
+router.get('/reports', authenticateToken, async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    const userId = req.user.id;
+    const reports = await getTopSalesIntelligenceReports(userId, Number(limit));
+    
+    res.json({
+      success: true,
+      data: reports
+    });
+  } catch (error) {
+    console.error('Error getting reports:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get reports',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
