@@ -15,6 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  setUser: (user: User | null) => void;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, firstName?: string, lastName?: string, company?: string) => Promise<boolean>;
   logout: () => void;
@@ -287,6 +288,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value: AuthContextType = {
     user,
     token,
+    setUser,
     login,
     register,
     logout,

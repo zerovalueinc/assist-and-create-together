@@ -478,12 +478,12 @@ router.get('/reports', authenticateToken, async (req, res) => {
   }
 });
 
-// Get all saved GTM playbooks for the user
+// Get all saved playbooks for the user (alias for saved ICPs)
 router.get('/playbooks', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   try {
-    const playbooks = await getSavedPlaybooks(userId);
-    res.json({ success: true, playbooks });
+    const icps = await getSavedICPs(userId);
+    res.json({ success: true, playbooks: icps });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch playbooks' });
   }

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,21 +24,6 @@ const AccountHeader = () => {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Zap className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-slate-900">Account Settings</h1>
-            </div>
-            <Button variant="outline" onClick={() => window.history.back()}>
-              Back to Dashboard
-            </Button>
-          </div>
-        </div>
-      </div>
-
       {/* Account Overview */}
       <div className="mb-8">
         <Card>

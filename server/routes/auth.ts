@@ -344,4 +344,63 @@ router.post('/google', async (req, res) => {
   }
 });
 
+// Update user profile
+router.put('/profile', authenticateToken, async (req, res) => {
+  const profileSchema = z.object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    company: z.string().optional(),
+  });
+  try {
+    const { firstName, lastName, company } = profileSchema.parse(req.body);
+    await runQuery(
+      'UPDATE users SET firstName = ?, lastName = ?, company = ? WHERE id = ?',
+      [firstName, lastName, company, req.user.id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid profile update', details: error instanceof z.ZodError ? error.errors : error });
+  }
+});
+
+// Change password
+router.put('/security', authenticateToken, async (req, res) => {
+  const passwordSchema = z.object({
+    currentPassword: z.string().min(8),
+    newPassword: z.string().min(8),
+  });
+  try {
+    const { currentPassword, newPassword } = passwordSchema.parse(req.body);
+    const user = await getRow('SELECT passwordHash FROM users WHERE id = ?', [req.user.id]);
+    if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await runQuery('UPDATE users SET passwordHash = ? WHERE id = ?', [newHash, req.user.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid password change', details: error instanceof z.ZodError ? error.errors : error });
+  }
+});
+
+// Notification preferences (mock, extend as needed)
+router.get('/notifications', authenticateToken, async (req, res) => {
+  // TODO: Fetch from DB if you store notification prefs
+  res.json({ notifications: { email: true, sms: false } });
+});
+router.put('/notifications', authenticateToken, async (req, res) => {
+  // TODO: Save to DB if you store notification prefs
+  res.json({ success: true });
+});
+
+// User preferences (mock, extend as needed)
+router.get('/preferences', authenticateToken, async (req, res) => {
+  // TODO: Fetch from DB if you store user prefs
+  res.json({ preferences: { darkMode: false, language: 'en' } });
+});
+router.put('/preferences', authenticateToken, async (req, res) => {
+  // TODO: Save to DB if you store user prefs
+  res.json({ success: true });
+});
+
 export default router; 

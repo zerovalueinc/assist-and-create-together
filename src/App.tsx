@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import PasswordReset from "./components/PasswordReset";
 import ForgotPassword from "./components/ForgotPassword";
 import { CompanyProvider } from "@/context/CompanyContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import Workspace from '@/pages/Workspace';
 
 const queryClient = new QueryClient();
 
@@ -60,6 +60,7 @@ const AppRoutes = () => (
         </ProtectedRoute>
       } 
     />
+    <Route path="/workspace" element={<Workspace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

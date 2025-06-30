@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const ProfileTab = () => {
-  const { user } = useAuth();
+  const { user, token, setUser } = useAuth();
   const { toast } = useToast();
   
   const [profileData, setProfileData] = useState({
@@ -23,11 +22,46 @@ const ProfileTab = () => {
     timezone: 'UTC-8',
   });
 
-  const handleProfileSave = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
+  const [loading, setLoading] = useState(false);
+
+  const handleProfileSave = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          company: profileData.company,
+        }),
+      });
+      if (response.ok) {
+        setUser({ ...user, ...profileData });
+        toast({
+          title: "Profile Updated",
+          description: "Your profile information has been saved successfully.",
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Profile Update Failed",
+          description: data.error || 'An error occurred.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Network Error",
+        description: 'Could not update profile.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getUserInitials = () => {
@@ -106,9 +140,8 @@ const ProfileTab = () => {
               />
             </div>
 
-            <Button onClick={handleProfileSave} className="w-full md:w-auto">
-              <Check className="h-4 w-4 mr-2" />
-              Save Changes
+            <Button onClick={handleProfileSave} className="w-full md:w-auto" disabled={loading} aria-busy={loading} aria-label="Save profile changes">
+              {loading ? 'Saving...' : (<><Check className="h-4 w-4 mr-2" />Save Changes</>)}
             </Button>
           </CardContent>
         </Card>

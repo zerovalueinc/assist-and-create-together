@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Target, Users, Mail, BarChart3, Upload, Globe, Zap, LogOut, User, Settings } from "lucide-react";
+import { Search, Target, Users, Mail, BarChart3, Upload, Globe, Zap, LogOut, User, Settings, FolderOpen } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +14,7 @@ import LeadEnrichment from "@/components/LeadEnrichment";
 import SalesIntelligence from "@/components/SalesIntelligence";
 import EmailCampaigns from "@/components/EmailCampaigns";
 import { useAuth } from "@/context/AuthContext";
+import AppHeader from '@/components/ui/AppHeader';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("analyzer");
@@ -34,73 +34,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Zap className="h-8 w-8 text-blue-600" />
-                <h1 className="text-2xl font-bold text-slate-900">PersonaOps</h1>
-              </div>
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                AI-Powered
-              </Badge>
-            </div>
-            <nav className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Analytics
-              </Button>
-              <Button variant="ghost" size="sm">
-                Settings
-              </Button>
-              <Button size="sm">
-                Upgrade
-              </Button>
-              
-              {/* User Profile Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">
-                        {user?.firstName && user?.lastName 
-                          ? `${user.firstName} ${user.lastName}`
-                          : user?.email
-                        }
-                      </p>
-                      {user?.company && (
-                        <p className="w-[200px] truncate text-sm text-muted-foreground">
-                          {user.company}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <DropdownMenuItem onClick={() => navigate('/account')}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Account Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+      <AppHeader />
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}

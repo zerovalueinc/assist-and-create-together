@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +7,14 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, AlertTriangle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const SecurityTab = () => {
   const { toast } = useToast();
+  const { token } = useAuth();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -20,7 +22,7 @@ const SecurityTab = () => {
     confirmPassword: '',
   });
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -29,11 +31,42 @@ const SecurityTab = () => {
       });
       return;
     }
-    toast({
-      title: "Password Updated",
-      description: "Your password has been changed successfully.",
-    });
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/security', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+      if (response.ok) {
+        toast({
+          title: "Password Updated",
+          description: "Your password has been changed successfully.",
+        });
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Password Update Failed",
+          description: data.error || 'An error occurred.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Network Error",
+        description: 'Could not update password.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -99,8 +132,8 @@ const SecurityTab = () => {
               />
             </div>
 
-            <Button onClick={handlePasswordChange} className="w-full">
-              Update Password
+            <Button onClick={handlePasswordChange} className="w-full" disabled={loading} aria-busy={loading} aria-label="Update password">
+              {loading ? 'Updating...' : 'Update Password'}
             </Button>
           </CardContent>
         </Card>
