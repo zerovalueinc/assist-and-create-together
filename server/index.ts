@@ -11,6 +11,7 @@ import salesIntelligenceRoutes from './routes/salesIntelligence';
 import companyAnalyzeRoutes from './routes/companyAnalyze';
 import authRoutes from './routes/auth';
 import { initDatabase, runQuery, getCachedResult } from './database/init';
+import workflowRoutes from './routes/workflow';
 
 // Load environment variables
 dotenv.config();
@@ -500,6 +501,7 @@ app.use('/api/email', emailRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/sales-intelligence', salesIntelligenceRoutes);
 app.use('/api/company-analyze', companyAnalyzeRoutes);
+app.use('/api/workflow', workflowRoutes);
 
 // Enhanced error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -538,7 +540,8 @@ app.use('*', (req, res) => {
       '/api/email',
       '/api/upload',
       '/api/sales-intelligence',
-      '/api/company-analyze'
+      '/api/company-analyze',
+      '/api/workflow'
     ]
   });
 });
@@ -610,6 +613,7 @@ async function startServer() {
       console.log(`   - /api/upload - Campaign upload`);
       console.log(`   - /api/sales-intelligence - Sales intelligence reports`);
       console.log(`   - /api/company-analyze - Company analysis`);
+      console.log(`   - /api/workflow - Workflow management`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "lucide-react";
+import { SectionLabel } from "./ui/section-label";
 
 const SalesIntelligence = () => {
   const [reports, setReports] = useState([]);
@@ -56,7 +56,7 @@ const SalesIntelligence = () => {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <BarChart3 className="h-5 w-5" />
-          <span>Sales Intelligence Dashboard</span>
+          <SectionLabel>Sales Intelligence</SectionLabel>
         </CardTitle>
         <CardDescription>
           AI-powered insights and analytics for your sales performance

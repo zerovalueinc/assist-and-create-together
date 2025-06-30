@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,12 +115,18 @@ const EmailCampaigns = () => {
             <CardTitle className="text-lg">Create New Campaign</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <label htmlFor="campaignName" className="text-sm font-medium">Campaign Name</label>
             <Input
+              id="campaignName"
+              name="campaignName"
               placeholder="Campaign name"
               value={campaignName}
               onChange={(e) => setCampaignName(e.target.value)}
             />
+            <label htmlFor="emailTemplate" className="text-sm font-medium">Email Template</label>
             <Textarea
+              id="emailTemplate"
+              name="emailTemplate"
               placeholder="Email template (use {{firstName}}, {{companyName}}, etc. for personalization)"
               value={emailTemplate}
               onChange={(e) => setEmailTemplate(e.target.value)}

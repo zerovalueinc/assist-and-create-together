@@ -333,6 +333,18 @@ export async function initDatabase(): Promise<void> {
         )
       `);
 
+      // Create ICP Results table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS icp_results (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
+          companyUrl TEXT NOT NULL,
+          icpData TEXT,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
       db.run('PRAGMA foreign_keys = ON', (err: Error | null) => {
         if (err) {
           reject(err);
@@ -1482,4 +1494,37 @@ export async function cleanupExpiredSessions(): Promise<void> {
   } catch (error) {
     console.error('Error cleaning up expired sessions:', error);
   }
+}
+
+// Save ICP result
+export async function saveICPResult(userId: number, companyUrl: string, icpData: any) {
+  return runQuery(
+    `INSERT INTO icp_results (userId, companyUrl, icpData, createdAt) VALUES (?, ?, ?, datetime('now'))`,
+    [userId, companyUrl, JSON.stringify(icpData)]
+  );
+}
+
+// Get all saved ICPs for a user
+export async function getSavedICPs(userId: number) {
+  return getRows(
+    `SELECT * FROM icp_results WHERE userId = ? ORDER BY createdAt DESC`,
+    [userId]
+  );
+}
+
+// Get a saved ICP by company URL
+export async function getSavedICPByCompanyUrl(userId: number, companyUrl: string) {
+  return getRow(
+    `SELECT * FROM icp_results WHERE userId = ? AND companyUrl = ? ORDER BY createdAt DESC LIMIT 1`,
+    [userId, companyUrl]
+  );
+}
+
+// Get all saved playbooks for a user
+export async function getSavedPlaybooks(userId: number) {
+  // For now, treat playbooks as the same as ICP results (adjust if you have a separate table)
+  return getRows(
+    `SELECT * FROM icp_results WHERE userId = ? ORDER BY createdAt DESC`,
+    [userId]
+  );
 } 

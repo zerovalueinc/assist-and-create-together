@@ -1,5 +1,5 @@
 import express from 'express';
-import { runQuery, getRow, getCachedResult, saveToCache, cleanupExpiredCache, getCacheStats, bulkCacheCleanup, warmCacheForPopularUrls, isCacheExpired, saveReport, getSavedReports, getSavedReportByUrl } from '../database/init';
+import { runQuery, getRow, getCachedResult, saveToCache, cleanupExpiredCache, getCacheStats, bulkCacheCleanup, warmCacheForPopularUrls, isCacheExpired, saveReport, getSavedReports, getSavedReportByUrl, saveICPResult, getSavedICPs, getSavedPlaybooks } from '../database/init';
 import { generateComprehensiveIBP, generateICPFromWebsite } from '../../agents/claude';
 import { authenticateToken } from '../middleware/auth';
 
@@ -464,6 +464,44 @@ router.post('/deep-analyze', authenticateToken, async (req, res) => {
       error: 'Failed to perform deep analysis',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+// Get all saved ICPs for the user
+router.get('/reports', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const icps = await getSavedICPs(userId);
+    res.json({ success: true, icps });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch ICPs' });
+  }
+});
+
+// Get all saved GTM playbooks for the user
+router.get('/playbooks', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const playbooks = await getSavedPlaybooks(userId);
+    res.json({ success: true, playbooks });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch playbooks' });
+  }
+});
+
+// Save a GTM/ICP playbook for the user
+router.post('/save', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { companyUrl, icpData } = req.body;
+    if (!companyUrl || !icpData) {
+      return res.status(400).json({ error: 'companyUrl and icpData are required' });
+    }
+    await saveICPResult(userId, companyUrl, icpData);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error saving ICP:', error);
+    res.status(500).json({ error: 'Failed to save ICP' });
   }
 });
 

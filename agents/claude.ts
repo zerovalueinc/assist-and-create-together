@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import fetch from 'node-fetch';
 import { searchSimilarCompanies, searchMarketIntelligence } from './webCrawler';
 import { analyzeWithBestModel } from './analysisAgent';
+import { Agent } from './BaseAgent';
 
 // Usage tracking for Claude API calls
 const claudeUsageTracker = {
@@ -893,5 +894,17 @@ Create a compelling subject line and personalized email body that resonates with
   } catch (error) {
     console.error('Error generating personalized email:', error);
     throw new Error('Failed to generate personalized email');
+  }
+}
+
+export class ClaudeAgent implements Agent {
+  name = 'ClaudeAgent';
+
+  async execute(params: { prompt: string; retries?: number }): Promise<string> {
+    return callClaude3(params.prompt, params.retries);
+  }
+
+  getCapabilities() {
+    return ['llm', 'chat', 'icp', 'ibp', 'email_generation'];
   }
 } 

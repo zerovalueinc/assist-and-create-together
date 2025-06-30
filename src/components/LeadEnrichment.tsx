@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Upload, Download, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { SectionLabel } from "./ui/section-label";
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,7 +92,7 @@ const LeadEnrichment = () => {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Users className="h-5 w-5" />
-          <span>Lead Enrichment</span>
+          <SectionLabel>Lead Enrichment</SectionLabel>
         </CardTitle>
         <CardDescription>
           Search, enrich, and qualify leads using AI-powered intelligence

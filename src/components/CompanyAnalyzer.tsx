@@ -1,13 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Globe, Building, Users, TrendingUp, Target, AlertTriangle, MapPin, DollarSign } from "lucide-react";
+import { Loader2, Search, Globe, Building, Users, TrendingUp, Target, AlertTriangle, MapPin, DollarSign, ArrowUpRight, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { SectionLabel } from "@/components/ui/section-label";
+
+// Helper to get favicon from a URL
+const getFaviconUrl = (url: string) => {
+  try {
+    const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}`;
+  } catch {
+    return '/favicon.ico';
+  }
+};
 
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
@@ -18,22 +30,26 @@ const CompanyAnalyzer = () => {
   const [report, setReport] = useState(null);
   const { user, token } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
+  const pillsRef = useRef<HTMLDivElement>(null);
 
-  // Fetch recent reports on mount
-  useEffect(() => {
-    async function fetchReports() {
-      if (!token) return;
-      try {
-        const response = await fetch('http://localhost:3001/api/company-analyze/reports', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const data = await response.json();
-        if (data.success) setReports(data.reports);
-      } catch (err) {
-        // Optionally handle error
-      }
+  // Fetch recent reports
+  const fetchReports = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('http://localhost:3001/api/company-analyze/reports', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success) setReports(data.reports);
+    } catch (err) {
+      // Optionally handle error
     }
+  };
+
+  // Fetch on mount
+  useEffect(() => {
     fetchReports();
+    // eslint-disable-next-line
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,19 +86,17 @@ const CompanyAnalyzer = () => {
       if (data.success) {
         setAnalysis(data.analysis);
         setReport(data.report);
-        
-        // Save to context for downstream processing
         setResearch({
           companyAnalysis: data.analysis,
-          reportId: data.report?.id,
           isCached: data.isCached,
           timestamp: new Date().toISOString()
         });
-
         toast({
           title: "Analysis Complete",
           description: data.isCached ? "Retrieved from cache" : "New analysis generated",
         });
+        // Refresh reports after analysis
+        fetchReports();
       } else {
         throw new Error(data.error || 'Analysis failed');
       }
@@ -105,17 +119,56 @@ const CompanyAnalyzer = () => {
     }
   };
 
+  // Helper to trigger analysis for a given URL (simulate form submit)
+  const triggerAnalysis = async (companyUrl: string) => {
+    setUrl(companyUrl);
+    if (!companyUrl.trim()) return;
+    setLoading(true);
+    setAnalysis(null);
+    setReport(null);
+    try {
+      const response = await fetch('http://localhost:3001/api/company-analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ url: companyUrl.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Analysis failed');
+      }
+      if (data.success) {
+        setAnalysis(data.analysis);
+        setReport(data.report);
+        setResearch({
+          companyAnalysis: data.analysis,
+          isCached: data.isCached,
+          timestamp: new Date().toISOString()
+        });
+        toast({
+          title: "Analysis Complete",
+          description: data.isCached ? "Retrieved from cache" : "New analysis generated",
+        });
+        fetchReports();
+      } else {
+        throw new Error(data.error || 'Analysis failed');
+      }
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: error.message || "Failed to analyze company",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Company Analyzer</h1>
-        <p className="text-muted-foreground">
-          Analyze any company to understand their business, decision makers, and market position
-        </p>
-      </div>
-
-      {/* Input Form */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -141,6 +194,8 @@ const CompanyAnalyzer = () => {
                 onKeyPress={handleKeyPress}
                 disabled={loading}
                 className="text-base"
+                autoComplete="off"
+                aria-label="Company URL"
               />
             </div>
             <Button type="submit" disabled={loading || !url.trim()} className="w-full">
@@ -157,43 +212,59 @@ const CompanyAnalyzer = () => {
               )}
             </Button>
           </form>
+          {/* Recent Analyses Bar - label above pills */}
+          {reports && reports.length > 0 && (
+            <div className="mt-4">
+              <div className="flex flex-col items-center w-full">
+                <SectionLabel className="text-center mb-1">Recent Analyses</SectionLabel>
+              </div>
+              <div className="flex flex-row gap-3 justify-center overflow-x-auto pb-1 hide-scrollbar w-full">
+                {reports.slice(0, 3).map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className="flex items-center gap-2 bg-background border rounded-lg px-3 py-2 min-w-[140px] max-w-[180px] transition hover:bg-accent/20 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer w-full"
+                    style={{ flex: '0 0 auto' }}
+                    onClick={() => triggerAnalysis(r.url)}
+                    aria-label={`View analysis for ${r.companyName}`}
+                    disabled={loading}
+                    tabIndex={0}
+                  >
+                    <div className="flex items-center justify-center w-6 h-6 rounded bg-muted/40 border">
+                      <img
+                        src={getFaviconUrl(r.url)}
+                        alt="favicon"
+                        className="w-4 h-4 object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.ico'; }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="truncate font-medium text-xs text-foreground leading-tight">
+                        {r.companyName}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ''}
+                      </div>
+                    </div>
+                    <TooltipProvider delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center">
+                            <ArrowUpRight className="w-4 h-4 ml-1 text-muted-foreground group-hover:text-primary transition-all duration-150" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          View analysis
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* My Recent Company Analyses */}
-      <div>
-        <h2 className="text-xl font-semibold mt-8 mb-2">My Recent Company Analyses</h2>
-        <div className="bg-muted rounded-lg p-4">
-          {reports.length === 0 ? (
-            <p className="text-muted-foreground">No reports yet. Run an analysis to see it here.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="text-left">Company</th>
-                  <th className="text-left">URL</th>
-                  <th className="text-left">Date</th>
-                  <th className="text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.slice(0, 5).map((r) => (
-                  <tr key={r.id} className="border-t">
-                    <td>{r.companyName}</td>
-                    <td><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{r.url}</a></td>
-                    <td>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ''}</td>
-                    <td>
-                      <Button size="sm" variant="outline" onClick={() => setUrl(r.url)}>
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
 
       {/* Results */}
       {analysis && (
