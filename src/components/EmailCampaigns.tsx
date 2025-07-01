@@ -12,7 +12,7 @@ const EmailCampaigns = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { token } = useAuth();
+  const { session } = useAuth();
 
   // Mock real-time campaign data
   const activeCampaigns = [

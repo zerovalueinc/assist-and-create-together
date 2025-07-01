@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
-  const { token } = useAuth();
+  const { session } = useAuth();
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
@@ -22,7 +22,9 @@ export default function YourWork() {
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        const res = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, { 
+          headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
+        });
         if (!res.ok) throw new Error('Failed to fetch Company Analyzer reports');
         const data = await res.json();
         setAnalyzeWork(data.reports || []);
@@ -37,8 +39,12 @@ export default function YourWork() {
       setGtmError(null);
       try {
         const [icpRes, playbookRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/icp/reports`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} }),
-          fetch(`${API_BASE_URL}/api/icp/playbooks`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} }),
+          fetch(`${API_BASE_URL}/api/icp/reports`, { 
+            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
+          }),
+          fetch(`${API_BASE_URL}/api/icp/playbooks`, { 
+            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
+          }),
         ]);
         const icps = icpRes.ok ? (await icpRes.json()).icps || [] : [];
         const playbooks = playbookRes.ok ? (await playbookRes.json()).playbooks || [] : [];
@@ -51,11 +57,11 @@ export default function YourWork() {
         setGtmLoading(false);
       }
     };
-    if (token) {
+    if (session?.access_token) {
       fetchCompanyAnalyzer();
       fetchGTM();
     }
-  }, [token]);
+  }, [session?.access_token]);
 
   return (
     <div className="min-h-[80vh] w-full flex flex-col items-center justify-start bg-slate-50 py-12">
@@ -157,4 +163,4 @@ export default function YourWork() {
       </div>
     </div>
   );
-} 
+}

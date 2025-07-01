@@ -13,7 +13,7 @@ const LeadEnrichment = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { token } = useAuth();
+  const { session } = useAuth();
 
   const searchLeads = async () => {
     if (!searchQuery) {
@@ -32,7 +32,7 @@ const LeadEnrichment = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({ query: searchQuery }),
       });
@@ -65,7 +65,7 @@ const LeadEnrichment = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({ leadId }),
       });

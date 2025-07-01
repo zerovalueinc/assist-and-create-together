@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Settings, CreditCard, Shield, Bell, Target, Users, BarChart3, Mail } from "lucide-react";
@@ -16,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/ui/AppHeader';
 
 const Account = () => {
-  const { token, user } = useAuth();
+  const { session, user } = useAuth();
   const { fullName, company, initials } = useUserData();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
@@ -37,9 +36,15 @@ const Account = () => {
       setError('');
       try {
         const [analyzeRes, icpRes, playbookRes] = await Promise.all([
-          fetch('/api/company-analyze/reports', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('/api/icp/reports', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('/api/icp/playbooks', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/company-analyze/reports', { 
+            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
+          }),
+          fetch('/api/icp/reports', { 
+            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
+          }),
+          fetch('/api/icp/playbooks', { 
+            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
+          }),
         ]);
         if (!analyzeRes.ok && !icpRes.ok && !playbookRes.ok) throw new Error('Failed to fetch work');
         const analyze = analyzeRes.ok ? (await analyzeRes.json()).reports || [] : [];
@@ -57,7 +62,7 @@ const Account = () => {
       }
     };
     fetchWork();
-  }, [token]);
+  }, [session?.access_token]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">

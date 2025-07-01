@@ -28,16 +28,16 @@ const CompanyAnalyzer = () => {
   const { toast } = useToast();
   const { setResearch } = useCompany();
   const [report, setReport] = useState(null);
-  const { user, token } = useAuth();
+  const { user, session } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const pillsRef = useRef<HTMLDivElement>(null);
 
   // Fetch recent reports
   const fetchReports = async () => {
-    if (!token) return;
+    if (!session?.access_token) return;
     try {
       const response = await fetch('http://localhost:3001/api/company-analyze/reports', {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
       const data = await response.json();
       if (data.success) setReports(data.reports);
@@ -50,7 +50,7 @@ const CompanyAnalyzer = () => {
   useEffect(() => {
     fetchReports();
     // eslint-disable-next-line
-  }, [token]);
+  }, [session?.access_token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +72,7 @@ const CompanyAnalyzer = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({ url: url.trim() }),
       });
@@ -131,7 +131,7 @@ const CompanyAnalyzer = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({ url: companyUrl.trim() }),
       });
