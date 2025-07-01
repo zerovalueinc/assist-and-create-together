@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -5,15 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Mail, Lock, User, Building, Code } from "lucide-react";
+import { Loader2, Mail, Lock, User, Building } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
-import { GoogleLogin } from '@react-oauth/google';
 
 const Auth = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
-  const { login, register, loginWithGoogle, bypassAuth } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -31,9 +31,10 @@ const Auth = () => {
     if (!loginEmail || !loginPassword) return;
 
     setLoading(true);
-    const success = await login(loginEmail, loginPassword);
+    const { error } = await signIn(loginEmail, loginPassword);
     setLoading(false);
-    if (success) {
+    
+    if (!error) {
       navigate('/');
     }
   };
@@ -43,7 +44,7 @@ const Auth = () => {
     if (!registerEmail || !registerPassword) return;
 
     setLoading(true);
-    const success = await register(
+    const { error } = await signUp(
       registerEmail, 
       registerPassword, 
       registerFirstName, 
@@ -51,15 +52,10 @@ const Auth = () => {
       registerCompany
     );
     setLoading(false);
-  };
-
-  const handleForgotPassword = () => {
-    navigate('/forgot-password');
-  };
-
-  const handleDevBypass = () => {
-    bypassAuth();
-    navigate('/');
+    
+    if (!error) {
+      setActiveTab("login");
+    }
   };
 
   return (
@@ -72,20 +68,6 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Development Bypass Button */}
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800 mb-2">Development Mode:</p>
-            <Button 
-              onClick={handleDevBypass}
-              variant="outline" 
-              size="sm"
-              className="w-full border-amber-300 hover:bg-amber-100"
-            >
-              <Code className="mr-2 h-4 w-4" />
-              Skip Login (Dev Mode)
-            </Button>
-          </div>
-
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
@@ -93,21 +75,6 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="login" className="space-y-4">
-              <div className="flex flex-col items-center mb-4">
-                <GoogleLogin
-                  onSuccess={async credentialResponse => {
-                    if (credentialResponse.credential) {
-                      const success = await loginWithGoogle(credentialResponse.credential);
-                      if (success) navigate('/');
-                    }
-                  }}
-                  onError={() => {
-                    console.log('Google login failed');
-                  }}
-                  width={300}
-                />
-                <span className="text-xs text-muted-foreground mt-2">or</span>
-              </div>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
@@ -115,9 +82,7 @@ const Auth = () => {
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="login-email"
-                      name="email"
                       type="email"
-                      autoComplete="username"
                       placeholder="Enter your email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
@@ -133,9 +98,7 @@ const Auth = () => {
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="login-password"
-                      name="password"
                       type="password"
-                      autoComplete="current-password"
                       placeholder="Enter your password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
@@ -145,46 +108,20 @@ const Auth = () => {
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={handleForgotPassword}
-                    className="text-sm px-0"
-                  >
-                    Forgot Password?
-                  </Button>
-                </div>
-
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Logging in...
+                      Signing in...
                     </>
                   ) : (
-                    'Login'
+                    'Sign In'
                   )}
                 </Button>
               </form>
             </TabsContent>
 
             <TabsContent value="register" className="space-y-4">
-              <div className="flex flex-col items-center mb-4">
-                <GoogleLogin
-                  onSuccess={async credentialResponse => {
-                    if (credentialResponse.credential) {
-                      const success = await loginWithGoogle(credentialResponse.credential);
-                      if (success) navigate('/');
-                    }
-                  }}
-                  onError={() => {
-                    console.log('Google register failed');
-                  }}
-                  width={300}
-                />
-                <span className="text-xs text-muted-foreground mt-2">or</span>
-              </div>
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -224,9 +161,7 @@ const Auth = () => {
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="register-email"
-                      name="email"
                       type="email"
-                      autoComplete="username"
                       placeholder="Enter your email"
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
@@ -257,9 +192,7 @@ const Auth = () => {
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="register-password"
-                      name="password"
                       type="password"
-                      autoComplete="new-password"
                       placeholder="Create a password (min 8 characters)"
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}

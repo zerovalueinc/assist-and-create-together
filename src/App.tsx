@@ -1,100 +1,91 @@
+
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import Account from "./pages/Account";
-import Analytics from "./pages/Analytics";
-import NotFound from "./pages/NotFound";
-import Auth from "./components/Auth";
-import EmailVerification from "./components/EmailVerification";
-import PasswordReset from "./components/PasswordReset";
-import ForgotPassword from "./components/ForgotPassword";
-import { CompanyProvider } from "@/context/CompanyContext";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import Auth from '@/components/Auth';
+import Index from '@/pages/Index';
 import Workspace from '@/pages/Workspace';
+import Account from '@/pages/Account';
+import Analytics from '@/pages/Analytics';
+import { Loader2 } from 'lucide-react';
 
-const queryClient = new QueryClient();
-
-// Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth();
-
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading...</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
-
+  
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
-
+  
   return <>{children}</>;
 };
 
-const AppRoutes = () => (
-  <Routes>
-    <Route path="/auth" element={<Auth />} />
-    <Route path="/verify-email" element={<EmailVerification />} />
-    <Route path="/reset-password" element={<PasswordReset />} />
-    <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route 
-      path="/" 
-      element={
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/auth" element={
+        <PublicRoute>
+          <Auth />
+        </PublicRoute>
+      } />
+      <Route path="/" element={
         <ProtectedRoute>
           <Index />
         </ProtectedRoute>
-      } 
-    />
-    <Route 
-      path="/workspace" 
-      element={
+      } />
+      <Route path="/workspace" element={
         <ProtectedRoute>
           <Workspace />
-        </ProtectedRoute>
-      } 
-    />
-    <Route 
-      path="/analytics" 
-      element={
-        <ProtectedRoute>
-          <Analytics />
-        </ProtectedRoute>
-      } 
-    />
-    <Route 
-      path="/account" 
-      element={
+        </ProtectedRoute>    
+      } />
+      <Route path="/account" element={
         <ProtectedRoute>
           <Account />
         </ProtectedRoute>
-      } 
-    />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
+      } />
+      <Route path="/analytics" element={
+        <ProtectedRoute>
+          <Analytics />
+        </ProtectedRoute>
+      } />
+    </Routes>
+  );
+};
 
-const App = () => (
-  <AuthProvider>
-    <CompanyProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </CompanyProvider>
-  </AuthProvider>
-);
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+        <Toaster />
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;
