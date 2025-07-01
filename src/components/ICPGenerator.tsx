@@ -67,7 +67,7 @@ const ICPGenerator = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { research } = useCompany();
-  const { token, user } = useAuth();
+  const { session, user } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [companies, setCompanies] = useState<any[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
@@ -80,10 +80,10 @@ const ICPGenerator = () => {
   // Fetch analyzed companies (CompanyAnalyzer reports)
   useEffect(() => {
     const fetchCompanies = async () => {
-      if (!token) return;
+      if (!session?.access_token) return;
       try {
         const response = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
         if (data.success) {
@@ -98,15 +98,15 @@ const ICPGenerator = () => {
       }
     };
     fetchCompanies();
-  }, [token]);
+  }, [session?.access_token]);
 
   // Fetch recent/generated ICPs
   useEffect(() => {
     const fetchICPs = async () => {
-      if (!token) return;
+      if (!session?.access_token) return;
       try {
         const response = await fetch(`${API_BASE_URL}/api/icp/reports`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
         if (data.success) setRecentICPs(data.icps);
@@ -116,15 +116,15 @@ const ICPGenerator = () => {
       }
     };
     fetchICPs();
-  }, [token, icp]);
+  }, [session?.access_token, icp]);
 
   // Fetch recent playbooks
   useEffect(() => {
     const fetchPlaybooks = async () => {
-      if (!token) return;
+      if (!session?.access_token) return;
       try {
         const response = await fetch(`${API_BASE_URL}/api/icp/playbooks`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
         if (data.success) setRecentPlaybooks(data.playbooks);
@@ -133,7 +133,7 @@ const ICPGenerator = () => {
       }
     };
     fetchPlaybooks();
-  }, [token, icp]);
+  }, [session?.access_token, icp]);
 
   // Auto-load saved playbooks
   useEffect(() => {
@@ -215,7 +215,7 @@ const ICPGenerator = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({
           workflowName: 'icp-generator',
@@ -258,7 +258,7 @@ const ICPGenerator = () => {
       attempts++;
       try {
         const response = await fetch(`${API_BASE_URL}/api/workflow/state?workflowName=icp-generator&sessionId=${encodeURIComponent(sessionId)}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
         });
         const data = await response.json();
         if (data.success && data.state) {
@@ -275,7 +275,7 @@ const ICPGenerator = () => {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                  ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
                 },
                 body: JSON.stringify({
                   companyUrl: selectedCompany?.companyUrl || '',

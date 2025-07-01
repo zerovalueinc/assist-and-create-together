@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, FolderOpen, BarChart3, Users, Zap, Settings, Link2, FileText, Trash2, Eye, Plus, Search } from 'lucide-react';
@@ -15,7 +14,7 @@ import YourWork from '@/components/YourWork';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 export default function Workspace() {
-  const { user, token } = useAuth();
+  const { user, session } = useAuth();
   const { fullName, company, initials } = useUserData();
   const [activeTab, setActiveTab] = useState('yourwork');
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
@@ -39,7 +38,7 @@ export default function Workspace() {
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {};
         const res = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, { headers });
         if (res.ok) {
           const data = await res.json();
@@ -55,7 +54,7 @@ export default function Workspace() {
       setPlaybooksLoading(true);
       setPlaybooksError(null);
       try {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {};
         const playbookRes = await fetch(`${API_BASE_URL}/api/icp/playbooks`, { headers });
         const playbooksData = playbookRes.ok ? (await playbookRes.json()) : {};
         const playbooksArray = playbooksData.playbooks || [];
@@ -68,7 +67,7 @@ export default function Workspace() {
     };
 
     fetchData();
-  }, [token]);
+  }, [session?.access_token]);
 
   const filteredAnalyzeWork = analyzeWork.filter(item => 
     (item.companyName || item.company || item.title || '').toLowerCase().includes(searchTerm.toLowerCase())
