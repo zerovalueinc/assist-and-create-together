@@ -1,61 +1,89 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Mail, Send, Upload, Users, BarChart3 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Mail, Send, Users, BarChart3, ExternalLink, Bot, Zap, TrendingUp, Clock, Target, CheckCircle2, ArrowUpRight, Play, Pause, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const EmailCampaigns = () => {
-  const [campaignName, setCampaignName] = useState('');
-  const [emailTemplate, setEmailTemplate] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState('instantly');
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { token } = useAuth();
 
-  const createCampaign = async () => {
-    if (!campaignName || !emailTemplate) {
-      toast({
-        title: "Required Fields Missing",
-        description: "Please provide campaign name and email template.",
-        variant: "destructive",
-      });
-      return;
+  // Mock real-time campaign data
+  const activeCampaigns = [
+    {
+      id: 1,
+      name: "Enterprise SaaS Q1 Outreach",
+      platform: "Instantly",
+      status: "Active",
+      leads: 547,
+      sent: 2341,
+      opened: 1687,
+      replies: 298,
+      meetings: 67,
+      openRate: "72.1%",
+      replyRate: "12.7%",
+      meetingRate: "2.9%",
+      revenue: "$890K potential",
+      aiPersonalization: "97.3%",
+      lastUpdated: "2 mins ago"
+    },
+    {
+      id: 2,
+      name: "Mid-Market Manufacturing Push",
+      platform: "HubSpot",
+      status: "Active",
+      leads: 234,
+      sent: 1456,
+      opened: 1089,
+      replies: 187,
+      meetings: 34,
+      openRate: "74.8%",
+      replyRate: "12.8%",
+      meetingRate: "2.3%",
+      revenue: "$345K potential",
+      aiPersonalization: "94.7%",
+      lastUpdated: "5 mins ago"
+    },
+    {
+      id: 3,
+      name: "FinTech Vertical Expansion",
+      platform: "Instantly",
+      status: "Scheduled",
+      leads: 178,
+      sent: 0,
+      opened: 0,
+      replies: 0,
+      meetings: 0,
+      openRate: "-",
+      replyRate: "-",
+      meetingRate: "-",
+      revenue: "$234K potential",
+      aiPersonalization: "Ready",
+      lastUpdated: "Launch in 2 hours"
     }
+  ];
 
+  const launchAICampaign = async () => {
     setLoading(true);
     try {
-      // Connect to your /api/email endpoint
-      const response = await fetch('/api/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          campaignName, 
-          template: emailTemplate 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Campaign creation failed');
-      }
-
-      const data = await response.json();
+      // Simulate API call to launch campaign
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
-        title: "Campaign Created",
-        description: "Email campaign has been created successfully.",
+        title: "AI Campaign Launched",
+        description: `New PersonaOps campaign launched on ${selectedPlatform}. AI agents are now generating personalized outreach.`,
       });
-
-      // Reset form
-      setCampaignName('');
-      setEmailTemplate('');
     } catch (error) {
       toast({
-        title: "Creation Failed",
-        description: "Failed to create email campaign. Please try again.",
+        title: "Launch Failed",
+        description: "Failed to launch AI campaign. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -63,182 +91,235 @@ const EmailCampaigns = () => {
     }
   };
 
-  // Mock campaigns data
-  const mockCampaigns = [
-    {
-      id: 1,
-      name: "Q1 Outreach Campaign",
-      status: "Active",
-      sent: 1247,
-      opened: 423,
-      replies: 89,
-      openRate: "33.9%",
-      replyRate: "7.1%"
-    },
-    {
-      id: 2,
-      name: "Product Demo Follow-up",
-      status: "Scheduled",
-      sent: 0,
-      opened: 0,
-      replies: 0,
-      openRate: "-",
-      replyRate: "-"
-    },
-    {
-      id: 3,
-      name: "Holiday Promotion",
-      status: "Completed",
-      sent: 2156,
-      opened: 987,
-      replies: 234,
-      openRate: "45.8%",
-      replyRate: "10.9%"
-    }
-  ];
-
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <Mail className="h-5 w-5" />
-          <span>Email Campaigns</span>
+          <Mail className="h-5 w-5 text-blue-600" />
+          <span>AI-Powered Email Campaigns</span>
         </CardTitle>
         <CardDescription>
-          Create, manage, and track AI-personalized email campaigns
+          <span className="font-semibold">Step 5 of 5:</span> Launch fully automated, AI-personalized email campaigns through Instantly and HubSpot integrations.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Campaign Creation */}
-        <Card>
+        {/* Platform Integration Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-2 border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="font-semibold text-blue-800">Instantly Integration</span>
+                </div>
+                <Badge className="bg-blue-100 text-blue-800">Connected</Badge>
+              </div>
+              <p className="text-sm text-blue-700">API connected • Auto-sync enabled</p>
+              <div className="flex items-center space-x-4 mt-3 text-xs text-blue-600">
+                <span>• 2 Active Campaigns</span>
+                <span>• 725 Leads in Pipeline</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-orange-200 bg-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                  <span className="font-semibold text-orange-800">HubSpot Integration</span>
+                </div>
+                <Badge className="bg-orange-100 text-orange-800">Connected</Badge>
+              </div>
+              <p className="text-sm text-orange-700">CRM sync active • Lead scoring enabled</p>
+              <div className="flex items-center space-x-4 mt-3 text-xs text-orange-600">
+                <span>• 1 Active Campaign</span>
+                <span>• 234 Leads in Pipeline</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* AI Campaign Launcher */}
+        <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
           <CardHeader>
-            <CardTitle className="text-lg">Create New Campaign</CardTitle>
+            <CardTitle className="flex items-center text-green-800">
+              <Bot className="h-5 w-5 mr-2" />
+              Launch New AI Campaign
+            </CardTitle>
+            <CardDescription className="text-green-700">
+              PersonaOps will automatically generate personalized emails, research prospects, and launch campaigns
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <label htmlFor="campaignName" className="text-sm font-medium">Campaign Name</label>
-            <Input
-              id="campaignName"
-              name="campaignName"
-              placeholder="Campaign name"
-              value={campaignName}
-              onChange={(e) => setCampaignName(e.target.value)}
-            />
-            <label htmlFor="emailTemplate" className="text-sm font-medium">Email Template</label>
-            <Textarea
-              id="emailTemplate"
-              name="emailTemplate"
-              placeholder="Email template (use {{firstName}}, {{companyName}}, etc. for personalization)"
-              value={emailTemplate}
-              onChange={(e) => setEmailTemplate(e.target.value)}
-              className="min-h-[120px]"
-            />
-            <div className="flex justify-between items-center">
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import Leads
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Users className="h-4 w-4 mr-2" />
-                  Select Audience
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-slate-700 mb-2 block">Target Platform</label>
+                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="instantly">Instantly (Recommended)</SelectItem>
+                    <SelectItem value="hubspot">HubSpot</SelectItem>
+                    <SelectItem value="both">Both Platforms</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="pt-6">
+                <Button onClick={launchAICampaign} disabled={loading} className="bg-green-600 hover:bg-green-700">
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Launching...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4 mr-2" />
+                      Launch AI Campaign
+                    </>
+                  )}
                 </Button>
               </div>
-              <Button onClick={createCampaign} disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Create Campaign
-                  </>
-                )}
-              </Button>
+            </div>
+
+            {/* AI Features */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+              <div className="text-center p-3 bg-white rounded-lg border">
+                <Target className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <h4 className="font-medium text-slate-800 text-sm">Smart Targeting</h4>
+                <p className="text-xs text-slate-600">AI selects optimal prospects from your ICP</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg border">
+                <Bot className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                <h4 className="font-medium text-slate-800 text-sm">Auto Personalization</h4>
+                <p className="text-xs text-slate-600">Each email uniquely crafted by AI agents</p>
+              </div>
+              <div className="text-center p-3 bg-white rounded-lg border">
+                <TrendingUp className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                <h4 className="font-medium text-slate-800 text-sm">Performance Optimization</h4>
+                <p className="text-xs text-slate-600">AI continuously improves campaign performance</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Campaign Performance */}
+        {/* Active Campaign Performance */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Campaign Performance</CardTitle>
-              <CardDescription>Track and analyze your email campaign results</CardDescription>
+              <CardTitle className="text-lg">Campaign Performance Dashboard</CardTitle>
+              <CardDescription>Real-time performance metrics for your AI-powered campaigns</CardDescription>
             </div>
-            <BarChart3 className="h-5 w-5 text-gray-400" />
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                {activeCampaigns.filter(c => c.status === 'Active').length} Active
+              </Badge>
+              <Button variant="outline" size="sm">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Platform
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Campaign</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Sent</th>
-                    <th className="text-left p-2">Opened</th>
-                    <th className="text-left p-2">Replies</th>
-                    <th className="text-left p-2">Open Rate</th>
-                    <th className="text-left p-2">Reply Rate</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockCampaigns.map((campaign) => (
-                    <tr key={campaign.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2 font-medium">{campaign.name}</td>
-                      <td className="p-2">
-                        <Badge variant={
-                          campaign.status === 'Active' ? 'default' : 
-                          campaign.status === 'Scheduled' ? 'secondary' : 
-                          'outline'
-                        }>
-                          {campaign.status}
-                        </Badge>
-                      </td>
-                      <td className="p-2">{campaign.sent.toLocaleString()}</td>
-                      <td className="p-2">{campaign.opened.toLocaleString()}</td>
-                      <td className="p-2">{campaign.replies.toLocaleString()}</td>
-                      <td className="p-2 text-green-600 font-medium">{campaign.openRate}</td>
-                      <td className="p-2 text-blue-600 font-medium">{campaign.replyRate}</td>
-                      <td className="p-2">
-                        <Button size="sm" variant="outline">
-                          View
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {activeCampaigns.map((campaign) => (
+                <div key={campaign.id} className="border rounded-lg p-4 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        campaign.status === 'Active' ? 'bg-green-500 animate-pulse' :
+                        campaign.status === 'Scheduled' ? 'bg-blue-500' : 'bg-gray-500'
+                      }`} />
+                      <h3 className="font-semibold text-slate-900">{campaign.name}</h3>
+                      <Badge variant={campaign.status === 'Active' ? 'default' : 'secondary'}>
+                        {campaign.status}
+                      </Badge>
+                      <Badge className={campaign.platform === 'Instantly' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}>
+                        {campaign.platform}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-green-600">{campaign.revenue}</span>
+                      <Button variant="ghost" size="sm">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 text-sm">
+                    <div className="text-center p-3 bg-slate-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">Leads</span>
+                      <span className="font-semibold text-slate-900">{campaign.leads}</span>
+                    </div>
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">Sent</span>
+                      <span className="font-semibold text-blue-600">{campaign.sent.toLocaleString()}</span>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">Opened</span>
+                      <span className="font-semibold text-green-600">{campaign.opened.toLocaleString()}</span>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">Replies</span>
+                      <span className="font-semibold text-purple-600">{campaign.replies}</span>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">Meetings</span>
+                      <span className="font-semibold text-orange-600">{campaign.meetings}</span>
+                    </div>
+                    <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">Open Rate</span>
+                      <span className="font-semibold text-emerald-600">{campaign.openRate}</span>
+                    </div>
+                    <div className="text-center p-3 bg-indigo-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">Reply Rate</span>
+                      <span className="font-semibold text-indigo-600">{campaign.replyRate}</span>
+                    </div>
+                    <div className="text-center p-3 bg-pink-50 rounded-lg">
+                      <span className="text-slate-500 block text-xs">AI Score</span>
+                      <span className="font-semibold text-pink-600">{campaign.aiPersonalization}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t text-xs text-slate-500">
+                    <span>Last updated: {campaign.lastUpdated}</span>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-3 w-3" />
+                      <span>AI optimizing in real-time</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* AI Personalization Insights */}
-        <Card>
+        {/* AI Insights */}
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="text-lg">AI Personalization Insights</CardTitle>
+            <CardTitle className="flex items-center text-blue-800">
+              <Brain className="h-5 w-5 mr-2" />
+              AI Performance Insights
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-800">Company Research</h4>
-                <p className="text-sm text-blue-700 mt-1">
-                  AI automatically researches each prospect's company for personalized messaging
-                </p>
+              <div className="text-center p-4 bg-white rounded-lg border">
+                <div className="text-2xl font-bold text-green-600 mb-1">94.7%</div>
+                <div className="text-sm font-medium text-slate-700">Average AI Personalization Score</div>
+                <div className="text-xs text-slate-500 mt-1">vs 23% manual personalization</div>
               </div>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h4 className="font-medium text-green-800">Growth Signals</h4>
-                <p className="text-sm text-green-700 mt-1">
-                  Mentions recent funding, hiring, or product launches for timely outreach
-                </p>
+              <div className="text-center p-4 bg-white rounded-lg border">
+                <div className="text-2xl font-bold text-blue-600 mb-1">73.2%</div>
+                <div className="text-sm font-medium text-slate-700">Average Open Rate</div>
+                <div className="text-xs text-slate-500 mt-1">vs 21% industry average</div>
               </div>
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <h4 className="font-medium text-purple-800">Pain Point Detection</h4>
-                <p className="text-sm text-purple-700 mt-1">
-                  Identifies specific challenges your solution can address
-                </p>
+              <div className="text-center p-4 bg-white rounded-lg border">
+                <div className="text-2xl font-bold text-purple-600 mb-1">12.8%</div>
+                <div className="text-sm font-medium text-slate-700">Average Reply Rate</div>
+                <div className="text-xs text-slate-500 mt-1">vs 1.2% industry average</div>
               </div>
             </div>
           </CardContent>

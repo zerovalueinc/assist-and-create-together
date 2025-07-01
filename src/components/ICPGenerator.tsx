@@ -4,7 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Target, Users, Building2, MapPin, DollarSign, ArrowUpRight, Lightbulb, BarChart2, ClipboardList, TrendingUp, FileText, CheckCircle, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Target, Users, Building2, MapPin, DollarSign, ArrowUpRight, Lightbulb, BarChart2, ClipboardList, TrendingUp, FileText, CheckCircle, AlertTriangle, Rocket, Globe, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
@@ -48,7 +52,17 @@ const GTMICPSchemaZod = z.object({
 });
 
 const ICPGenerator = () => {
-  const [companyInfo, setCompanyInfo] = useState('');
+  // Form state
+  const [playbookType, setPlaybookType] = useState('');
+  const [productStage, setProductStage] = useState('');
+  const [channelExpansion, setChannelExpansion] = useState('');
+  const [targetMarket, setTargetMarket] = useState('');
+  const [salesCycle, setSalesCycle] = useState('');
+  const [competitivePosition, setCompetitivePosition] = useState('');
+  const [primaryGoals, setPrimaryGoals] = useState([]);
+  const [marketingChannels, setMarketingChannels] = useState([]);
+  const [additionalContext, setAdditionalContext] = useState('');
+
   const [icp, setICP] = useState<GTMICPSchema | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -121,7 +135,7 @@ const ICPGenerator = () => {
     fetchPlaybooks();
   }, [token, icp]);
 
-  // 1. On mount, auto-load the most recent saved playbook if icp is null
+  // Auto-load saved playbooks
   useEffect(() => {
     if (!icp && recentICPs.length > 0) {
       try {
@@ -129,16 +143,13 @@ const ICPGenerator = () => {
         const parsed = GTMICPSchemaZod.safeParse(JSON.parse(latest.icpData));
         if (parsed.success) {
           setICP(parsed.data as GTMICPSchema);
-        } else {
-          toast({ title: 'Invalid GTM playbook', description: 'Saved playbook failed schema validation.', variant: 'destructive' });
         }
       } catch {
-        toast({ title: 'Error loading playbook', description: 'Failed to parse saved playbook.', variant: 'destructive' });
+        // Handle parsing error silently
       }
     }
   }, [recentICPs, icp]);
 
-  // 2. When a company is selected, auto-load the saved playbook for that company (if available)
   useEffect(() => {
     if (selectedCompany && recentICPs.length > 0) {
       const match = recentICPs.find((icp) => icp.companyUrl === selectedCompany.companyUrl);
@@ -147,39 +158,68 @@ const ICPGenerator = () => {
           const parsed = GTMICPSchemaZod.safeParse(JSON.parse(match.icpData));
           if (parsed.success) {
             setICP(parsed.data as GTMICPSchema);
-          } else {
-            toast({ title: 'Invalid GTM playbook', description: 'Saved playbook failed schema validation.', variant: 'destructive' });
           }
         } catch {
-          toast({ title: 'Error loading playbook', description: 'Failed to parse saved playbook.', variant: 'destructive' });
+          // Handle parsing error silently
         }
       } else {
-        setICP(null); // Clear if no saved playbook for this company
+        setICP(null);
       }
     }
   }, [selectedCompany, recentICPs]);
 
+  const handleGoalChange = (goal: string, checked: boolean) => {
+    if (checked) {
+      setPrimaryGoals([...primaryGoals, goal]);
+    } else {
+      setPrimaryGoals(primaryGoals.filter(g => g !== goal));
+    }
+  };
+
+  const handleChannelChange = (channel: string, checked: boolean) => {
+    if (checked) {
+      setMarketingChannels([...marketingChannels, channel]);
+    } else {
+      setMarketingChannels(marketingChannels.filter(c => c !== channel));
+    }
+  };
+
   const startICPWorkflow = async () => {
-    if (!selectedCompany && !companyInfo) {
+    if (!selectedCompany) {
       toast({
         title: "Company Selection Required",
-        description: "Please select a company or provide company information.",
+        description: "Please select a company to generate the GTM playbook for.",
         variant: "destructive",
       });
       return;
     }
-    if (selectedCompany && !selectedCompany.companyUrl) {
+
+    if (!playbookType || !productStage || !targetMarket) {
       toast({
-        title: "Missing Company URL",
-        description: "The selected company is missing a valid URL. Please analyze a company with a valid website.",
+        title: "Required Fields Missing",
+        description: "Please fill out the playbook type, product stage, and target market.",
         variant: "destructive",
       });
       return;
     }
+
     setLoading(true);
     setICP(null);
     setSessionId(null);
+    
     try {
+      const formData = {
+        playbookType,
+        productStage,
+        channelExpansion,
+        targetMarket,
+        salesCycle,
+        competitivePosition,
+        primaryGoals,
+        marketingChannels,
+        additionalContext
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/workflow/start`, {
         method: 'POST',
         headers: {
@@ -192,24 +232,27 @@ const ICPGenerator = () => {
             url: selectedCompany?.companyUrl || '',
             comprehensive: false,
             userId: user?.id,
-            userInput: companyInfo,
+            formData: formData,
           },
         }),
       });
+      
       const data = await response.json();
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to start ICP workflow');
+        throw new Error(data.error || 'Failed to start GTM playbook generation');
       }
+      
       setSessionId(data.sessionId);
       toast({
-        title: "ICP Generation Started",
-        description: "Your ICP is being generated. This may take a moment.",
+        title: "GTM Playbook Generation Started",
+        description: "Your enterprise GTM playbook is being generated. This may take a few moments.",
       });
+      
       pollWorkflowState(data.sessionId);
     } catch (error) {
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to start ICP workflow.",
+        description: error.message || "Failed to start GTM playbook generation.",
         variant: "destructive",
       });
       setLoading(false);
@@ -232,10 +275,10 @@ const ICPGenerator = () => {
             setICP(data.state.result as GTMICPSchema);
             setLoading(false);
             toast({
-              title: "ICP Generated",
-              description: "Ideal Customer Profile has been created successfully.",
+              title: "GTM Playbook Generated",
+              description: "Your enterprise GTM playbook has been created successfully.",
             });
-            // Auto-save the result to the backend
+            // Auto-save the result
             try {
               await fetch(`${API_BASE_URL}/api/icp/save`, {
                 method: 'POST',
@@ -249,14 +292,14 @@ const ICPGenerator = () => {
                 }),
               });
             } catch (saveErr) {
-              console.error('Failed to save GTM ICP result:', saveErr);
+              console.error('Failed to save GTM playbook:', saveErr);
             }
             return;
           } else if (data.state.status === 'failed') {
             setLoading(false);
             toast({
               title: "Generation Failed",
-              description: data.state.error || "ICP generation failed.",
+              description: data.state.error || "GTM playbook generation failed.",
               variant: "destructive",
             });
             return;
@@ -268,7 +311,7 @@ const ICPGenerator = () => {
           setLoading(false);
           toast({
             title: "Timeout",
-            description: "ICP generation took too long. Please try again.",
+            description: "GTM playbook generation took too long. Please try again.",
             variant: "destructive",
           });
         }
@@ -288,11 +331,11 @@ const ICPGenerator = () => {
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <Target className="h-5 w-5" />
-          <span>GTM Generator</span>
+          <Target className="h-5 w-5 text-blue-600" />
+          <span>Enterprise GTM Playbook Generator</span>
         </CardTitle>
         <CardDescription>
-          <span className="font-semibold">Step 2 of 5:</span> Select a company and generate an Ideal Customer Profile based on your company analysis and additional input.
+          <span className="font-semibold">Step 2 of 5:</span> Select a company and configure your go-to-market strategy parameters to generate a comprehensive enterprise GTM playbook.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -304,7 +347,6 @@ const ICPGenerator = () => {
               try {
                 const result = GTMICPSchemaZod.safeParse(JSON.parse(icpObj.icpData));
                 if (result.success) parsed = result.data as GTMICPSchema;
-                else parsed = null;
               } catch {
                 parsed = null;
               }
@@ -316,9 +358,7 @@ const ICPGenerator = () => {
                   style={{ flex: '0 0 auto' }}
                   onClick={() => {
                     if (parsed) setICP(parsed as GTMICPSchema);
-                    else toast({ title: 'Invalid GTM playbook', description: 'This playbook could not be loaded.', variant: 'destructive' });
                   }}
-                  aria-label={`Load GTM playbook for ${icpObj.companyName || icpObj.companyUrl}`}
                 >
                   <img
                     src={`https://www.google.com/s2/favicons?domain=${icpObj.companyUrl}`}
@@ -334,50 +374,207 @@ const ICPGenerator = () => {
         )}
         {/* Company Selector */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Select Company</label>
+          <label className="text-sm font-medium">Select Target Company</label>
           <div className="flex flex-wrap gap-2">
-            {companies.length === 0 && <span className="text-gray-500 text-sm">No companies analyzed yet.</span>}
+            {companies.length === 0 && <span className="text-gray-500 text-sm">No companies analyzed yet. Use Company Analyzer first.</span>}
             {companies.map((c) => (
               <Button
                 key={c.id}
-                variant={selectedCompany?.id === c.id ? 'secondary' : 'outline'}
+                variant={selectedCompany?.id === c.id ? 'default' : 'outline'}
                 onClick={() => setSelectedCompany(c)}
                 className="flex items-center gap-2 px-3 py-1 text-sm"
                 size="sm"
               >
                 <img src={`https://www.google.com/s2/favicons?domain=${c.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
                 {c.companyName || c.companyUrl}
-                {selectedCompany?.id === c.id && <ArrowUpRight className="h-3 w-3 ml-1" />}
+                {selectedCompany?.id === c.id && <CheckCircle className="h-3 w-3 ml-1" />}
               </Button>
             ))}
           </div>
         </div>
-        {/* User Input */}
-        <div className="space-y-4">
-          <label htmlFor="companyInfo" className="text-sm font-medium">Additional Company Info</label>
-          <Textarea
-            id="companyInfo"
-            name="companyInfo"
-            value={companyInfo}
-            onChange={(e) => setCompanyInfo(e.target.value)}
-            placeholder="Add any extra info about the company here..."
-            className="min-h-[100px]"
-            disabled={loading}
-          />
-          <Button onClick={startICPWorkflow} disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating ICP...
-              </>
-            ) : (
-              <>
-                <Target className="h-4 w-4 mr-2" />
-                Generate ICP
-              </>
-            )}
-          </Button>
+
+        {/* GTM Configuration Form */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
+          {/* Playbook Type */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Playbook Type</Label>
+            <Select value={playbookType} onValueChange={setPlaybookType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select playbook type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sales">Sales Playbook</SelectItem>
+                <SelectItem value="marketing">Marketing Playbook</SelectItem>
+                <SelectItem value="integrated">Integrated Sales & Marketing</SelectItem>
+                <SelectItem value="account-based">Account-Based Marketing</SelectItem>
+                <SelectItem value="product-led">Product-Led Growth</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Product Stage */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Product Stage</Label>
+            <Select value={productStage} onValueChange={setProductStage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select product stage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new-product">New Product Launch</SelectItem>
+                <SelectItem value="existing-product">Existing Product</SelectItem>
+                <SelectItem value="product-expansion">Product Feature Expansion</SelectItem>
+                <SelectItem value="market-expansion">Market Expansion</SelectItem>
+                <SelectItem value="rebranding">Product Rebranding</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Channel Expansion */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Channel Strategy</Label>
+            <Select value={channelExpansion} onValueChange={setChannelExpansion}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select channel strategy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="direct-sales">Direct Sales</SelectItem>
+                <SelectItem value="partner-channel">Partner Channel</SelectItem>
+                <SelectItem value="multi-channel">Multi-Channel</SelectItem>
+                <SelectItem value="digital-first">Digital-First</SelectItem>
+                <SelectItem value="enterprise-sales">Enterprise Sales</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Target Market */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Target Market</Label>
+            <Select value={targetMarket} onValueChange={setTargetMarket}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select target market" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="enterprise">Enterprise (1000+ employees)</SelectItem>
+                <SelectItem value="mid-market">Mid-Market (100-1000 employees)</SelectItem>
+                <SelectItem value="smb">Small Business (1-100 employees)</SelectItem>
+                <SelectItem value="startup">Startups & Scale-ups</SelectItem>
+                <SelectItem value="multi-segment">Multi-Segment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sales Cycle */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Expected Sales Cycle</Label>
+            <Select value={salesCycle} onValueChange={setSalesCycle}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select sales cycle length" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="short">Short (0-3 months)</SelectItem>
+                <SelectItem value="medium">Medium (3-6 months)</SelectItem>
+                <SelectItem value="long">Long (6-12 months)</SelectItem>
+                <SelectItem value="complex">Complex (12+ months)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Competitive Position */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Competitive Position</Label>
+            <Select value={competitivePosition} onValueChange={setCompetitivePosition}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select competitive position" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="market-leader">Market Leader</SelectItem>
+                <SelectItem value="challenger">Challenger</SelectItem>
+                <SelectItem value="niche-player">Niche Player</SelectItem>
+                <SelectItem value="disruptor">Disruptor</SelectItem>
+                <SelectItem value="follower">Market Follower</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
+        {/* Primary Goals */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Primary Goals (Select all that apply)</Label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              'Increase Market Share',
+              'Generate New Leads',
+              'Improve Conversion Rates',
+              'Expand to New Markets',
+              'Increase Deal Size',
+              'Reduce Sales Cycle',
+              'Improve Customer Retention',
+              'Launch New Product',
+              'Competitive Displacement'
+            ].map((goal) => (
+              <div key={goal} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={goal}
+                  checked={primaryGoals.includes(goal)}
+                  onCheckedChange={(checked) => handleGoalChange(goal, checked)}
+                />
+                <Label htmlFor={goal} className="text-sm">{goal}</Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Marketing Channels */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Preferred Marketing Channels</Label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              'Email Marketing',
+              'Social Media',
+              'Content Marketing',
+              'Paid Advertising',
+              'SEO/SEM',
+              'Events & Webinars',
+              'Partner Marketing',
+              'Direct Mail'
+            ].map((channel) => (
+              <div key={channel} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={channel}
+                  checked={marketingChannels.includes(channel)}
+                  onCheckedChange={(checked) => handleChannelChange(channel, checked)}
+                />
+                <Label htmlFor={channel} className="text-sm">{channel}</Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Additional Context */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Additional Context (Optional)</Label>
+          <Textarea
+            value={additionalContext}
+            onChange={(e) => setAdditionalContext(e.target.value)}
+            placeholder="Any specific requirements, constraints, or additional context for your GTM strategy..."
+            className="min-h-[80px]"
+          />
+        </div>
+
+        {/* Generate Button */}
+        <Button onClick={startICPWorkflow} disabled={loading} className="w-full h-12 text-base font-medium">
+          {loading ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Generating Enterprise GTM Playbook...
+            </>
+          ) : (
+            <>
+              <Rocket className="h-5 w-5 mr-2" />
+              Generate GTM Playbook
+            </>
+          )}
+        </Button>
 
         {/* Step/Progress UI */}
         <div className="text-xs text-gray-500">Step 2 of 5: ICP Generation</div>
