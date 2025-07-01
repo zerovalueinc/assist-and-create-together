@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Target, Users, Mail, BarChart3, Globe, TrendingUp, Calendar, Activity } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Target, Users, Mail, BarChart3, Globe, TrendingUp, Calendar, Activity, Zap, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import CompanyAnalyzer from "@/components/CompanyAnalyzer";
 import ICPGenerator from "@/components/ICPGenerator";
 import LeadEnrichment from "@/components/LeadEnrichment";
@@ -13,46 +14,96 @@ import { useAuth } from "@/context/AuthContext";
 import AppHeader from '@/components/ui/AppHeader';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("analyzer");
+  const [activeTab, setActiveTab] = useState("overview");
   const { user } = useAuth();
 
-  // Mock data for dashboard metrics
-  const metrics = [
+  // Key performance metrics for sales directors
+  const kpiMetrics = [
     {
-      title: "Companies Analyzed",
-      value: "2,847",
-      change: "+12% from last month",
-      icon: Globe,
-      color: "text-blue-600"
-    },
-    {
-      title: "ICPs Generated",
-      value: "1,234",
-      change: "+8% from last month", 
+      title: "Pipeline Quality Score",
+      value: "94.2%",
+      change: "+5.2%",
+      description: "AI-qualified leads vs manual",
       icon: Target,
-      color: "text-green-600"
+      color: "text-green-600",
+      bgColor: "bg-green-50"
     },
     {
-      title: "Leads Enriched",
-      value: "8,492",
-      change: "+23% from last month",
-      icon: Users,
-      color: "text-purple-600"
+      title: "Lead Response Time",
+      value: "< 2hrs",
+      change: "-67%",
+      description: "Average first contact speed",
+      icon: Clock,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
     },
     {
-      title: "Email Campaigns",
-      value: "156",
-      change: "+15% from last month",
-      icon: Mail,
-      color: "text-orange-600"
+      title: "Conversion Rate",
+      value: "23.8%",
+      change: "+127%",
+      description: "Lead to opportunity",
+      icon: TrendingUp,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
+    },
+    {
+      title: "Team Efficiency",
+      value: "340%",
+      change: "+89%",
+      description: "Productivity vs baseline",
+      icon: Zap,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
     }
   ];
 
-  const recentActivity = [
-    { action: "Company Analysis", target: "TechCorp Inc.", time: "2 minutes ago", status: "completed" },
-    { action: "ICP Generation", target: "SaaS Startups", time: "5 minutes ago", status: "processing" },
-    { action: "Lead Enrichment", target: "250 contacts", time: "12 minutes ago", status: "completed" },
-    { action: "Email Campaign", target: "Q4 Outreach", time: "1 hour ago", status: "scheduled" }
+  // Active workflows and processes
+  const activeWorkflows = [
+    { 
+      id: 1,
+      name: "Enterprise SaaS - Q1 Push", 
+      stage: "Lead Enrichment", 
+      progress: 87, 
+      leads: 342,
+      priority: "high",
+      assignee: "Sarah Chen (AE)",
+      eta: "2 hours"
+    },
+    { 
+      id: 2,
+      name: "Mid-Market Manufacturing", 
+      stage: "ICP Validation", 
+      progress: 23, 
+      leads: 156,
+      priority: "medium",
+      assignee: "Mike Rodriguez (SDR)",
+      eta: "4 hours"
+    },
+    { 
+      id: 3,
+      name: "FinTech Expansion", 
+      stage: "Email Sequencing", 
+      progress: 94, 
+      leads: 89,
+      priority: "low",
+      assignee: "Alex Thompson (SDR)",
+      eta: "30 mins"
+    }
+  ];
+
+  // Team performance snapshot
+  const teamPerformance = [
+    { name: "Sarah Chen", role: "Senior AE", leads: 45, meetings: 12, closed: 3, score: 94 },
+    { name: "Mike Rodriguez", role: "SDR", leads: 89, meetings: 23, closed: 8, score: 87 },
+    { name: "Alex Thompson", role: "SDR", leads: 67, meetings: 18, closed: 5, score: 83 },
+    { name: "Jessica Park", role: "AE", leads: 34, meetings: 9, closed: 2, score: 91 }
+  ];
+
+  const quickActions = [
+    { label: "Analyze New Market", action: () => setActiveTab("analyzer"), icon: Search, color: "bg-blue-600" },
+    { label: "Generate ICP", action: () => setActiveTab("icp"), icon: Target, color: "bg-green-600" },
+    { label: "Enrich Lead List", action: () => setActiveTab("leads"), icon: Users, color: "bg-purple-600" },
+    { label: "Launch Campaign", action: () => setActiveTab("email"), icon: Mail, color: "bg-orange-600" }
   ];
 
   return (
@@ -60,140 +111,175 @@ const Index = () => {
       <AppHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Dashboard Overview */}
-        <div className="mb-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-              <p className="text-slate-600 mt-1">Welcome back, {user?.firstName || 'User'}. Here's what's happening with your sales intelligence.</p>
+              <h1 className="text-3xl font-bold text-slate-900">Sales Command Center</h1>
+              <p className="text-slate-600 mt-1">Hey {user?.firstName || 'Director'}, your AI-powered sales engine is running.</p>
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Activity className="h-4 w-4 mr-2" />
-              New Analysis
-            </Button>
+            <TabsList className="bg-white border shadow-sm">
+              <TabsTrigger value="overview" className="flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="analyzer">Company Intel</TabsTrigger>
+              <TabsTrigger value="icp">ICP Engine</TabsTrigger>
+              <TabsTrigger value="leads">Lead Factory</TabsTrigger>
+              <TabsTrigger value="intelligence">Sales Intel</TabsTrigger>
+              <TabsTrigger value="email">Campaign Hub</TabsTrigger>
+            </TabsList>
           </div>
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {metrics.map((metric, index) => (
-              <Card key={index} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+          <TabsContent value="overview" className="space-y-6">
+            {/* KPI Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {kpiMetrics.map((metric, index) => (
+                <Card key={index} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`p-3 rounded-full ${metric.bgColor}`}>
+                        <metric.icon className={`h-6 w-6 ${metric.color}`} />
+                      </div>
+                      <Badge variant="secondary" className="text-xs font-medium">
+                        {metric.change}
+                      </Badge>
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-600">{metric.title}</p>
-                      <p className="text-3xl font-bold text-slate-900 mt-2">{metric.value}</p>
-                      <p className="text-sm text-green-600 mt-1">{metric.change}</p>
+                      <p className="text-2xl font-bold text-slate-900 mb-1">{metric.value}</p>
+                      <p className="text-sm font-medium text-slate-700 mb-1">{metric.title}</p>
+                      <p className="text-xs text-slate-500">{metric.description}</p>
                     </div>
-                    <div className={`p-3 rounded-full bg-slate-100 ${metric.color}`}>
-                      <metric.icon className="h-6 w-6" />
-                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Active Workflows */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Activity className="h-5 w-5 mr-2" />
+                    Active Workflows
+                  </CardTitle>
+                  <CardDescription>AI-powered lead generation in progress</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {activeWorkflows.map((workflow) => (
+                      <div key={workflow.id} className="border rounded-lg p-4 hover:bg-slate-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${
+                              workflow.priority === 'high' ? 'bg-red-500' :
+                              workflow.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                            }`} />
+                            <h3 className="font-medium text-slate-900">{workflow.name}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {workflow.leads} leads
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-slate-500">ETA: {workflow.eta}</span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-slate-600">{workflow.stage}</span>
+                          <span className="text-sm font-medium text-slate-900">{workflow.progress}%</span>
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                            style={{ width: `${workflow.progress}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500">Assigned to {workflow.assignee}</p>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
 
-          {/* Quick Actions & Recent Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Activity className="h-5 w-5 mr-2" />
-                  Recent Activity
-                </CardTitle>
-                <CardDescription>Your latest sales intelligence activities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-2 h-2 rounded-full ${
-                          activity.status === 'completed' ? 'bg-green-500' :
-                          activity.status === 'processing' ? 'bg-yellow-500' : 'bg-blue-500'
-                        }`} />
-                        <div>
-                          <p className="font-medium text-slate-900">{activity.action}</p>
-                          <p className="text-sm text-slate-600">{activity.target}</p>
-                        </div>
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Zap className="h-5 w-5 mr-2" />
+                    Quick Launch
+                  </CardTitle>
+                  <CardDescription>Start new AI workflows</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {quickActions.map((action, index) => (
+                    <Button 
+                      key={index}
+                      variant="outline" 
+                      className="w-full justify-start hover:bg-slate-50"
+                      onClick={action.action}
+                    >
+                      <div className={`p-1 rounded ${action.color} mr-3`}>
+                        <action.icon className="h-3 w-3 text-white" />
                       </div>
-                      <span className="text-xs text-slate-500">{activity.time}</span>
-                    </div>
+                      {action.label}
+                    </Button>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
+            {/* Team Performance */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2" />
-                  Quick Start
+                  <Users className="h-5 w-5 mr-2" />
+                  Team Performance
                 </CardTitle>
-                <CardDescription>Get started with common tasks</CardDescription>
+                <CardDescription>Your sales team's AI-assisted performance this week</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("analyzer")}
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  Analyze Company
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("icp")}
-                >
-                  <Target className="h-4 w-4 mr-2" />
-                  Generate ICP
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("leads")}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Enrich Leads
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("email")}
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email Campaign
-                </Button>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-3">Rep</th>
+                        <th className="text-left p-3">Role</th>
+                        <th className="text-left p-3">AI Leads</th>
+                        <th className="text-left p-3">Meetings</th>
+                        <th className="text-left p-3">Closed</th>
+                        <th className="text-left p-3">AI Score</th>
+                        <th className="text-left p-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teamPerformance.map((rep, index) => (
+                        <tr key={index} className="border-b hover:bg-slate-50">
+                          <td className="p-3 font-medium">{rep.name}</td>
+                          <td className="p-3 text-slate-600">{rep.role}</td>
+                          <td className="p-3">{rep.leads}</td>
+                          <td className="p-3">{rep.meetings}</td>
+                          <td className="p-3 font-medium text-green-600">{rep.closed}</td>
+                          <td className="p-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">{rep.score}</span>
+                              <div className="w-12 bg-slate-200 rounded-full h-1.5">
+                                <div 
+                                  className="bg-green-500 h-1.5 rounded-full" 
+                                  style={{ width: `${rep.score}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center">
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
-
-        {/* Main Tools */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
-            <TabsTrigger value="analyzer" className="flex items-center space-x-2">
-              <Search className="h-4 w-4" />
-              <span>Company Analyzer</span>
-            </TabsTrigger>
-            <TabsTrigger value="icp" className="flex items-center space-x-2">
-              <Target className="h-4 w-4" />
-              <span>ICP Generator</span>
-            </TabsTrigger>
-            <TabsTrigger value="leads" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>Lead Enrichment</span>
-            </TabsTrigger>
-            <TabsTrigger value="intelligence" className="flex items-center space-x-2">
-              <BarChart3 className="h-4 w-4" />
-              <span>Sales Intelligence</span>
-            </TabsTrigger>
-            <TabsTrigger value="email" className="flex items-center space-x-2">
-              <Mail className="h-4 w-4" />
-              <span>Email Campaigns</span>
-            </TabsTrigger>
-          </TabsList>
+          </TabsContent>
 
           <TabsContent value="analyzer">
             <CompanyAnalyzer />
