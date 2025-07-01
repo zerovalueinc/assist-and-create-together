@@ -45,11 +45,11 @@ const SecurityTab = () => {
         }),
       });
       if (response.ok) {
-        toast({
-          title: "Password Updated",
-          description: "Your password has been changed successfully.",
-        });
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    toast({
+      title: "Password Updated",
+      description: "Your password has been changed successfully.",
+    });
+    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
         const data = await response.json();
         toast({

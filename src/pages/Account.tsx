@@ -1,25 +1,39 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Settings, CreditCard, Shield, Bell } from "lucide-react";
-import AccountHeader from "@/components/account/AccountHeader";
+import { User, Settings, CreditCard, Shield, Bell, Target, Users, BarChart3, Mail } from "lucide-react";
 import ProfileTab from "@/components/account/ProfileTab";
 import SecurityTab from "@/components/account/SecurityTab";
 import BillingTab from "@/components/account/BillingTab";
 import NotificationsTab from "@/components/account/NotificationsTab";
 import PreferencesTab from "@/components/account/PreferencesTab";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/ui/AppHeader';
 
 const Account = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('yourwork');
+  const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [work, setWork] = useState([]);
+
+  const getUserInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    return user?.email?.[0]?.toUpperCase() || 'U';
+  };
+
+  const accountStats = [
+    { label: "Companies Analyzed", value: "2,847", icon: Target, change: "+12%" },
+    { label: "ICPs Generated", value: "1,234", icon: Users, change: "+8%" },
+    { label: "Leads Enriched", value: "8,492", icon: BarChart3, change: "+23%" },
+    { label: "Email Campaigns", value: "156", icon: Mail, change: "+15%" },
+  ];
 
   useEffect(() => {
     const fetchWork = async () => {
@@ -52,55 +66,94 @@ const Account = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <AppHeader />
-      <AccountHeader />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards (if any) */}
-        {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
-            <TabsTrigger value="profile" className="flex items-center space-x-2">
-              <User className="h-4 w-4" />
-              <span>Profile</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center space-x-2">
-              <Shield className="h-4 w-4" />
-              <span>Security</span>
-            </TabsTrigger>
-            <TabsTrigger value="billing" className="flex items-center space-x-2">
-              <CreditCard className="h-4 w-4" />
-              <span>Billing</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center space-x-2">
-              <Bell className="h-4 w-4" />
-              <span>Notifications</span>
-            </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center space-x-2">
-              <Settings className="h-4 w-4" />
-              <span>Preferences</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="profile">
-            <ProfileTab />
-          </TabsContent>
-
-          <TabsContent value="security">
-            <SecurityTab />
-          </TabsContent>
-
-          <TabsContent value="billing">
-            <BillingTab />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <NotificationsTab />
-          </TabsContent>
-
-          <TabsContent value="preferences">
-            <PreferencesTab />
-          </TabsContent>
-        </Tabs>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card className="shadow-lg border border-slate-200">
+          <CardContent className="pt-6">
+            {/* Profile and Stats */}
+            <div className="flex items-center space-x-4 mb-6">
+              <Avatar className="h-20 w-20">
+                <AvatarFallback className="bg-blue-100 text-blue-600 text-xl font-semibold">
+                  {getUserInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  {user?.firstName && user?.lastName 
+                    ? `${user.firstName} ${user.lastName}`
+                    : user?.email
+                  }
+                </h2>
+                {user?.company && (
+                  <p className="text-slate-600">{user.company}</p>
+                )}
+                <div className="flex items-center space-x-2 mt-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    Pro Plan
+                  </Badge>
+                  <Badge variant="outline">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              {accountStats.map((stat, index) => (
+                <div key={index} className="bg-slate-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-600">{stat.label}</p>
+                      <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                      <p className="text-sm text-green-600">{stat.change}</p>
+                    </div>
+                    <stat.icon className="h-8 w-8 text-blue-600" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Tabs - now directly under stats, on white */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-5 mb-8">
+                <TabsTrigger value="profile" className="flex items-center space-x-2">
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </TabsTrigger>
+                <TabsTrigger value="security" className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4" />
+                  <span>Security</span>
+                </TabsTrigger>
+                <TabsTrigger value="billing" className="flex items-center space-x-2">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Billing</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center space-x-2">
+                  <Bell className="h-4 w-4" />
+                  <span>Notifications</span>
+                </TabsTrigger>
+                <TabsTrigger value="preferences" className="flex items-center space-x-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Preferences</span>
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="profile">
+                <ProfileTab />
+              </TabsContent>
+              <TabsContent value="security">
+                <SecurityTab />
+              </TabsContent>
+              <TabsContent value="billing">
+                <BillingTab />
+              </TabsContent>
+              <TabsContent value="notifications">
+                <NotificationsTab />
+              </TabsContent>
+              <TabsContent value="preferences">
+                <PreferencesTab />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

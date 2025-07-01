@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Mail, Send, Users, BarChart3, ExternalLink, Bot, Zap, TrendingUp, Clock, Target, CheckCircle2, ArrowUpRight, Play, Pause, Settings } from "lucide-react";
+import { Loader2, Mail, Send, Users, BarChart3, ExternalLink, Bot, Zap, TrendingUp, Clock, Target, CheckCircle2, ArrowUpRight, Play, Pause, Settings, Brain, BookOpen, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
@@ -140,66 +139,39 @@ const EmailCampaigns = () => {
           </Card>
         </div>
 
-        {/* AI Campaign Launcher */}
-        <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        {/* Best Practices & Resources */}
+        <Card className="border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50">
           <CardHeader>
-            <CardTitle className="flex items-center text-green-800">
-              <Bot className="h-5 w-5 mr-2" />
-              Launch New AI Campaign
+            <CardTitle className="flex items-center text-indigo-800">
+              <BookOpen className="h-5 w-5 mr-2" />
+              Email Campaign Best Practices
             </CardTitle>
-            <CardDescription className="text-green-700">
-              PersonaOps will automatically generate personalized emails, research prospects, and launch campaigns
+            <CardDescription className="text-indigo-700">
+              Download our whitepaper or explore training to maximize your results.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium text-slate-700 mb-2 block">Target Platform</label>
-                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select platform" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="instantly">Instantly (Recommended)</SelectItem>
-                    <SelectItem value="hubspot">HubSpot</SelectItem>
-                    <SelectItem value="both">Both Platforms</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="pt-6">
-                <Button onClick={launchAICampaign} disabled={loading} className="bg-green-600 hover:bg-green-700">
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Launching...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      Launch AI Campaign
-                    </>
-                  )}
-                </Button>
-              </div>
+            <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-2 md:space-y-0">
+              <Button asChild variant="outline" className="bg-white border-indigo-200 text-indigo-800 hover:bg-indigo-50">
+                <a href="/whitepaper.pdf" target="_blank" rel="noopener noreferrer">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Whitepaper
+                </a>
+              </Button>
+              <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+                <a href="/training" target="_blank" rel="noopener noreferrer">
+                  <Play className="h-4 w-4 mr-2" />
+                  View Training
+                </a>
+              </Button>
             </div>
-
-            {/* AI Features */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
-              <div className="text-center p-3 bg-white rounded-lg border">
-                <Target className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-                <h4 className="font-medium text-slate-800 text-sm">Smart Targeting</h4>
-                <p className="text-xs text-slate-600">AI selects optimal prospects from your ICP</p>
-              </div>
-              <div className="text-center p-3 bg-white rounded-lg border">
-                <Bot className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-                <h4 className="font-medium text-slate-800 text-sm">Auto Personalization</h4>
-                <p className="text-xs text-slate-600">Each email uniquely crafted by AI agents</p>
-              </div>
-              <div className="text-center p-3 bg-white rounded-lg border">
-                <TrendingUp className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                <h4 className="font-medium text-slate-800 text-sm">Performance Optimization</h4>
-                <p className="text-xs text-slate-600">AI continuously improves campaign performance</p>
-              </div>
+            <div className="pt-4 border-t">
+              <h4 className="font-medium text-slate-800 text-sm mb-2">Top 3 Tips for High-Performing Campaigns</h4>
+              <ul className="list-disc pl-5 text-xs text-slate-600 space-y-1">
+                <li>Personalize every email—use dynamic fields and AI insights for relevance.</li>
+                <li>Keep subject lines short, clear, and curiosity-driven (30–50 characters).</li>
+                <li>Follow up 2–3 times, but always provide value and a clear call to action.</li>
+              </ul>
             </div>
           </CardContent>
         </Card>

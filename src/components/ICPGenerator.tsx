@@ -185,19 +185,10 @@ const ICPGenerator = () => {
   };
 
   const startICPWorkflow = async () => {
-    if (!selectedCompany) {
-      toast({
-        title: "Company Selection Required",
-        description: "Please select a company to generate the GTM playbook for.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!playbookType || !productStage || !targetMarket) {
+    if (!selectedCompany || !playbookType || !productStage || !channelExpansion || !targetMarket || !salesCycle || !competitivePosition || primaryGoals.length === 0 || marketingChannels.length === 0) {
       toast({
         title: "Required Fields Missing",
-        description: "Please fill out the playbook type, product stage, and target market.",
+        description: "Please fill out all required fields before generating the GTM playbook.",
         variant: "destructive",
       });
       return;
@@ -515,8 +506,8 @@ const ICPGenerator = () => {
               <div key={goal} className="flex items-center space-x-2">
                 <Checkbox 
                   id={goal}
-                  checked={primaryGoals.includes(goal)}
-                  onCheckedChange={(checked) => handleGoalChange(goal, checked)}
+                  checked={!!primaryGoals.includes(goal)}
+                  onCheckedChange={(checked) => handleGoalChange(goal, checked === true)}
                 />
                 <Label htmlFor={goal} className="text-sm">{goal}</Label>
               </div>
@@ -541,8 +532,8 @@ const ICPGenerator = () => {
               <div key={channel} className="flex items-center space-x-2">
                 <Checkbox 
                   id={channel}
-                  checked={marketingChannels.includes(channel)}
-                  onCheckedChange={(checked) => handleChannelChange(channel, checked)}
+                  checked={!!marketingChannels.includes(channel)}
+                  onCheckedChange={(checked) => handleChannelChange(channel, checked === true)}
                 />
                 <Label htmlFor={channel} className="text-sm">{channel}</Label>
               </div>

@@ -212,57 +212,6 @@ const CompanyAnalyzer = () => {
               )}
             </Button>
           </form>
-          {/* Recent Analyses Bar - label above pills */}
-          {reports && reports.length > 0 && (
-            <div className="mt-4">
-              <div className="flex flex-col items-center w-full">
-                <SectionLabel className="text-center mb-1">Recent Analyses</SectionLabel>
-              </div>
-              <div className="flex flex-row gap-3 justify-center overflow-x-auto pb-1 hide-scrollbar w-full">
-                {reports.slice(0, 3).map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    className="flex items-center gap-2 bg-background border rounded-lg px-3 py-2 min-w-[140px] max-w-[180px] transition hover:bg-accent/20 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer w-full"
-                    style={{ flex: '0 0 auto' }}
-                    onClick={() => triggerAnalysis(r.url)}
-                    aria-label={`View analysis for ${r.companyName}`}
-                    disabled={loading}
-                    tabIndex={0}
-                  >
-                    <div className="flex items-center justify-center w-6 h-6 rounded bg-muted/40 border">
-                      <img
-                        src={getFaviconUrl(r.url)}
-                        alt="favicon"
-                        className="w-4 h-4 object-contain"
-                        onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.ico'; }}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="truncate font-medium text-xs text-foreground leading-tight">
-                        {r.companyName}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground truncate">
-                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ''}
-                      </div>
-                    </div>
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-flex items-center">
-                            <ArrowUpRight className="w-4 h-4 ml-1 text-muted-foreground group-hover:text-primary transition-all duration-150" />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          View analysis
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 

@@ -41,10 +41,10 @@ const ProfileTab = () => {
       });
       if (response.ok) {
         setUser({ ...user, ...profileData });
-        toast({
-          title: "Profile Updated",
-          description: "Your profile information has been saved successfully.",
-        });
+    toast({
+      title: "Profile Updated",
+      description: "Your profile information has been saved successfully.",
+    });
       } else {
         const data = await response.json();
         toast({
@@ -72,7 +72,7 @@ const ProfileTab = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
       <div className="lg:col-span-2">
         <Card>
           <CardHeader>
@@ -147,8 +147,8 @@ const ProfileTab = () => {
         </Card>
       </div>
 
-      <div>
-        <Card>
+      <div className="flex flex-col h-full">
+        <Card className="min-w-[260px]">
           <CardHeader>
             <CardTitle>Profile Picture</CardTitle>
             <CardDescription>
@@ -172,12 +172,11 @@ const ProfileTab = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="mt-6">
+        <Card className="mt-6 min-w-[260px] flex-1 flex flex-col">
           <CardHeader>
             <CardTitle>Account Activity</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col justify-end">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600">Last login</span>

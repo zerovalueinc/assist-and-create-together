@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Target, Users, Mail, BarChart3, Globe, TrendingUp, Calendar, Activity, Zap, AlertCircle, CheckCircle2, Clock, Brain, Shield, Settings, Bell, FileText, Bot, Workflow, PieChart, MessageSquare, Filter, ChevronRight, Play, Pause, RefreshCw, ExternalLink, ArrowUpRight, Database, Cpu, Network, Eye } from "lucide-react";
+import { Search, Target, Users, Mail, BarChart3, Globe, TrendingUp, Calendar, Activity, Zap, AlertCircle, CheckCircle2, Clock, Brain, Shield, Settings, Bell, FileText, Bot, Workflow, PieChart, MessageSquare, Filter, ChevronRight, Play, Pause, RefreshCw, ExternalLink, ArrowUpRight, Database, Cpu, Network, Eye, BookOpen, Download } from "lucide-react";
 import CompanyAnalyzer from "@/components/CompanyAnalyzer";
 import ICPGenerator from "@/components/ICPGenerator";
 import LeadEnrichment from "@/components/LeadEnrichment";
@@ -13,6 +12,7 @@ import SalesIntelligence from "@/components/SalesIntelligence";
 import EmailCampaigns from "@/components/EmailCampaigns";
 import { useAuth } from "@/context/AuthContext";
 import AppHeader from '@/components/ui/AppHeader';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -217,11 +217,8 @@ const Index = () => {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">AI Revenue Operations Command Center</h1>
-                <p className="text-slate-600 mt-1">Hey {user?.firstName || 'Director'}, your multi-agent AI workforce is optimizing {teamPerformance.reduce((sum, rep) => sum + rep.aiLeads, 0).toLocaleString()} prospects across the pipeline.</p>
-              </div>
-              <TabsList className="bg-white border shadow-sm h-12">
+              <h1 className="text-2xl font-bold text-slate-900 leading-tight">PersonaOps Command Center</h1>
+              <TabsList className="bg-white border shadow-sm h-12" style={{ alignSelf: 'center' }}>
                 <TabsTrigger value="overview" className="flex items-center space-x-2 tab-morph">
                   <BarChart3 className="h-4 w-4" />
                   <span className="tab-text">Overview</span>
@@ -350,38 +347,67 @@ const Index = () => {
                   </CardContent>
                 </Card>
 
-                {/* Enhanced Quick Actions */}
+                {/* Best Practices & Resources - Compact Badge Card */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Zap className="h-5 w-5 mr-2 text-orange-500" />
-                      AI Quick Launch
+                      <BookOpen className="h-5 w-5 mr-2 text-indigo-600" />
+                      Resources
                     </CardTitle>
-                    <CardDescription>Start new AI-powered revenue workflows</CardDescription>
+                    <CardDescription>
+                      Unlock expert resources—brought to you by our partners.
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {quickActions.map((action, index) => (
-                      <Tooltip key={index}>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            className="w-full justify-start hover:bg-slate-50 hover:border-blue-300 transition-all duration-200 group border-2"
-                            onClick={action.action}
-                          >
-                            <div className={`p-2 rounded-lg mr-3 ${action.color} group-hover:scale-110 transition-transform duration-200`}>
-                              <action.icon className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="flex-1 text-left">
-                              <div className="font-medium text-slate-900">{action.label}</div>
-                              <div className="text-xs text-slate-500">{action.time}</div>
-                            </div>
-                            <ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="tooltip-content">
-                          <p>{action.description}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                  <CardContent className="flex flex-col gap-3">
+                    {[
+                      {
+                        icon: <BookOpen className="h-8 w-8 text-indigo-600" />, // Lucide icon
+                        title: "AI GTM Playbook",
+                        description: "Master B2B pipeline acceleration.",
+                        link: "/whitepaper.pdf",
+                        partner: "AcmeAI",
+                        partnerColor: "text-indigo-500",
+                        partnerIcon: <span className="font-bold">A</span>,
+                        bg: "from-white via-white to-indigo-100"
+                      },
+                      {
+                        icon: <Play className="h-8 w-8 text-green-600" />, // Lucide icon
+                        title: "PersonaOps Mastery",
+                        description: "Onboarding & advanced tactics.",
+                        link: "/training",
+                        partner: "EnablementPro",
+                        partnerColor: "text-green-500",
+                        partnerIcon: <span className="font-bold">E</span>,
+                        bg: "from-white via-white to-green-100"
+                      },
+                      {
+                        icon: <Shield className="h-8 w-8 text-yellow-500" />, // Lucide icon
+                        title: "Compliance Champion",
+                        description: "Stay ahead of AI regulations.",
+                        link: "/compliance-guide.pdf",
+                        partner: "LawTech",
+                        partnerColor: "text-yellow-500",
+                        partnerIcon: <span className="font-bold">L</span>,
+                        bg: "from-white via-white to-yellow-100"
+                      }
+                    ].map((resource, idx) => (
+                      <a
+                        key={idx}
+                        href={resource.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-3 rounded-xl border border-slate-200 shadow-sm px-5 py-2.5 bg-gradient-to-r ${resource.bg} transition-all duration-200 hover:shadow-md hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-200 group cursor-pointer`}
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <div className="flex-shrink-0 flex items-center justify-center">
+                          {resource.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-slate-900 text-base truncate">{resource.title}</div>
+                          <div className="text-xs text-slate-600 truncate">{resource.description}</div>
+                        </div>
+                        <span className={`ml-3 text-sm font-bold ${resource.partnerColor}`} title={`Sponsored by ${resource.partner}`}>{resource.partnerIcon}</span>
+                      </a>
                     ))}
                   </CardContent>
                 </Card>
