@@ -74,6 +74,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 
     // Attach user to request
     req.user = user;
+    console.log('DEBUG: User attached to request:', user.email, user.id);
     next();
   } catch (error) {
     console.error('Authentication error:', error);
