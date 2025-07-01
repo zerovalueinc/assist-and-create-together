@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,17 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, Upload } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useUserData } from "@/hooks/useUserData";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProfileTab = () => {
-  const { user, token, setUser } = useAuth();
+  const { user, profile } = useAuth();
+  const { email, firstName, lastName, company, initials } = useUserData();
   const { toast } = useToast();
   
   const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    company: user?.company || '',
+    firstName: firstName,
+    lastName: lastName,
+    email: email,
+    company: company,
     phone: '',
     jobTitle: '',
     timezone: 'UTC-8',
@@ -24,36 +28,45 @@ const ProfileTab = () => {
 
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    setProfileData({
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      company: company,
+      phone: '',
+      jobTitle: '',
+      timezone: 'UTC-8',
+    });
+  }, [firstName, lastName, email, company]);
+
   const handleProfileSave = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          firstName: profileData.firstName,
-          lastName: profileData.lastName,
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profileData.firstName,
+          last_name: profileData.lastName,
           company: profileData.company,
-        }),
-      });
-      if (response.ok) {
-        setUser({ ...user, ...profileData });
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
-      } else {
-        const data = await response.json();
+        })
+        .eq('id', user.id);
+
+      if (error) {
         toast({
           title: "Profile Update Failed",
-          description: data.error || 'An error occurred.',
+          description: error.message,
           variant: 'destructive',
         });
+      } else {
+        toast({
+          title: "Profile Updated",
+          description: "Your profile information has been saved successfully.",
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Network Error",
         description: 'Could not update profile.',
@@ -62,13 +75,6 @@ const ProfileTab = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getUserInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
-    }
-    return user?.email?.[0]?.toUpperCase() || 'U';
   };
 
   return (
@@ -108,6 +114,7 @@ const ProfileTab = () => {
                 type="email"
                 value={profileData.email}
                 onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                disabled
               />
             </div>
 
@@ -159,7 +166,7 @@ const ProfileTab = () => {
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="h-24 w-24">
                 <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl font-semibold">
-                  {getUserInitials()}
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <Button variant="outline" className="w-full">

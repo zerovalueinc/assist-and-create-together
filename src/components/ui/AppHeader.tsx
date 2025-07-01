@@ -1,5 +1,6 @@
 
 import { useAuth } from '@/context/AuthContext';
+import { useUserData } from '@/hooks/useUserData';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,19 +16,13 @@ const navItems = [
 ];
 
 export default function AppHeader() {
-  const { user, logout } = useAuth();
+  const { signOut } = useAuth();
+  const { fullName, company, initials } = useUserData();
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = () => {
-    logout();
-  };
-
-  const getUserInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
-    }
-    return user?.email?.[0]?.toUpperCase() || 'U';
+    signOut();
   };
 
   return (
@@ -78,7 +73,7 @@ export default function AppHeader() {
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-4">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-blue-100 text-blue-600">
-                      {getUserInitials()}
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -86,14 +81,10 @@ export default function AppHeader() {
               <DropdownMenuContent className="w-56 bg-white border shadow-lg" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium text-slate-900">
-                      {user?.firstName && user?.lastName
-                        ? `${user.firstName} ${user.lastName}`
-                        : user?.email}
-                    </p>
-                    {user?.company && (
+                    <p className="font-medium text-slate-900">{fullName}</p>
+                    {company && (
                       <p className="w-[200px] truncate text-sm text-slate-600">
-                        {user.company}
+                        {company}
                       </p>
                     )}
                   </div>
