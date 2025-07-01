@@ -49,17 +49,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Check if profiles table exists by trying to query it
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       if (!error && data) {
         setProfile(data);
+      } else {
+        // If profiles table doesn't exist or no profile found, create a basic profile from user data
+        const basicProfile: Profile = {
+          id: userId,
+          email: user?.email || '',
+          first_name: user?.user_metadata?.first_name,
+          last_name: user?.user_metadata?.last_name,
+          company: user?.user_metadata?.company,
+        };
+        setProfile(basicProfile);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // Fallback to basic profile from user metadata
+      if (user) {
+        const basicProfile: Profile = {
+          id: userId,
+          email: user.email || '',
+          first_name: user.user_metadata?.first_name,
+          last_name: user.user_metadata?.last_name,
+          company: user.user_metadata?.company,
+        };
+        setProfile(basicProfile);
+      }
     }
   };
 
@@ -96,7 +118,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [user]);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string, company?: string) => {
     try {

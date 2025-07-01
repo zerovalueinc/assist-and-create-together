@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Settings, CreditCard, Shield, Bell, Target, Users, BarChart3, Mail } from "lucide-react";
@@ -10,23 +11,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
+import { useUserData } from '@/hooks/useUserData';
 import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/ui/AppHeader';
 
 const Account = () => {
   const { token, user } = useAuth();
+  const { fullName, company, initials } = useUserData();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [work, setWork] = useState([]);
-
-  const getUserInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
-    }
-    return user?.email?.[0]?.toUpperCase() || 'U';
-  };
 
   const accountStats = [
     { label: "Companies Analyzed", value: "2,847", icon: Target, change: "+12%" },
@@ -73,18 +69,13 @@ const Account = () => {
             <div className="flex items-center space-x-4 mb-6">
               <Avatar className="h-20 w-20">
                 <AvatarFallback className="bg-blue-100 text-blue-600 text-xl font-semibold">
-                  {getUserInitials()}
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">
-                  {user?.firstName && user?.lastName 
-                    ? `${user.firstName} ${user.lastName}`
-                    : user?.email
-                  }
-                </h2>
-                {user?.company && (
-                  <p className="text-slate-600">{user.company}</p>
+                <h2 className="text-2xl font-bold text-slate-900">{fullName}</h2>
+                {company && (
+                  <p className="text-slate-600">{company}</p>
                 )}
                 <div className="flex items-center space-x-2 mt-2">
                   <Badge variant="secondary" className="bg-green-100 text-green-800">

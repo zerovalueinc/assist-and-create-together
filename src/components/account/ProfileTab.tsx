@@ -45,31 +45,51 @@ const ProfileTab = () => {
     
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: profileData.firstName,
-          last_name: profileData.lastName,
-          company: profileData.company,
-        })
-        .eq('id', user.id);
+      // Try to update the profiles table if it exists
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            first_name: profileData.firstName,
+            last_name: profileData.lastName,
+            company: profileData.company,
+          })
+          .eq('id', user.id);
 
-      if (error) {
+        if (error) {
+          throw error;
+        }
+
         toast({
-          title: "Profile Update Failed",
-          description: error.message,
-          variant: 'destructive',
+          title: "Profile Updated",
+          description: "Your profile information has been saved successfully.",
         });
-      } else {
+      } catch (profileError) {
+        // If profiles table doesn't exist, try to update user metadata
+        console.log('Profiles table not available, updating user metadata');
+        
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            first_name: profileData.firstName,
+            last_name: profileData.lastName,
+            company: profileData.company,
+          }
+        });
+
+        if (updateError) {
+          throw updateError;
+        }
+
         toast({
           title: "Profile Updated",
           description: "Your profile information has been saved successfully.",
         });
       }
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
-        title: "Network Error",
-        description: 'Could not update profile.',
+        title: "Profile Update Failed",
+        description: error.message || 'Could not update profile.',
         variant: 'destructive',
       });
     } finally {

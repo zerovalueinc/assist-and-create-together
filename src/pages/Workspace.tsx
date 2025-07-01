@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, FolderOpen, BarChart3, Users, Zap, Settings, Link2, FileText, Trash2, Eye, Plus, Search } from 'lucide-react';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
+import { useUserData } from '@/hooks/useUserData';
 import AppHeader from '@/components/ui/AppHeader';
 import YourWork from '@/components/YourWork';
 
@@ -14,6 +16,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
 
 export default function Workspace() {
   const { user, token } = useAuth();
+  const { fullName, company, initials } = useUserData();
   const [activeTab, setActiveTab] = useState('yourwork');
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [playbooks, setPlaybooks] = useState<any[]>([]);
@@ -67,12 +70,6 @@ export default function Workspace() {
     fetchData();
   }, [token]);
 
-  const getWorkspaceInitials = () => {
-    if (user?.company) return user.company.slice(0, 2).toUpperCase();
-    if (user?.firstName && user?.lastName) return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
-    return user?.email?.[0]?.toUpperCase() || 'W';
-  };
-
   const filteredAnalyzeWork = analyzeWork.filter(item => 
     (item.companyName || item.company || item.title || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -91,12 +88,12 @@ export default function Workspace() {
           <div className="flex items-center space-x-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="bg-blue-100 text-blue-600 text-lg font-semibold">
-                {getWorkspaceInitials()}
+                {initials}
               </AvatarFallback>
             </Avatar>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">
-                {user?.company || `${user?.firstName}'s Workspace` || 'Workspace'}
+                {company || fullName || 'Workspace'}
               </h1>
               <div className="flex items-center space-x-2 mt-2">
                 <Badge variant="secondary" className="bg-green-100 text-green-800">
@@ -321,11 +318,11 @@ export default function Workspace() {
                     <div className="flex items-center space-x-3">
                       <Avatar>
                         <AvatarFallback className="bg-blue-100 text-blue-600">
-                          {getWorkspaceInitials()}
+                          {initials}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                        <p className="font-medium">{fullName}</p>
                         <p className="text-sm text-slate-500">Owner</p>
                       </div>
                     </div>
@@ -353,7 +350,7 @@ export default function Workspace() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-medium mb-2">Workspace Name</h3>
-                    <Input value={user?.company || 'Workspace'} />
+                    <Input value={company || fullName || 'Workspace'} />
                   </div>
                   <div>
                     <h3 className="font-medium mb-2">Subscription</h3>
