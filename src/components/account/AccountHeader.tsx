@@ -9,8 +9,8 @@ const AccountHeader = () => {
   const { user } = useAuth();
 
   const getUserInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    if (user?.user_metadata?.firstName && user?.user_metadata?.lastName) {
+      return `${user.user_metadata.firstName[0]}${user.user_metadata.lastName[0]}`.toUpperCase();
     }
     return user?.email?.[0]?.toUpperCase() || 'U';
   };
@@ -36,13 +36,13 @@ const AccountHeader = () => {
               </Avatar>
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">
-                  {user?.firstName && user?.lastName 
-                    ? `${user.firstName} ${user.lastName}`
+                  {user?.user_metadata?.firstName && user?.user_metadata?.lastName 
+                    ? `${user.user_metadata.firstName} ${user.user_metadata.lastName}`
                     : user?.email
                   }
                 </h2>
-                {user?.company && (
-                  <p className="text-slate-600">{user.company}</p>
+                {user?.user_metadata?.company && (
+                  <p className="text-slate-600">{user.user_metadata.company}</p>
                 )}
                 <div className="flex items-center space-x-2 mt-2">
                   <Badge variant="secondary" className="bg-green-100 text-green-800">

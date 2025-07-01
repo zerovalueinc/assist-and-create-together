@@ -7,49 +7,50 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, Upload } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import supabase from '../../lib/supabaseClient';
 
 const ProfileTab = () => {
   const { user, token, setUser } = useAuth();
   const { toast } = useToast();
   
   const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
+    firstName: user?.user_metadata?.firstName || '',
+    lastName: user?.user_metadata?.lastName || '',
     email: user?.email || '',
-    company: user?.company || '',
+    company: user?.user_metadata?.company || '',
     phone: '',
     jobTitle: '',
     timezone: 'UTC-8',
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleProfileSave = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const { error } = await supabase.auth.updateUser({
+        data: {
           firstName: profileData.firstName,
           lastName: profileData.lastName,
           company: profileData.company,
-        }),
+        }
       });
-      if (response.ok) {
-        setUser({ ...user, ...profileData });
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
+      if (!error) {
+        setUser({ ...user, user_metadata: {
+          ...user?.user_metadata,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          company: profileData.company,
+        }});
+        toast({
+          title: "Profile Updated",
+          description: "Your profile information has been saved successfully.",
+        });
       } else {
-        const data = await response.json();
         toast({
           title: "Profile Update Failed",
-          description: data.error || 'An error occurred.',
+          description: error.message || 'An error occurred.',
           variant: 'destructive',
         });
       }
@@ -65,10 +66,27 @@ const ProfileTab = () => {
   };
 
   const getUserInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    if (user?.user_metadata?.firstName && user?.user_metadata?.lastName) {
+      return `${user.user_metadata.firstName[0]}${user.user_metadata.lastName[0]}`.toUpperCase();
     }
     return user?.email?.[0]?.toUpperCase() || 'U';
+  };
+
+  const fetchProfile = async () => {
+    setLoading(true);
+    setError(null);
+    const { data: { user }, error } = await supabase.auth.getUser();
+    setLoading(false);
+    if (error) setError(error.message);
+    else setProfileData({
+      firstName: user?.user_metadata?.firstName || '',
+      lastName: user?.user_metadata?.lastName || '',
+      email: user?.email || '',
+      company: user?.user_metadata?.company || '',
+      phone: '',
+      jobTitle: '',
+      timezone: 'UTC-8',
+    });
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,8 +23,8 @@ export default function AppHeader() {
   };
 
   const getUserInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    if (user?.user_metadata?.firstName && user?.user_metadata?.lastName) {
+      return `${user.user_metadata.firstName[0]}${user.user_metadata.lastName[0]}`.toUpperCase();
     }
     return user?.email?.[0]?.toUpperCase() || 'U';
   };
@@ -87,13 +86,13 @@ export default function AppHeader() {
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
                     <p className="font-medium text-slate-900">
-                      {user?.firstName && user?.lastName
-                        ? `${user.firstName} ${user.lastName}`
+                      {user?.user_metadata?.firstName && user?.user_metadata?.lastName
+                        ? `${user.user_metadata.firstName} ${user.user_metadata.lastName}`
                         : user?.email}
                     </p>
-                    {user?.company && (
+                    {user?.user_metadata?.company && (
                       <p className="w-[200px] truncate text-sm text-slate-600">
-                        {user.company}
+                        {user.user_metadata.company}
                       </p>
                     )}
                   </div>

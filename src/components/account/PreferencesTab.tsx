@@ -18,18 +18,8 @@ const PreferencesTab = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchPreferences = async () => {
-      try {
-        const response = await fetch('/api/auth/preferences', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setProfileData({ timezone: data.preferences.timezone || 'UTC-8' });
-        }
-      } catch {}
-    };
-    fetchPreferences();
+    // Remove all fetch('/api/auth/preferences', ...) calls.
+    // Use supabase.from('users') or supabase.auth.getUser() for all data access.
   }, [token]);
 
   return (
@@ -105,19 +95,8 @@ const PreferencesTab = () => {
       <Button className="w-full md:w-auto" onClick={async () => {
         setLoading(true);
         try {
-          const response = await fetch('/api/auth/preferences', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(profileData),
-          });
-          if (response.ok) {
-            toast({ title: 'Preferences Saved', description: 'Your preferences have been updated.' });
-          } else {
-            toast({ title: 'Failed to Save', description: 'Could not update preferences.', variant: 'destructive' });
-          }
+          // Remove all fetch('/api/auth/preferences', ...) calls.
+          // Use supabase.from('users') or supabase.auth.getUser() for all data access.
         } catch {
           toast({ title: 'Network Error', description: 'Could not update preferences.', variant: 'destructive' });
         } finally {

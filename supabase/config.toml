@@ -1,0 +1,44 @@
+
+[functions.company-analysis]
+enabled = true
+verify_jwt = true
+import_map = "./functions/company-analysis/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/company-analysis/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/company-analysis/*.html" ]
+
+[functions.icp-generator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/icp-generator/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/icp-generator/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/icp-generator/*.html" ]
+
+[functions.playbook-generator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/playbook-generator/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/playbook-generator/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/playbook-generator/*.html" ]
+
+[functions.lead-enrichment]
+enabled = true
+verify_jwt = true
+import_map = "./functions/lead-enrichment/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/lead-enrichment/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/lead-enrichment/*.html" ]

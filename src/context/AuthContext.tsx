@@ -1,27 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-interface User {
-  id: number;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  company?: string;
-  role: string;
-  lastLogin?: string;
-  createdAt?: string;
-}
+import supabase from '../lib/supabaseClient';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AuthContextType {
-  user: User | null;
+  user: SupabaseUser | null;
   token: string | null;
-  setUser: (user: User | null) => void;
+  setUser: (user: SupabaseUser | null) => void;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, firstName?: string, lastName?: string, company?: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<boolean>;
   bypassAuth: () => void;
 }
 
@@ -36,74 +27,63 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  console.log('[AuthContext] window.location.href:', window.location.href);
+  try {
+    localStorage.setItem('test', '1');
+    localStorage.removeItem('test');
+    console.log('[AuthContext] localStorage is available');
+  } catch (e) {
+    console.warn('[AuthContext] localStorage is NOT available', e);
+  }
+  try {
+    document.cookie = 'testcookie=1';
+    if (document.cookie.indexOf('testcookie=1') !== -1) {
+      console.log('[AuthContext] cookies are available');
+      document.cookie = 'testcookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    } else {
+      console.warn('[AuthContext] cookies are NOT available');
+    }
+  } catch (e) {
+    console.warn('[AuthContext] cookies are NOT available', e);
+  }
 
   // Check for existing token on app load
   useEffect(() => {
-    const savedToken = localStorage.getItem('authToken');
-    const devMode = localStorage.getItem('devMode');
-    
-    if (devMode === 'true') {
-      // Development mode - bypass auth
-      const mockUser: User = {
-        id: 1,
-        email: 'dev@personaops.com',
-        firstName: 'Developer',
-        lastName: 'User',
-        company: 'PersonaOps',
-        role: 'admin'
-      };
-      setUser(mockUser);
-      setToken('dev-token');
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AuthContext] onAuthStateChange:', { event, session });
+      setUser(session?.user || null);
+      setToken(session?.access_token || null);
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('[AuthContext] getSession (after onAuthStateChange):', { session });
+      });
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[AuthContext] getSession (on mount):', { session });
+      setUser(session?.user || null);
+      setToken(session?.access_token || null);
       setLoading(false);
-      return;
-    }
-    
-    if (savedToken) {
-      setToken(savedToken);
-      fetchUserProfile(savedToken);
-    } else {
-      setLoading(false);
-    }
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
-  const fetchUserProfile = async (authToken: string) => {
-    try {
-      const response = await fetch('/api/auth/profile', {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      } else {
-        // Token is invalid, clear it
-        localStorage.removeItem('authToken');
-        setToken(null);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      localStorage.removeItem('authToken');
-      setToken(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const bypassAuth = () => {
-    const mockUser: User = {
-      id: 1,
+    const mockUser: SupabaseUser = {
+      id: '1',
+      aud: 'authenticated',
       email: 'dev@personaops.com',
-      firstName: 'Developer',
-      lastName: 'User',
-      company: 'PersonaOps',
-      role: 'admin'
+      created_at: new Date().toISOString(),
+      app_metadata: {},
+      user_metadata: { firstName: 'Developer', lastName: 'User', company: 'PersonaOps', role: 'admin' },
+      identities: [],
+      phone: null,
     };
     setUser(mockUser);
     setToken('dev-token');
@@ -116,171 +96,104 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      // Check if response is HTML (backend not running)
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        toast({
-          title: "Backend Not Available",
-          description: "Using development mode instead",
-        });
-        bypassAuth();
-        return true;
-      }
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setUser(data.user);
-        setToken(data.token);
-        localStorage.setItem('authToken', data.token);
-        
-        toast({
-          title: "Login Successful",
-          description: `Welcome back, ${data.user.firstName || data.user.email}!`,
-        });
-        
-        return true;
-      } else {
-        // Handle email verification requirement
-        if (data.requiresVerification) {
-          toast({
-            title: "Email Verification Required",
-            description: "Please check your email and click the verification link before logging in.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Login Failed",
-            description: data.error || 'Invalid email or password',
-            variant: "destructive",
-          });
-        }
-        return false;
-      }
-    } catch (error) {
-      console.error('Login error:', error);
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      setError(error.message);
       toast({
-        title: "Backend Connection Failed",
-        description: "Switching to development mode",
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive",
       });
-      bypassAuth();
+      return false;
+    } else {
+      setUser(data.user as any);
+      setToken(data.session?.access_token || null);
+      localStorage.setItem('authToken', data.session?.access_token || '');
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${data.user?.email}!`,
+      });
       return true;
     }
   };
 
   const register = async (
-    email: string, 
-    password: string, 
-    firstName?: string, 
-    lastName?: string, 
+    email: string,
+    password: string,
+    firstName?: string,
+    lastName?: string,
     company?: string
   ): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, firstName, lastName, company }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: "Registration Successful",
-          description: data.message || "Please check your email to verify your account before logging in.",
-        });
-        
-        return true;
-      } else {
-        toast({
-          title: "Registration Failed",
-          description: data.error || 'Registration failed',
-          variant: "destructive",
-        });
-        return false;
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    setLoading(false);
+    if (error) {
+      setError(error.message);
       toast({
         title: "Registration Failed",
-        description: "Network error. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
       return false;
+    } else {
+      toast({
+        title: "Registration Successful",
+        description: "Please check your email to verify your account before logging in.",
+      });
+      return true;
     }
   };
 
   const logout = async () => {
-    try {
-      if (token && token !== 'dev-token') {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setUser(null);
-      setToken(null);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('devMode');
-      
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
-      });
-    }
+    setLoading(true);
+    await supabase.auth.signOut();
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('devMode');
+    
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    setLoading(false);
   };
 
-  const loginWithGoogle = async (credential: string): Promise<boolean> => {
+  const loginWithGoogle = async (): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUser(data.user);
-        setToken(data.token);
-        localStorage.setItem('authToken', data.token);
-        console.log('[Auth] Google login successful, token set:', data.token);
-        // Always fetch user profile from backend to sync state
-        await fetchUserProfile(data.token);
-        toast({
-          title: 'Login Successful',
-          description: `Welcome, ${data.user.firstName || data.user.email}!`,
-        });
-        return true;
-      } else {
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      setLoading(false);
+      if (error) {
+        setError(error.message);
         toast({
           title: 'Google Login Failed',
-          description: data.error || 'Google authentication failed',
+          description: error.message,
           variant: 'destructive',
         });
+        console.error('[AuthContext] Google OAuth error:', error);
         return false;
+      } else {
+        toast({
+          title: 'Login Redirect',
+          description: 'You will be redirected to Google to complete login.',
+        });
+        return true;
       }
-    } catch (error) {
+    } catch (e) {
+      setLoading(false);
+      setError('Unknown error during Google OAuth');
       toast({
         title: 'Google Login Failed',
-        description: 'Network error. Please try again.',
+        description: 'Unknown error during Google OAuth',
         variant: 'destructive',
       });
+      console.error('[AuthContext] Google OAuth exception:', e);
       return false;
     }
   };

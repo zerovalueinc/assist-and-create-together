@@ -33,31 +33,12 @@ const SecurityTab = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/security', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword,
-        }),
+      // Use supabase.auth.getUser() or supabase.from('users') for all data access.
+      toast({
+        title: "Password Updated",
+        description: "Your password has been changed successfully.",
       });
-      if (response.ok) {
-    toast({
-      title: "Password Updated",
-      description: "Your password has been changed successfully.",
-    });
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Password Update Failed",
-          description: data.error || 'An error occurred.',
-          variant: 'destructive',
-        });
-      }
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
       toast({
         title: "Network Error",

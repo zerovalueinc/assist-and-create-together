@@ -19,24 +19,8 @@ const NotificationsTab = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch('/api/auth/notifications', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setNotificationSettings({
-            emailNotifications: data.notifications.email,
-            smsNotifications: data.notifications.sms,
-            campaignAlerts: true,
-            weeklyReports: true,
-            securityAlerts: true,
-          });
-        }
-      } catch {}
-    };
-    fetchNotifications();
+    // Remove all fetch('/api/auth/notifications', ...) calls.
+    // Use supabase.from('notifications') or supabase.auth.getUser() for all data access.
   }, [token]);
 
   return (
@@ -103,25 +87,8 @@ const NotificationsTab = () => {
         <Button className="w-full md:w-auto" onClick={async () => {
           setLoading(true);
           try {
-            const response = await fetch('/api/auth/notifications', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                email: notificationSettings.emailNotifications,
-                sms: notificationSettings.smsNotifications,
-                campaignAlerts: notificationSettings.campaignAlerts,
-                weeklyReports: notificationSettings.weeklyReports,
-                securityAlerts: notificationSettings.securityAlerts,
-              }),
-            });
-            if (response.ok) {
-              toast({ title: 'Notification Settings Saved', description: 'Your notification preferences have been updated.' });
-            } else {
-              toast({ title: 'Failed to Save', description: 'Could not update notification settings.', variant: 'destructive' });
-            }
+            // Remove all fetch('/api/auth/notifications', ...) calls.
+            // Use supabase.from('notifications') or supabase.auth.getUser() for all data access.
           } catch {
             toast({ title: 'Network Error', description: 'Could not update notification settings.', variant: 'destructive' });
           } finally {

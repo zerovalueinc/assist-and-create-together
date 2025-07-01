@@ -4,9 +4,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "lucide-react";
 import { SectionLabel } from "./ui/section-label";
+import supabase from "../lib/supabaseClient";
 
 const SalesIntelligence = () => {
   const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [results, setResults] = useState([]);
+
+  // Replace mock/legacy fetch with Supabase Edge Function call
+  const fetchSalesIntelligence = async (input: any) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('sales-intelligence', {
+        body: input,
+      });
+      if (error) throw error;
+      setResults(data);
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch sales intelligence');
+      setLoading(false);
+    }
+  };
 
   // Mock data - will connect to your /api/sales-intelligence endpoint
   useEffect(() => {
