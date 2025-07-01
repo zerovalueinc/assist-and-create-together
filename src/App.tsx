@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Account from "./pages/Account";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import Auth from "./components/Auth";
 import EmailVerification from "./components/EmailVerification";
@@ -53,6 +54,22 @@ const AppRoutes = () => (
       } 
     />
     <Route 
+      path="/workspace" 
+      element={
+        <ProtectedRoute>
+          <Workspace />
+        </ProtectedRoute>
+      } 
+    />
+    <Route 
+      path="/analytics" 
+      element={
+        <ProtectedRoute>
+          <Analytics />
+        </ProtectedRoute>
+      } 
+    />
+    <Route 
       path="/account" 
       element={
         <ProtectedRoute>
@@ -60,7 +77,6 @@ const AppRoutes = () => (
         </ProtectedRoute>
       } 
     />
-    <Route path="/workspace" element={<Workspace />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

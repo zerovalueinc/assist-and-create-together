@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -17,7 +18,7 @@ export default defineConfig(async ({ mode }) => {
   return {
     server: {
       host: true,
-      port: 3000,
+      port: 8080,
       // Proxy API requests in development to the backend
       proxy: process.env.NODE_ENV !== 'production' ? {
         '/api': 'http://localhost:3001'

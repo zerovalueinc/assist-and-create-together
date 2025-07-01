@@ -1,13 +1,9 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Target, Users, Mail, BarChart3, Upload, Globe, Zap, LogOut, User, Settings, FolderOpen } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
+import { Search, Target, Users, Mail, BarChart3, Globe, TrendingUp, Calendar, Activity } from "lucide-react";
 import CompanyAnalyzer from "@/components/CompanyAnalyzer";
 import ICPGenerator from "@/components/ICPGenerator";
 import LeadEnrichment from "@/components/LeadEnrichment";
@@ -18,37 +14,163 @@ import AppHeader from '@/components/ui/AppHeader';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("analyzer");
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-  };
-
-  const getUserInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+  // Mock data for dashboard metrics
+  const metrics = [
+    {
+      title: "Companies Analyzed",
+      value: "2,847",
+      change: "+12% from last month",
+      icon: Globe,
+      color: "text-blue-600"
+    },
+    {
+      title: "ICPs Generated",
+      value: "1,234",
+      change: "+8% from last month", 
+      icon: Target,
+      color: "text-green-600"
+    },
+    {
+      title: "Leads Enriched",
+      value: "8,492",
+      change: "+23% from last month",
+      icon: Users,
+      color: "text-purple-600"
+    },
+    {
+      title: "Email Campaigns",
+      value: "156",
+      change: "+15% from last month",
+      icon: Mail,
+      color: "text-orange-600"
     }
-    return user?.email?.[0]?.toUpperCase() || 'U';
-  };
+  ];
+
+  const recentActivity = [
+    { action: "Company Analysis", target: "TechCorp Inc.", time: "2 minutes ago", status: "completed" },
+    { action: "ICP Generation", target: "SaaS Startups", time: "5 minutes ago", status: "processing" },
+    { action: "Lead Enrichment", target: "250 contacts", time: "12 minutes ago", status: "completed" },
+    { action: "Email Campaign", target: "Q4 Outreach", time: "1 hour ago", status: "scheduled" }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-slate-50">
       <AppHeader />
-      {/* Main Content */}
+      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-slate-900 mb-4">
-            AI-Powered Sales Intelligence Platform
-          </h2>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-            Transform your sales process with intelligent company analysis, ICP generation, 
-            lead enrichment, and automated email campaigns.
-          </p>
+        {/* Dashboard Overview */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+              <p className="text-slate-600 mt-1">Welcome back, {user?.firstName || 'User'}. Here's what's happening with your sales intelligence.</p>
+            </div>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Activity className="h-4 w-4 mr-2" />
+              New Analysis
+            </Button>
+          </div>
+
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {metrics.map((metric, index) => (
+              <Card key={index} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600">{metric.title}</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-2">{metric.value}</p>
+                      <p className="text-sm text-green-600 mt-1">{metric.change}</p>
+                    </div>
+                    <div className={`p-3 rounded-full bg-slate-100 ${metric.color}`}>
+                      <metric.icon className="h-6 w-6" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Quick Actions & Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Activity className="h-5 w-5 mr-2" />
+                  Recent Activity
+                </CardTitle>
+                <CardDescription>Your latest sales intelligence activities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          activity.status === 'completed' ? 'bg-green-500' :
+                          activity.status === 'processing' ? 'bg-yellow-500' : 'bg-blue-500'
+                        }`} />
+                        <div>
+                          <p className="font-medium text-slate-900">{activity.action}</p>
+                          <p className="text-sm text-slate-600">{activity.target}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-slate-500">{activity.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <TrendingUp className="h-5 w-5 mr-2" />
+                  Quick Start
+                </CardTitle>
+                <CardDescription>Get started with common tasks</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab("analyzer")}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Analyze Company
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab("icp")}
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Generate ICP
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab("leads")}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Enrich Leads
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab("email")}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email Campaign
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* Feature Tabs */}
+        {/* Main Tools */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-8">
             <TabsTrigger value="analyzer" className="flex items-center space-x-2">
@@ -93,53 +215,6 @@ const Index = () => {
             <EmailCampaigns />
           </TabsContent>
         </Tabs>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Companies Analyzed</CardTitle>
-              <Globe className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">2,847</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ICPs Generated</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foreground">+8% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Leads Enriched</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">8,492</div>
-              <p className="text-xs text-muted-foreground">+23% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Email Campaigns</CardTitle>
-              <Mail className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">156</div>
-              <p className="text-xs text-muted-foreground">+15% from last month</p>
-            </CardContent>
-          </Card>
-        </div>
       </main>
     </div>
   );
