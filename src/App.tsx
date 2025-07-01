@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Toaster } from "@/components/ui/toaster";
 import Auth from '@/components/Auth';
+import EmailVerification from '@/components/EmailVerification';
+import ForgotPassword from '@/components/ForgotPassword';
+import PasswordReset from '@/components/PasswordReset';
 import Index from '@/pages/Index';
 import Workspace from '@/pages/Workspace';
 import Account from '@/pages/Account';
@@ -51,6 +54,21 @@ const AppRoutes = () => {
       <Route path="/auth" element={
         <PublicRoute>
           <Auth />
+        </PublicRoute>
+      } />
+      <Route path="/verify-email" element={
+        <PublicRoute>
+          <EmailVerification />
+        </PublicRoute>
+      } />
+      <Route path="/forgot-password" element={
+        <PublicRoute>
+          <ForgotPassword />
+        </PublicRoute>
+      } />
+      <Route path="/reset-password" element={
+        <PublicRoute>
+          <PasswordReset />
         </PublicRoute>
       } />
       <Route path="/" element={

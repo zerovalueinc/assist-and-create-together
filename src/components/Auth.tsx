@@ -118,6 +118,17 @@ const Auth = () => {
                     'Sign In'
                   )}
                 </Button>
+
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-sm"
+                  >
+                    Forgot your password?
+                  </Button>
+                </div>
               </form>
             </TabsContent>
 

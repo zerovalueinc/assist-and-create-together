@@ -17,12 +17,9 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  token: string | null;
   signUp: (email: string, password: string, firstName?: string, lastName?: string, company?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  logout: () => Promise<void>;
-  setUser: (user: any) => void;
   isAuthenticated: boolean;
 }
 
@@ -49,7 +46,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // Check if profiles table exists by trying to query it
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -59,7 +55,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (!error && data) {
         setProfile(data);
       } else {
-        // If profiles table doesn't exist or no profile found, create a basic profile from user data
+        // Create a basic profile from user data if no profile exists
         const basicProfile: Profile = {
           id: userId,
           email: user?.email || '',
@@ -218,26 +214,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const logout = signOut; // Alias for backward compatibility
-
-  const updateUser = (userData: any) => {
-    // For backward compatibility, update the profile
-    if (profile) {
-      setProfile({ ...profile, ...userData });
-    }
-  };
-
   const value: AuthContextType = {
     user,
     profile,
     session,
     loading,
-    token: session?.access_token || null,
     signUp,
     signIn,
     signOut,
-    logout,
-    setUser: updateUser,
     isAuthenticated: !!user && !!session,
   };
 

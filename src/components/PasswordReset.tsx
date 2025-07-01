@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -6,30 +7,29 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const PasswordReset: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [token, setToken] = useState<string>('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const tokenFromUrl = searchParams.get('token');
-    if (tokenFromUrl) {
-      setToken(tokenFromUrl);
-      setIsValidToken(true);
-    } else {
-      setIsValidToken(false);
+    // Check if we have the required hash fragments from Supabase
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    
+    if (!accessToken || !refreshToken) {
       setStatus('error');
       setMessage('Invalid reset link. Please request a new password reset.');
     }
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,38 +49,32 @@ const PasswordReset: React.FC = () => {
     setStatus('loading');
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, password }),
+      const { error } = await supabase.auth.updateUser({
+        password: password
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (error) {
+        setStatus('error');
+        setMessage(error.message);
+      } else {
         setStatus('success');
         setMessage('Password reset successfully! You can now log in with your new password.');
-      } else {
-        setStatus('error');
-        setMessage(data.error || 'Password reset failed. Please try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       setStatus('error');
       setMessage('An error occurred during password reset. Please try again.');
     }
   };
 
   const handleLogin = () => {
-    navigate('/login');
+    navigate('/auth');
   };
 
   const handleForgotPassword = () => {
     navigate('/forgot-password');
   };
 
-  if (isValidToken === false) {
+  if (status === 'error' && message.includes('Invalid reset link')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <Card className="w-full max-w-md">
@@ -234,4 +228,4 @@ const PasswordReset: React.FC = () => {
   );
 };
 
-export default PasswordReset; 
+export default PasswordReset;
