@@ -7,15 +7,13 @@ import { Loader2, Users, Upload, Download, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { SectionLabel } from "./ui/section-label";
-import supabase from '../lib/supabaseClient';
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { token, user } = useAuth();
-  const [error, setError] = useState(null);
+  const { token } = useAuth();
 
   const searchLeads = async () => {
     if (!searchQuery) {
@@ -61,44 +59,31 @@ const LeadEnrichment = () => {
     }
   };
 
-  const fetchLeads = async () => {
-    setLoading(true);
-    setError(null);
+  const enrichLead = async (leadId) => {
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setLeads(data || []);
-      setLoading(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch leads');
-      setLoading(false);
-    }
-  };
-
-  const handleLeadEnrichment = async (leadData: any) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Call Supabase Edge Function for enrichment
-      const { data, error } = await supabase.functions.invoke('lead-enrichment', {
-        body: leadData,
+      const response = await fetch('http://localhost:3001/api/enrich', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ leadId }),
       });
-      if (error) throw error;
-      // Optionally, fetch enriched leads from Supabase table
-      const { data: enrichedLeads, error: fetchError } = await supabase
-        .from('enriched_leads')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      if (!fetchError && enrichedLeads) setLeads(enrichedLeads);
-      setLoading(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to enrich lead');
-      setLoading(false);
+
+      if (!response.ok) {
+        throw new Error('Enrichment failed');
+      }
+
+      toast({
+        title: "Lead Enriched",
+        description: "Lead data has been enriched successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Enrichment Failed",
+        description: "Failed to enrich lead data.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -194,7 +179,7 @@ const LeadEnrichment = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => handleLeadEnrichment({ leadId: lead.id })}
+                            onClick={() => enrichLead(lead.id)}
                           >
                             Enrich
                           </Button>

@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import supabase from '../lib/supabaseClient';
 
 const EmailVerification: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -23,13 +22,22 @@ const EmailVerification: React.FC = () => {
       }
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email_confirmed_at) {
+        const response = await fetch('/api/auth/verify-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
           setStatus('success');
           setMessage('Email verified successfully! You can now log in to your account.');
         } else {
           setStatus('error');
-          setMessage('Email verification failed. Please try again.');
+          setMessage(data.error || 'Email verification failed. Please try again.');
         }
       } catch (error) {
         setStatus('error');

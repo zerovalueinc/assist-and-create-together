@@ -3,12 +3,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import supabase from '../lib/supabaseClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
@@ -23,13 +22,10 @@ export default function YourWork() {
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
-        const { data: reports, error: reportsError } = await supabase
-          .from('saved_reports')
-          .select('*')
-          .eq('user_id', user?.id)
-          .order('created_at', { ascending: false });
-        if (reportsError) throw reportsError;
-        setAnalyzeWork(reports || []);
+        const res = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        if (!res.ok) throw new Error('Failed to fetch Company Analyzer reports');
+        const data = await res.json();
+        setAnalyzeWork(data.reports || []);
       } catch (err) {
         setAnalyzeError('Failed to load Company Analyzer reports.');
       } finally {
@@ -40,13 +36,15 @@ export default function YourWork() {
       setGtmLoading(true);
       setGtmError(null);
       try {
-        const { data: playbooks, error: playbooksError } = await supabase
-          .from('playbook_analyses')
-          .select('*')
-          .eq('user_id', user?.id)
-          .order('created_at', { ascending: false });
-        if (playbooksError) throw playbooksError;
-        setGtmWork(playbooks || []);
+        const [icpRes, playbookRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/icp/reports`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} }),
+          fetch(`${API_BASE_URL}/api/icp/playbooks`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} }),
+        ]);
+        const icps = icpRes.ok ? (await icpRes.json()).icps || [] : [];
+        const playbooks = playbookRes.ok ? (await playbookRes.json()).playbooks || [] : [];
+        // Merge and dedupe by id (if needed)
+        const allGTM = [...icps, ...playbooks].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        setGtmWork(allGTM);
       } catch (err) {
         setGtmError('Failed to load GTM Generator reports.');
       } finally {
@@ -57,7 +55,7 @@ export default function YourWork() {
       fetchCompanyAnalyzer();
       fetchGTM();
     }
-  }, [token, user]);
+  }, [token]);
 
   return (
     <div className="min-h-[80vh] w-full flex flex-col items-center justify-start bg-slate-50 py-12">

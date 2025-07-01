@@ -22,8 +22,8 @@ const Account = () => {
   const [work, setWork] = useState([]);
 
   const getUserInitials = () => {
-    if (user?.user_metadata?.firstName && user?.user_metadata?.lastName) {
-      return `${user.user_metadata.firstName[0]}${user.user_metadata.lastName[0]}`.toUpperCase();
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
     }
     return user?.email?.[0]?.toUpperCase() || 'U';
   };
@@ -40,12 +40,20 @@ const Account = () => {
       setLoading(true);
       setError('');
       try {
-        // Replace all fetch calls with Supabase queries
-        // For example, replace fetch('/api/company-analyze/reports', { headers: { 'Authorization': `Bearer ${token}` } }) with supabase.from('saved_reports').select()
-        // Replace fetch('/api/icp/reports', { headers: { 'Authorization': `Bearer ${token}` } }) with supabase.from('icps').select()
-        // Replace fetch('/api/icp/playbooks', { headers: { 'Authorization': `Bearer ${token}` } }) with supabase.from('playbooks').select()
-        // For now, we'll keep the existing code
-        // ... existing code ...
+        const [analyzeRes, icpRes, playbookRes] = await Promise.all([
+          fetch('/api/company-analyze/reports', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/icp/reports', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/icp/playbooks', { headers: { 'Authorization': `Bearer ${token}` } }),
+        ]);
+        if (!analyzeRes.ok && !icpRes.ok && !playbookRes.ok) throw new Error('Failed to fetch work');
+        const analyze = analyzeRes.ok ? (await analyzeRes.json()).reports || [] : [];
+        const icps = icpRes.ok ? (await icpRes.json()).icps || [] : [];
+        const playbooks = playbookRes.ok ? (await playbookRes.json()).playbooks || [] : [];
+        setWork([
+          ...analyze.map(r => ({ ...r, type: 'Company Analyzer' })),
+          ...icps.map(r => ({ ...r, type: 'ICP' })),
+          ...playbooks.map(r => ({ ...r, type: 'Playbook' })),
+        ]);
       } catch (e) {
         setError('Could not load your work.');
       } finally {
@@ -70,13 +78,13 @@ const Account = () => {
               </Avatar>
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">
-                  {user?.user_metadata?.firstName && user?.user_metadata?.lastName 
-                    ? `${user.user_metadata.firstName} ${user.user_metadata.lastName}`
+                  {user?.firstName && user?.lastName 
+                    ? `${user.firstName} ${user.lastName}`
                     : user?.email
                   }
                 </h2>
-                {user?.user_metadata?.company && (
-                  <p className="text-slate-600">{user.user_metadata.company}</p>
+                {user?.company && (
+                  <p className="text-slate-600">{user.company}</p>
                 )}
                 <div className="flex items-center space-x-2 mt-2">
                   <Badge variant="secondary" className="bg-green-100 text-green-800">

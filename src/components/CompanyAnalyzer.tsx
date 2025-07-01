@@ -10,7 +10,6 @@ import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { SectionLabel } from "@/components/ui/section-label";
-import supabase from '../lib/supabaseClient';
 
 // Helper to get favicon from a URL
 const getFaviconUrl = (url: string) => {
@@ -37,12 +36,11 @@ const CompanyAnalyzer = () => {
   const fetchReports = async () => {
     if (!token) return;
     try {
-      const { data: reports, error } = await supabase
-        .from('saved_reports')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      if (reports) setReports(reports);
+      const response = await fetch('http://localhost:3001/api/company-analyze/reports', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success) setReports(data.reports);
     } catch (err) {
       // Optionally handle error
     }
@@ -70,9 +68,38 @@ const CompanyAnalyzer = () => {
     setReport(null);
 
     try {
-      // For company analysis, call your LLM/external API directly or via a Supabase Edge Function.
-      // All CRUD for reports should use supabase.from('saved_reports').
-      // ... existing code ...
+      const response = await fetch('http://localhost:3001/api/company-analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Analysis failed');
+      }
+
+      if (data.success) {
+        setAnalysis(data.analysis);
+        setReport(data.report);
+        setResearch({
+          companyAnalysis: data.analysis,
+          isCached: data.isCached,
+          timestamp: new Date().toISOString()
+        });
+        toast({
+          title: "Analysis Complete",
+          description: data.isCached ? "Retrieved from cache" : "New analysis generated",
+        });
+        // Refresh reports after analysis
+        fetchReports();
+      } else {
+        throw new Error(data.error || 'Analysis failed');
+      }
     } catch (error) {
       console.error('Analysis error:', error);
       toast({
@@ -100,9 +127,34 @@ const CompanyAnalyzer = () => {
     setAnalysis(null);
     setReport(null);
     try {
-      // For company analysis, call your LLM/external API directly or via a Supabase Edge Function.
-      // All CRUD for reports should use supabase.from('saved_reports').
-      // ... existing code ...
+      const response = await fetch('http://localhost:3001/api/company-analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ url: companyUrl.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Analysis failed');
+      }
+      if (data.success) {
+        setAnalysis(data.analysis);
+        setReport(data.report);
+        setResearch({
+          companyAnalysis: data.analysis,
+          isCached: data.isCached,
+          timestamp: new Date().toISOString()
+        });
+        toast({
+          title: "Analysis Complete",
+          description: data.isCached ? "Retrieved from cache" : "New analysis generated",
+        });
+        fetchReports();
+      } else {
+        throw new Error(data.error || 'Analysis failed');
+      }
     } catch (error: any) {
       console.error('Analysis error:', error);
       toast({

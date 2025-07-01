@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,19 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Mail, Lock, User, Building, Code } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Auth = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
-  const { login, register, loginWithGoogle, bypassAuth, isAuthenticated, loading: authLoading } = useAuth();
-
-  // Redirect authenticated users to /
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
+  const { login, register, loginWithGoogle, bypassAuth } = useAuth();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -35,6 +29,7 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) return;
+
     setLoading(true);
     const success = await login(loginEmail, loginPassword);
     setLoading(false);
@@ -46,6 +41,7 @@ const Auth = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!registerEmail || !registerPassword) return;
+
     setLoading(true);
     const success = await register(
       registerEmail, 
@@ -55,9 +51,6 @@ const Auth = () => {
       registerCompany
     );
     setLoading(false);
-    if (success) {
-      navigate('/');
-    }
   };
 
   const handleForgotPassword = () => {
@@ -93,12 +86,6 @@ const Auth = () => {
             </Button>
           </div>
 
-          {/* Single Google Auth Button */}
-          <Button onClick={loginWithGoogle} className="w-full mb-4" variant="outline">
-            Continue with Google
-          </Button>
-          <span className="text-xs text-muted-foreground mt-2 block text-center mb-4">or use email</span>
-
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
@@ -106,6 +93,21 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="login" className="space-y-4">
+              <div className="flex flex-col items-center mb-4">
+                <GoogleLogin
+                  onSuccess={async credentialResponse => {
+                    if (credentialResponse.credential) {
+                      const success = await loginWithGoogle(credentialResponse.credential);
+                      if (success) navigate('/');
+                    }
+                  }}
+                  onError={() => {
+                    console.log('Google login failed');
+                  }}
+                  width={300}
+                />
+                <span className="text-xs text-muted-foreground mt-2">or</span>
+              </div>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
@@ -168,6 +170,21 @@ const Auth = () => {
             </TabsContent>
 
             <TabsContent value="register" className="space-y-4">
+              <div className="flex flex-col items-center mb-4">
+                <GoogleLogin
+                  onSuccess={async credentialResponse => {
+                    if (credentialResponse.credential) {
+                      const success = await loginWithGoogle(credentialResponse.credential);
+                      if (success) navigate('/');
+                    }
+                  }}
+                  onError={() => {
+                    console.log('Google register failed');
+                  }}
+                  width={300}
+                />
+                <span className="text-xs text-muted-foreground mt-2">or</span>
+              </div>
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

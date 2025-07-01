@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import AppHeader from '@/components/ui/AppHeader';
 import YourWork from '@/components/YourWork';
-import supabase from '../lib/supabaseClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -37,42 +36,40 @@ export default function Workspace() {
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
-        // Fetch company analyses from Supabase
-        const { data: reports, error: reportsError } = await supabase
-          .from('saved_reports')
-          .select('*')
-          .eq('user_id', user?.id)
-          .order('created_at', { ascending: false });
-        if (reportsError) throw reportsError;
-        setAnalyzeWork(reports || []);
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setAnalyzeWork(data.reports || []);
+        }
       } catch (err) {
-        setAnalyzeError('Failed to fetch company analyses');
+        setAnalyzeError('Failed to load reports.');
       } finally {
         setAnalyzeLoading(false);
       }
-      // Fetch playbooks from new playbook_analyses table
+
+      // Fetch Playbooks data (only from /api/icp/playbooks)
       setPlaybooksLoading(true);
       setPlaybooksError(null);
       try {
-        const { data: playbooks, error: playbooksError } = await supabase
-          .from('playbook_analyses')
-          .select('*')
-          .eq('user_id', user?.id)
-          .order('created_at', { ascending: false });
-        if (playbooksError) throw playbooksError;
-        setPlaybooks(playbooks || []);
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const playbookRes = await fetch(`${API_BASE_URL}/api/icp/playbooks`, { headers });
+        const playbooksData = playbookRes.ok ? (await playbookRes.json()) : {};
+        const playbooksArray = playbooksData.playbooks || [];
+        setPlaybooks(playbooksArray);
       } catch (err) {
-        setPlaybooksError('Failed to fetch playbooks');
+        setPlaybooksError('Failed to load playbooks.');
       } finally {
         setPlaybooksLoading(false);
       }
     };
-    if (user?.id) fetchData();
-  }, [user?.id]);
+
+    fetchData();
+  }, [token]);
 
   const getWorkspaceInitials = () => {
-    if (user?.user_metadata?.company) return user.user_metadata.company.slice(0, 2).toUpperCase();
-    if (user?.user_metadata?.firstName && user?.user_metadata?.lastName) return `${user.user_metadata.firstName[0]}${user.user_metadata.lastName[0]}`.toUpperCase();
+    if (user?.company) return user.company.slice(0, 2).toUpperCase();
+    if (user?.firstName && user?.lastName) return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
     return user?.email?.[0]?.toUpperCase() || 'W';
   };
 
@@ -99,7 +96,7 @@ export default function Workspace() {
             </Avatar>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">
-                {user?.user_metadata?.company || `${user?.user_metadata?.firstName}'s Workspace` || 'Workspace'}
+                {user?.company || `${user?.firstName}'s Workspace` || 'Workspace'}
               </h1>
               <div className="flex items-center space-x-2 mt-2">
                 <Badge variant="secondary" className="bg-green-100 text-green-800">
@@ -328,7 +325,7 @@ export default function Workspace() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{user?.user_metadata?.firstName} {user?.user_metadata?.lastName}</p>
+                        <p className="font-medium">{user?.firstName} {user?.lastName}</p>
                         <p className="text-sm text-slate-500">Owner</p>
                       </div>
                     </div>
@@ -356,7 +353,7 @@ export default function Workspace() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-medium mb-2">Workspace Name</h3>
-                    <Input value={user?.user_metadata?.company || 'Workspace'} />
+                    <Input value={user?.company || 'Workspace'} />
                   </div>
                   <div>
                     <h3 className="font-medium mb-2">Subscription</h3>

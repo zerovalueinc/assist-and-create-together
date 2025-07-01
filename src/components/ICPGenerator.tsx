@@ -14,10 +14,8 @@ import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
 import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
-import supabase from '../lib/supabaseClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
-const SUPABASE_FUNCTIONS_URL = `${window.location.origin}/functions/v1`;
 
 const GTMICPSchemaZod = z.object({
   schemaVersion: z.string(),
@@ -75,60 +73,67 @@ const ICPGenerator = () => {
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [recentICPs, setRecentICPs] = useState<any[]>([]);
   const [recentPlaybooks, setRecentPlaybooks] = useState<any[]>([]);
-  const [playbook, setPlaybook] = useState<any>(null);
-  const [gtmForm, setGtmForm] = useState<any>({});
-  const [error, setError] = useState<string | null>(null);
 
   // Debug log for recentICPs
   console.log('recentICPs:', recentICPs);
 
   // Fetch analyzed companies (CompanyAnalyzer reports)
   useEffect(() => {
-    if (!token) return;
     const fetchCompanies = async () => {
-      const { data, error } = await supabase
-        .from('company_analyses')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setCompanies(data.map((r: any) => ({
-          ...r,
-          companyUrl: r.website_url || r.companyUrl || r.url || r.websiteUrl || r.website || '',
-          companyName: r.companyName || r.company_name || r.company || '',
-        })));
+      if (!token) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) {
+          // Map to ensure each company has a companyUrl field
+          setCompanies(data.reports.map((r: any) => ({
+            ...r,
+            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching companies:', err);
       }
     };
     fetchCompanies();
-  }, [token, user?.id]);
+  }, [token]);
 
   // Fetch recent/generated ICPs
   useEffect(() => {
-    if (!token) return;
     const fetchICPs = async () => {
-      const { data, error } = await supabase
-        .from('icp_analyses')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) setRecentICPs(data);
+      if (!token) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/icp/reports`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) setRecentICPs(data.icps);
+        else console.error('Failed to fetch ICPs:', data);
+      } catch (err) {
+        console.error('Error fetching ICPs:', err);
+      }
     };
     fetchICPs();
-  }, [token, user?.id, icp]);
+  }, [token, icp]);
 
   // Fetch recent playbooks
   useEffect(() => {
-    if (!token) return;
     const fetchPlaybooks = async () => {
-      const { data, error } = await supabase
-        .from('playbook_analyses')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) setRecentPlaybooks(data);
+      if (!token) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/icp/playbooks`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) setRecentPlaybooks(data.playbooks);
+      } catch (err) {
+        console.error('Error fetching playbooks:', err);
+      }
     };
     fetchPlaybooks();
-  }, [token, user?.id, icp]);
+  }, [token, icp]);
 
   // Auto-load saved playbooks
   useEffect(() => {
@@ -179,74 +184,139 @@ const ICPGenerator = () => {
     }
   };
 
-  const handleGenerateICP = async (input: any) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('icp-generator', {
-        body: input,
-      });
-      if (error) throw error;
-      setLoading(false);
-      return data;
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate ICP');
-      setLoading(false);
-      throw err;
-    }
-  };
-
-  const handleGeneratePlaybook = async (input: any) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('playbook-generator', {
-        body: input,
-      });
-      if (error) throw error;
-      setLoading(false);
-      return data;
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate playbook');
-      setLoading(false);
-      throw err;
-    }
-  };
-
   const startICPWorkflow = async () => {
-    if (!selectedCompany) {
-      toast({ title: "Select a company first", variant: "destructive" });
+    if (!selectedCompany || !playbookType || !productStage || !channelExpansion || !targetMarket || !salesCycle || !competitivePosition || primaryGoals.length === 0 || marketingChannels.length === 0) {
+      toast({
+        title: "Required Fields Missing",
+        description: "Please fill out all required fields before generating the GTM playbook.",
+        variant: "destructive",
+      });
       return;
     }
+
     setLoading(true);
     setICP(null);
     setSessionId(null);
+    
     try {
-      const icpData = await handleGenerateICP({ websiteUrl: selectedCompany.companyUrl });
-      setICP(icpData);
-      toast({ title: "ICP Generated", description: "Review and augment the ICP below." });
-    } catch (error: any) {
-      toast({ title: "ICP Generation Failed", description: error.message || String(error), variant: "destructive" });
-    } finally {
+      const formData = {
+        playbookType,
+        productStage,
+        channelExpansion,
+        targetMarket,
+        salesCycle,
+        competitivePosition,
+        primaryGoals,
+        marketingChannels,
+        additionalContext
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/workflow/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          workflowName: 'icp-generator',
+          params: {
+            url: selectedCompany?.companyUrl || '',
+            comprehensive: false,
+            userId: user?.id,
+            formData: formData,
+          },
+        }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to start GTM playbook generation');
+      }
+      
+      setSessionId(data.sessionId);
+      toast({
+        title: "GTM Playbook Generation Started",
+        description: "Your enterprise GTM playbook is being generated. This may take a few moments.",
+      });
+      
+      pollWorkflowState(data.sessionId);
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to start GTM playbook generation.",
+        variant: "destructive",
+      });
       setLoading(false);
     }
   };
 
-  const generatePlaybook = async () => {
-    if (!selectedCompany || !icp || !gtmForm) {
-      toast({ title: "Fill out all fields before generating playbook", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const playbookData = await handleGeneratePlaybook({ websiteUrl: selectedCompany.companyUrl, icp, gtmForm });
-      setPlaybook(playbookData);
-      toast({ title: "Playbook Generated", description: "Your GTM playbook is ready." });
-    } catch (error: any) {
-      toast({ title: "Playbook Generation Failed", description: error.message || String(error), variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
+  // Poll for workflow state/results
+  const pollWorkflowState = async (sessionId: string) => {
+    let attempts = 0;
+    const maxAttempts = 30;
+    const poll = async () => {
+      attempts++;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/workflow/state?workflowName=icp-generator&sessionId=${encodeURIComponent(sessionId)}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+        const data = await response.json();
+        if (data.success && data.state) {
+          if (data.state.status === 'completed') {
+            setICP(data.state.result as GTMICPSchema);
+            setLoading(false);
+            toast({
+              title: "GTM Playbook Generated",
+              description: "Your enterprise GTM playbook has been created successfully.",
+            });
+            // Auto-save the result
+            try {
+              await fetch(`${API_BASE_URL}/api/icp/playbooks`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                  companyUrl: selectedCompany?.companyUrl || '',
+                  icpData: data.state.result,
+                  playbookContent: JSON.stringify(data.state.result),
+                }),
+              });
+            } catch (saveErr) {
+              console.error('Failed to save GTM playbook:', saveErr);
+            }
+            return;
+          } else if (data.state.status === 'failed') {
+            setLoading(false);
+            toast({
+              title: "Generation Failed",
+              description: data.state.error || "GTM playbook generation failed.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 2000);
+        } else {
+          setLoading(false);
+          toast({
+            title: "Timeout",
+            description: "GTM playbook generation took too long. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        setLoading(false);
+        toast({
+          title: "Polling Error",
+          description: error.message || "Failed to poll workflow state.",
+          variant: "destructive",
+        });
+      }
+    };
+    poll();
   };
 
   return (
@@ -530,136 +600,231 @@ const ICPGenerator = () => {
         )}
 
         {/* ICP Result */}
-        {icp && !playbook && (
-          <div className="space-y-6">
-            <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold">Review & Augment ICP</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Target Company Size</Label>
-                  <Input
-                    value={icp.firmographics?.companySize || ''}
-                    onChange={e => setICP({ ...icp, firmographics: { ...icp.firmographics, companySize: e.target.value } })}
-                    placeholder="e.g. 11-50"
-                  />
-                </div>
-                <div>
-                  <Label>Target Industries</Label>
-                  <Input
-                    value={icp.firmographics?.industry || ''}
-                    onChange={e => setICP({ ...icp, firmographics: { ...icp.firmographics, industry: e.target.value } })}
-                    placeholder="e.g. B2B SaaS, Technology"
-                  />
-                </div>
-                <div>
-                  <Label>Buyer Personas</Label>
-                  <Textarea
-                    value={icp.personas?.map(p => `${p.title} (${p.role}${p.painPoints?.length ? ', ' + p.painPoints.join('; ') : ''})`).join('\n') || ''}
-                    onChange={e => setICP({ ...icp, personas: e.target.value.split('\n').map(line => { const [title, rest] = line.split(' ('); if (!rest) return { title: line, role: '', painPoints: [] }; const [role, painPoints] = rest.replace(')', '').split(', '); return { title, role, painPoints: painPoints ? painPoints.split(';').map(s => s.trim()) : [] }; }) })}
-                    placeholder="e.g. VP of Sales (Sales leadership, pain1; pain2)"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            {/* GTM Form Section */}
-            <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold">GTM Form</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>GTM Strategy</Label>
-                  <Input
-                    value={gtmForm.strategy || ''}
-                    onChange={e => setGtmForm({ ...gtmForm, strategy: e.target.value })}
-                    placeholder="e.g. Outbound, ABM, Product-led, etc."
-                  />
-                </div>
-                <div>
-                  <Label>Primary Channels</Label>
-                  <Input
-                    value={gtmForm.channels || ''}
-                    onChange={e => setGtmForm({ ...gtmForm, channels: e.target.value })}
-                    placeholder="e.g. Email, LinkedIn, Events"
-                  />
-                </div>
-                <div>
-                  <Label>Goals</Label>
-                  <Input
-                    value={gtmForm.goals || ''}
-                    onChange={e => setGtmForm({ ...gtmForm, goals: e.target.value })}
-                    placeholder="e.g. Meetings booked, pipeline, revenue"
-                  />
-                </div>
-                <div>
-                  <Label>Budget</Label>
-                  <Input
-                    value={gtmForm.budget || ''}
-                    onChange={e => setGtmForm({ ...gtmForm, budget: e.target.value })}
-                    placeholder="e.g. $10,000/month"
-                  />
-                </div>
-                <div>
-                  <Label>Timeline</Label>
-                  <Input
-                    value={gtmForm.timeline || ''}
-                    onChange={e => setGtmForm({ ...gtmForm, timeline: e.target.value })}
-                    placeholder="e.g. Q3 2024"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            {/* Generate Playbook Button */}
-            <Button
-              onClick={generatePlaybook}
-              disabled={loading || !icp.firmographics?.companySize || !icp.firmographics?.industry || !icp.personas?.length || !gtmForm.strategy || !gtmForm.channels || !gtmForm.goals || !gtmForm.budget || !gtmForm.timeline}
-              className="w-full h-12 text-base font-medium mt-4"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Generating Playbook...
-                </>
-              ) : (
-                <>
-                  <Rocket className="h-5 w-5 mr-2" />
-                  Generate Playbook
-                </>
-              )}
-            </Button>
+        {icp && (
+          <div className="space-y-8">
+            {/* Executive Summary Card */}
+            {(icp.gtmRecommendations) && (
+              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <BarChart2 className="h-6 w-6 text-blue-500" />
+                  <CardTitle className="text-xl font-bold">Executive Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-base text-gray-700 whitespace-pre-line">
+                    {icp.gtmRecommendations}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {/* Main Playbook Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Personas */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <Users className="h-5 w-5 text-indigo-500" />
+                  <CardTitle className="text-lg">Target Personas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Array.isArray(icp.personas) && icp.personas.length > 0 ? (
+                    <div className="space-y-2">
+                      {icp.personas.map((persona: any, idx: number) => (
+                        <div key={idx} className="mb-2 p-2 rounded bg-muted/40">
+                          <div className="font-semibold text-sm">{persona.title}{persona.role ? ` (${persona.role})` : ''}</div>
+                          {persona.painPoints && Array.isArray(persona.painPoints) && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              <span className="font-medium">Pain Points:</span>
+                              <ul className="list-disc list-inside ml-4">
+                                {persona.painPoints.map((pp: string, i: number) => (
+                                  <li key={i}>{pp}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {persona.responsibilities && Array.isArray(persona.responsibilities) && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              <span className="font-medium">Responsibilities:</span>
+                              <ul className="list-disc list-inside ml-4">
+                                {persona.responsibilities.map((r: string, i: number) => (
+                                  <li key={i}>{r}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : <div className="text-xs text-gray-400">No personas available.</div>}
+                </CardContent>
+              </Card>
+              {/* Firmographics */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <Target className="h-5 w-5 text-green-500" />
+                  <CardTitle className="text-lg">Firmographics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.firmographics && typeof icp.firmographics === 'object' ? (
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      {Object.entries(icp.firmographics).map(([key, value]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
+                          <span>{String(value) || 'N/A'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <div className="text-xs text-gray-400">No firmographics available.</div>}
+                </CardContent>
+              </Card>
+              {/* Messaging Angles */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-yellow-500" />
+                  <CardTitle className="text-lg">Messaging Angles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Array.isArray(icp.messagingAngles) && icp.messagingAngles.length > 0 ? (
+                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                      {icp.messagingAngles.map((m: string, i: number) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  ) : <div className="text-xs text-gray-400">No messaging angles available.</div>}
+                </CardContent>
+              </Card>
+              {/* GTM Recommendations */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-pink-500" />
+                  <CardTitle className="text-lg">GTM Recommendations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.gtmRecommendations ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.gtmRecommendations}</div>
+                  ) : <div className="text-xs text-gray-400">No recommendations available.</div>}
+                </CardContent>
+              </Card>
+              {/* Competitive Positioning */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <BarChart2 className="h-5 w-5 text-orange-500" />
+                  <CardTitle className="text-lg">Competitive Positioning</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.competitivePositioning ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.competitivePositioning}</div>
+                  ) : <div className="text-xs text-gray-400">No competitive positioning available.</div>}
+                </CardContent>
+              </Card>
+              {/* Objection Handling */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                  <CardTitle className="text-lg">Objection Handling</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Array.isArray(icp.objectionHandling) && icp.objectionHandling.length > 0 ? (
+                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                      {icp.objectionHandling.map((o: string, i: number) => (
+                        <li key={i}>{o}</li>
+                      ))}
+                    </ul>
+                  ) : <div className="text-xs text-gray-400">No objection handling available.</div>}
+                </CardContent>
+              </Card>
+              {/* Campaign Ideas */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-cyan-500" />
+                  <CardTitle className="text-lg">Campaign Ideas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Array.isArray(icp.campaignIdeas) && icp.campaignIdeas.length > 0 ? (
+                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                      {icp.campaignIdeas.map((c: string, i: number) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  ) : <div className="text-xs text-gray-400">No campaign ideas available.</div>}
+                </CardContent>
+              </Card>
+              {/* Metrics to Track */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-lime-500" />
+                  <CardTitle className="text-lg">Metrics to Track</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Array.isArray(icp.metricsToTrack) && icp.metricsToTrack.length > 0 ? (
+                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                      {icp.metricsToTrack.map((m: string, i: number) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  ) : <div className="text-xs text-gray-400">No metrics available.</div>}
+                </CardContent>
+              </Card>
+              {/* Film Reviews */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <FileText className="h-5 w-5 text-violet-500" />
+                  <CardTitle className="text-lg">Film Reviews</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.filmReviews ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.filmReviews}</div>
+                  ) : <div className="text-xs text-gray-400">No film reviews available.</div>}
+                </CardContent>
+              </Card>
+              {/* Cross-Functional Alignment */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <Users className="h-5 w-5 text-fuchsia-500" />
+                  <CardTitle className="text-lg">Cross-Functional Alignment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.crossFunctionalAlignment ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.crossFunctionalAlignment}</div>
+                  ) : <div className="text-xs text-gray-400">No cross-functional alignment available.</div>}
+                </CardContent>
+              </Card>
+              {/* Demand Generation Framework */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-amber-500" />
+                  <CardTitle className="text-lg">Demand Generation Framework</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.demandGenFramework ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.demandGenFramework}</div>
+                  ) : <div className="text-xs text-gray-400">No demand generation framework available.</div>}
+                </CardContent>
+              </Card>
+              {/* Iterative Measurement */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <BarChart2 className="h-5 w-5 text-sky-500" />
+                  <CardTitle className="text-lg">Iterative Measurement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.iterativeMeasurement ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.iterativeMeasurement}</div>
+                  ) : <div className="text-xs text-gray-400">No iterative measurement available.</div>}
+                </CardContent>
+              </Card>
+              {/* Training & Enablement */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <FileText className="h-5 w-5 text-emerald-500" />
+                  <CardTitle className="text-lg">Training & Enablement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {icp.trainingEnablement ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.trainingEnablement}</div>
+                  ) : <div className="text-xs text-gray-400">No training & enablement available.</div>}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        )}
-
-        {/* Playbook Result */}
-        {playbook && (
-          <Card className="bg-gradient-to-r from-pink-50 to-pink-100 border-pink-200 mt-8">
-            <CardHeader className="flex flex-row items-center gap-3">
-              <FileText className="h-6 w-6 text-pink-500" />
-              <CardTitle className="text-xl font-bold">Generated GTM Playbook</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <strong>Summary:</strong>
-                <div className="text-base text-gray-700 whitespace-pre-line">{playbook.summary}</div>
-              </div>
-              <div className="mb-4">
-                <strong>Steps:</strong>
-                <ol className="list-decimal ml-6 text-base text-gray-700">
-                  {playbook.steps?.map((step: string, idx: number) => <li key={idx}>{step}</li>)}
-                </ol>
-              </div>
-              <div className="mb-4">
-                <strong>ICP Used:</strong>
-                <pre className="bg-slate-100 rounded p-2 text-xs overflow-x-auto">{JSON.stringify(playbook.icpUsed, null, 2)}</pre>
-              </div>
-              <div className="mb-4">
-                <strong>GTM Form Used:</strong>
-                <pre className="bg-slate-100 rounded p-2 text-xs overflow-x-auto">{JSON.stringify(playbook.gtmFormUsed, null, 2)}</pre>
-              </div>
-            </CardContent>
-          </Card>
         )}
       </CardContent>
     </Card>

@@ -6,7 +6,6 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
-import supabase from '../lib/supabaseClient';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
@@ -19,13 +18,22 @@ const ForgotPassword: React.FC = () => {
     setStatus('loading');
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) {
-        setStatus('error');
-        setMessage(error.message || 'Failed to send password reset email. Please try again.');
-      } else {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
         setStatus('success');
-        setMessage('If an account with that email exists, a password reset link has been sent.');
+        setMessage(data.message || 'If an account with that email exists, a password reset link has been sent.');
+      } else {
+        setStatus('error');
+        setMessage(data.error || 'Failed to send password reset email. Please try again.');
       }
     } catch (error) {
       setStatus('error');

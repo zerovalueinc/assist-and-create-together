@@ -6,7 +6,6 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, Loader2, Eye, EyeOff } from 'lucide-react';
-import supabase from '../lib/supabaseClient';
 
 const PasswordReset: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -50,13 +49,22 @@ const PasswordReset: React.FC = () => {
     setStatus('loading');
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: password });
-      if (error) {
-        setStatus('error');
-        setMessage(error.message);
-      } else {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
         setStatus('success');
         setMessage('Password reset successfully! You can now log in with your new password.');
+      } else {
+        setStatus('error');
+        setMessage(data.error || 'Password reset failed. Please try again.');
       }
     } catch (error) {
       setStatus('error');
@@ -70,19 +78,6 @@ const PasswordReset: React.FC = () => {
 
   const handleForgotPassword = () => {
     navigate('/forgot-password');
-  };
-
-  const handlePasswordReset = async (newPassword: string) => {
-    setStatus('loading');
-    setMessage('');
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      setStatus('error');
-      setMessage(error.message);
-    } else {
-      setStatus('success');
-      setMessage('Password reset successfully! You can now log in with your new password.');
-    }
   };
 
   if (isValidToken === false) {
