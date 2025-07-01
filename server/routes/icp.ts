@@ -1,5 +1,5 @@
 import express from 'express';
-import { runQuery, getRow, getCachedResult, saveToCache, cleanupExpiredCache, getCacheStats, bulkCacheCleanup, warmCacheForPopularUrls, isCacheExpired, saveReport, getSavedReports, getSavedReportByUrl, saveICPResult, getSavedICPs, getSavedPlaybooks } from '../database/init';
+import { runQuery, getRow, getCachedResult, saveToCache, cleanupExpiredCache, getCacheStats, bulkCacheCleanup, warmCacheForPopularUrls, isCacheExpired, saveReport, getSavedReports, getSavedReportByUrl, saveICPResult, getSavedICPs, getSavedPlaybooks, savePlaybook } from '../database/init';
 import { generateComprehensiveIBP, generateICPFromWebsite } from '../../agents/claude';
 import { authenticateToken } from '../middleware/auth';
 
@@ -478,30 +478,47 @@ router.get('/reports', authenticateToken, async (req, res) => {
   }
 });
 
-// Get all saved playbooks for the user (alias for saved ICPs)
+// Get all saved playbooks for the user
 router.get('/playbooks', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   try {
-    const icps = await getSavedICPs(userId);
-    res.json({ success: true, playbooks: icps });
+    const playbooks = await getSavedPlaybooks(userId);
+    // Add companyName to each playbook for frontend display
+    const playbooksWithCompany = playbooks.map(pb => {
+      let companyName = pb.companyUrl;
+      try {
+        const icp = pb.icpData ? JSON.parse(pb.icpData) : {};
+        companyName = icp.companyName || icp.company || pb.companyUrl;
+      } catch (e) {
+        // fallback to companyUrl
+      }
+      return { ...pb, companyName };
+    });
+    console.log(`[API] Fetched ${playbooksWithCompany.length} playbooks for userId: ${userId}`);
+    res.json({ success: true, playbooks: playbooksWithCompany });
   } catch (error) {
+    console.error('Error fetching playbooks:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch playbooks' });
   }
 });
 
-// Save a GTM/ICP playbook for the user
-router.post('/save', authenticateToken, async (req, res) => {
+// Save a GTM Playbook for the user
+router.post('/playbooks', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { companyUrl, icpData } = req.body;
-    if (!companyUrl || !icpData) {
-      return res.status(400).json({ error: 'companyUrl and icpData are required' });
+    const { companyUrl, icpData, playbookContent } = req.body;
+    if (!companyUrl || !icpData || !playbookContent) {
+      return res.status(400).json({ error: 'companyUrl, icpData, and playbookContent are required' });
     }
-    await saveICPResult(userId, companyUrl, icpData);
+    // Save to playbooks table
+    await savePlaybook(userId, companyUrl, icpData, playbookContent);
+    // Save to cache (standardized pathway)
+    await saveToCache(companyUrl, true, icpData, playbookContent, null, null, userId);
+    console.log(`[API] Saved playbook for userId: ${userId}, companyUrl: ${companyUrl}`);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error saving ICP:', error);
-    res.status(500).json({ error: 'Failed to save ICP' });
+    console.error('Error saving playbook:', error);
+    res.status(500).json({ error: 'Failed to save playbook' });
   }
 });
 

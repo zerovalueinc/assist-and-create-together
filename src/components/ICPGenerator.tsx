@@ -271,7 +271,7 @@ const ICPGenerator = () => {
             });
             // Auto-save the result
             try {
-              await fetch(`${API_BASE_URL}/api/icp/save`, {
+              await fetch(`${API_BASE_URL}/api/icp/playbooks`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -280,6 +280,7 @@ const ICPGenerator = () => {
                 body: JSON.stringify({
                   companyUrl: selectedCompany?.companyUrl || '',
                   icpData: data.state.result,
+                  playbookContent: JSON.stringify(data.state.result),
                 }),
               });
             } catch (saveErr) {

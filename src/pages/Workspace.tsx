@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, FolderOpen, BarChart3, Users, Zap, Settings, Link2, FileText, Trash2, Eye, Plus, Search } from 'lucide-react';
@@ -49,23 +48,15 @@ export default function Workspace() {
         setAnalyzeLoading(false);
       }
 
-      // Fetch Playbooks data
+      // Fetch Playbooks data (only from /api/icp/playbooks)
       setPlaybooksLoading(true);
       setPlaybooksError(null);
       try {
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const [icpRes, playbookRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/icp/reports`, { headers }),
-          fetch(`${API_BASE_URL}/api/icp/playbooks`, { headers })
-        ]);
-        
-        const icps = icpRes.ok ? (await icpRes.json()) : {};
+        const playbookRes = await fetch(`${API_BASE_URL}/api/icp/playbooks`, { headers });
         const playbooksData = playbookRes.ok ? (await playbookRes.json()) : {};
-        
-        const icpArray = icps.icps || [];
         const playbooksArray = playbooksData.playbooks || [];
-        const allPlaybooks = [...icpArray, ...playbooksArray].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-        setPlaybooks(allPlaybooks);
+        setPlaybooks(playbooksArray);
       } catch (err) {
         setPlaybooksError('Failed to load playbooks.');
       } finally {
@@ -204,7 +195,7 @@ export default function Workspace() {
                   <div className="py-8 text-center text-red-500">{analyzeError}</div>
                 ) : filteredAnalyzeWork.length === 0 ? (
                   <div className="py-8 text-center text-slate-400">
-                    {searchTerm ? 'No analyses match your search.' : 'No analyses yet. Run your first company analysis to see it here!'}
+                    {searchTerm ? 'No analyses match your search.' : 'No company analyses yet. Run your first company analysis to see it here!'}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -240,7 +231,7 @@ export default function Workspace() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>ICP Playbooks</span>
+                  <span>GTM Playbooks</span>
                   <Badge variant="secondary">{filteredPlaybooks.length} total</Badge>
                 </CardTitle>
               </CardHeader>
@@ -251,7 +242,7 @@ export default function Workspace() {
                   <div className="py-8 text-center text-red-500">{playbooksError}</div>
                 ) : filteredPlaybooks.length === 0 ? (
                   <div className="py-8 text-center text-slate-400">
-                    {searchTerm ? 'No playbooks match your search.' : 'No playbooks yet. Generate your first ICP to see it here!'}
+                    {searchTerm ? 'No playbooks match your search.' : 'No GTM Playbooks yet. Generate a GTM Playbook to see it here!'}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -259,7 +250,7 @@ export default function Workspace() {
                       <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition">
                         <div className="flex-1">
                           <h3 className="font-medium text-slate-900">
-                            {item.companyName || item.company || item.title || 'Untitled Playbook'}
+                            {item.companyName || item.company || item.title || item.companyUrl || 'Untitled Playbook'}
                           </h3>
                           <p className="text-sm text-slate-500 mt-1">
                             {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}

@@ -38,6 +38,19 @@ export async function initDatabase(): Promise<void> {
         )
       `);
 
+      // Create Playbooks table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS playbooks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
+          companyUrl TEXT,
+          icpData TEXT,
+          playbookContent TEXT,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
       // Create Leads table
       db.run(`
         CREATE TABLE IF NOT EXISTS leads (
@@ -1520,11 +1533,18 @@ export async function getSavedICPByCompanyUrl(userId: number, companyUrl: string
   );
 }
 
+// Save Playbook result
+export async function savePlaybook(userId: number, companyUrl: string, icpData: any, playbookContent: string) {
+  return runQuery(
+    `INSERT INTO playbooks (userId, companyUrl, icpData, playbookContent, createdAt) VALUES (?, ?, ?, ?, datetime('now'))`,
+    [userId, companyUrl, JSON.stringify(icpData), playbookContent]
+  );
+}
+
 // Get all saved playbooks for a user
 export async function getSavedPlaybooks(userId: number) {
-  // For now, treat playbooks as the same as ICP results (adjust if you have a separate table)
   return getRows(
-    `SELECT * FROM icp_results WHERE userId = ? ORDER BY createdAt DESC`,
+    `SELECT * FROM playbooks WHERE userId = ? ORDER BY createdAt DESC`,
     [userId]
   );
 } 
