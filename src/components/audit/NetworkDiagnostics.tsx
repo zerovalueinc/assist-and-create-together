@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, WifiOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NetworkTest {
   name: string;
-  url: string;
   status: 'pending' | 'pass' | 'fail';
   message: string;
 }
@@ -16,19 +16,16 @@ export function NetworkDiagnostics() {
   const [tests, setTests] = useState<NetworkTest[]>([
     {
       name: 'Internet Connectivity',
-      url: 'https://www.google.com',
       status: 'pending',
       message: 'Not tested'
     },
     {
-      name: 'Supabase Reachability',
-      url: 'https://hbogcsztrryrepudceww.supabase.co',
+      name: 'Supabase Database',
       status: 'pending',
       message: 'Not tested'
     },
     {
-      name: 'Supabase API',
-      url: 'https://hbogcsztrryrepudceww.supabase.co/rest/v1/',
+      name: 'Supabase Authentication',
       status: 'pending',
       message: 'Not tested'
     }
@@ -39,29 +36,71 @@ export function NetworkDiagnostics() {
     setIsRunning(true);
     const updatedTests = [...tests];
 
-    for (let i = 0; i < updatedTests.length; i++) {
-      try {
-        // Use a simple fetch with a timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch(updatedTests[i].url, {
-          method: 'HEAD',
-          mode: 'no-cors',
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        
-        updatedTests[i].status = 'pass';
-        updatedTests[i].message = 'Reachable';
-      } catch (error) {
-        updatedTests[i].status = 'fail';
-        updatedTests[i].message = error instanceof Error ? error.message : 'Connection failed';
-      }
-
-      setTests([...updatedTests]);
+    // Test 1: Internet Connectivity
+    try {
+      // Use a simple image load test for internet connectivity
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = 'https://www.google.com/favicon.ico?' + new Date().getTime();
+      });
+      
+      updatedTests[0].status = 'pass';
+      updatedTests[0].message = 'Internet connection active';
+    } catch (error) {
+      updatedTests[0].status = 'fail';
+      updatedTests[0].message = 'No internet connection';
     }
+    setTests([...updatedTests]);
+
+    // Test 2: Supabase Database Connection
+    try {
+      console.log('Testing Supabase database connection...');
+      
+      // Try a simple select query that doesn't require authentication
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .limit(1);
+      
+      if (error) {
+        // If it's an auth error, that's actually good - it means we can reach Supabase
+        if (error.message.includes('JWT') || error.message.includes('RLS') || error.message.includes('policy')) {
+          updatedTests[1].status = 'pass';
+          updatedTests[1].message = 'Database reachable (RLS protecting data)';
+        } else {
+          updatedTests[1].status = 'fail';
+          updatedTests[1].message = `Database error: ${error.message}`;
+        }
+      } else {
+        updatedTests[1].status = 'pass';
+        updatedTests[1].message = 'Database connection successful';
+      }
+    } catch (error) {
+      updatedTests[1].status = 'fail';
+      updatedTests[1].message = error instanceof Error ? error.message : 'Database connection failed';
+    }
+    setTests([...updatedTests]);
+
+    // Test 3: Supabase Authentication Service
+    try {
+      console.log('Testing Supabase auth service...');
+      
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        updatedTests[2].status = 'fail';
+        updatedTests[2].message = `Auth error: ${error.message}`;
+      } else {
+        updatedTests[2].status = 'pass';
+        updatedTests[2].message = session ? 'Authenticated user session' : 'Auth service accessible (no session)';
+      }
+    } catch (error) {
+      updatedTests[2].status = 'fail';
+      updatedTests[2].message = error instanceof Error ? error.message : 'Auth service unavailable';
+    }
+    setTests([...updatedTests]);
 
     setIsRunning(false);
   };
@@ -121,8 +160,15 @@ export function NetworkDiagnostics() {
             <ul className="text-sm text-red-800 space-y-1">
               <li>• Check your internet connection</li>
               <li>• Try refreshing the page</li>
-              <li>• Check if Supabase is experiencing outages</li>
+              <li>• If Supabase auth fails, try logging in again</li>
             </ul>
+          </div>
+        )}
+
+        {tests.every(t => t.status === 'pass') && tests[0].status !== 'pending' && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">All Network Tests Passed</h4>
+            <p className="text-sm text-green-800">Your connection to Supabase is working correctly.</p>
           </div>
         )}
       </CardContent>
