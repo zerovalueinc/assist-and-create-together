@@ -30,8 +30,11 @@ const CompanyAnalyzer = () => {
   const { user, session, loading: authLoading } = useAuth();
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
-  // Use preloaded reports
-  const reports = preloadData?.companyAnalyzer || [];
+  // Use preloaded reports or fallback to cache
+  let reports = preloadData?.companyAnalyzer || [];
+  if (!reports.length) {
+    reports = getCache('yourwork_analyze', []);
+  }
   const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 

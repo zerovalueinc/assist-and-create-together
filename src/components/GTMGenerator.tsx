@@ -23,8 +23,11 @@ const GTMGenerator = () => {
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
-  // Use preloaded analyses for pills
-  const availableAnalyses = preloadData?.companyAnalyzer || [];
+  // Use preloaded analyses for pills or fallback to cache
+  let availableAnalyses = preloadData?.companyAnalyzer || [];
+  if (!availableAnalyses.length) {
+    availableAnalyses = getCache('yourwork_analyze', []);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
