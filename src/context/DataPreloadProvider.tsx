@@ -52,7 +52,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchAll = async () => {
       const now = Date.now();
-      if (!user || !user.id) {
+      if (typeof user.id !== 'string' || !user.id) {
         console.error('[DataPreloadProvider] Blocked fetch: invalid user', { user });
         return;
       }
@@ -67,9 +67,9 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
       try {
         const [companyAnalyzer, icps, playbooks, salesintel] = await Promise.all([
           supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-          supabase.from('icps').select('*').eq('user_id', Number(user.id)).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('user_id', Number(user.id)).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('user_id', Number(user.id)).order('created_at', { ascending: false })
+          supabase.from('icps').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('saved_reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('saved_reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         ]);
         if (cancelled) return;
         const normalize = (arr: any[] = []) => arr.map((r: any) => ({

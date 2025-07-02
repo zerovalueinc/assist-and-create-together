@@ -95,10 +95,7 @@ const ICPGenerator = () => {
     let cancelled = false;
     const fetchCompanies = async () => {
       setLoading(true);
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (typeof user.id !== 'string' || !user.id) return;
       try {
         const { data, error } = await supabase
           .from('company_analyzer_outputs_unrestricted')
@@ -142,12 +139,12 @@ const ICPGenerator = () => {
     hasFetchedICPs.current = true;
     let cancelled = false;
     const fetchICPs = async () => {
-      if (!user) return;
+      if (typeof user.id !== 'string' || !user.id) return;
       try {
         const { data, error } = await supabase
           .from('icps')
           .select('*')
-          .eq('user_id', Number(user.id))
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         if (!cancelled) {
           if (error) throw error;
@@ -178,12 +175,12 @@ const ICPGenerator = () => {
     hasFetchedPlaybooks.current = true;
     let cancelled = false;
     const fetchPlaybooks = async () => {
-      if (!user) return;
+      if (typeof user.id !== 'string' || !user.id) return;
       try {
         const { data, error } = await supabase
           .from('saved_reports')
           .select('*')
-          .eq('user_id', Number(user.id))
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         if (!cancelled) {
           if (error) throw error;
