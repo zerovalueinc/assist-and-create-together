@@ -48,6 +48,22 @@ const CompanyAnalyzer = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  const handleDeleteReport = async (id: string) => {
+    const prevReports = reports;
+    setReports(reports.filter(r => r.id !== id));
+    if (selectedReportId === id) {
+      setAnalysis(null);
+      setSelectedReportId(null);
+    }
+    const { error } = await supabase.from('company_analyzer_outputs_unrestricted').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
+      setReports(prevReports); // Rollback UI
+    } else {
+      toast({ title: 'Report Deleted', description: 'The report was deleted successfully.' });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session, isLoading });
@@ -153,6 +169,9 @@ const CompanyAnalyzer = () => {
         >
           <span className="font-semibold">{report.companyName || 'Untitled'}</span>
           <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
+          <Button size="sm" variant="destructive" className="ml-2" onClick={e => { e.stopPropagation(); handleDeleteReport(report.id); }}>
+            Delete
+          </Button>
         </Badge>
       ))}
     </div>
