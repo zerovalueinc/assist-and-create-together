@@ -5,7 +5,7 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(async ({ mode }) => {
-  const plugins = [react()];
+  const plugins: any[] = [react()];
   
   // Dynamically import lovable-tagger only in development mode
   if (mode === 'development') {
