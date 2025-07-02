@@ -39,7 +39,8 @@ const CompanyAnalyzer = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session });
     if (!url.trim()) {
       toast({
         title: "Error",

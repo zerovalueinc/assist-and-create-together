@@ -30,7 +30,8 @@ const GTMGenerator = () => {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    console.log('[GTMGenerator] handleSubmit triggered', { url, user, session });
     if (!url.trim()) {
       toast({
         title: "Error",
