@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,25 +68,33 @@ const CompanyAnalyzer = () => {
     setAnalysis(null);
 
     try {
-      console.log('Starting company analysis for:', url);
+      console.log('=== Starting Company Analysis ===');
+      console.log('URL:', url);
+      console.log('User ID:', user?.id);
       console.log('Session token available:', !!session?.access_token);
       
+      const requestBody = { url: url.trim() };
+      console.log('Request body:', requestBody);
+
       const { data, error } = await supabase.functions.invoke('company-analyze', {
-        body: { url: url.trim() },
+        body: requestBody,
         headers: {
           Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
         },
       });
 
-      console.log('Supabase function response:', { data, error });
+      console.log('=== Supabase Function Response ===');
+      console.log('Data:', data);
+      console.log('Error:', error);
 
       if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Analysis failed');
+        console.error('Supabase function error details:', error);
+        throw new Error(error.message || 'Analysis request failed');
       }
 
-      if (data?.success) {
-        console.log('Analysis completed:', data.analysis);
+      if (data?.success && data?.analysis) {
+        console.log('Analysis successful:', data.analysis);
         setAnalysis(data.analysis);
         setResearch({
           companyAnalysis: data.analysis,
@@ -95,18 +103,23 @@ const CompanyAnalyzer = () => {
         });
         toast({
           title: "Analysis Complete",
-          description: "Company analysis generated successfully",
+          description: `Successfully analyzed ${data.analysis.companyName}`,
         });
         // Refresh reports after analysis
         fetchReports();
       } else {
-        throw new Error(data?.error || 'Analysis failed');
+        console.error('Analysis failed - no success flag or analysis data');
+        throw new Error(data?.error || 'Analysis failed - no data returned');
       }
     } catch (error: any) {
-      console.error('Analysis error:', error);
+      console.error('=== Analysis Error ===');
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error.message);
+      console.error('Full error:', error);
+      
       toast({
         title: "Analysis Failed",
-        description: error.message || "Failed to analyze company. Please try again.",
+        description: error.message || "Failed to analyze company. Please check the URL and try again.",
         variant: "destructive",
       });
     } finally {
