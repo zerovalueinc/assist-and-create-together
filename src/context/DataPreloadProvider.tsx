@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../lib/supabase';
 import { getCache, setCache } from '@/lib/utils';
 import { useAuth } from './AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';

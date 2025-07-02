@@ -7,13 +7,14 @@ import { Loader2, Search, Building, Users, TrendingUp, Target, AlertTriangle, Ma
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
 import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
+import { useUser } from '../hooks/useUserData';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -27,7 +28,7 @@ const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
   const { setResearch } = useCompany();
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, session } = useUser();
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
   // Use preloaded reports or fallback to cache
@@ -52,7 +53,7 @@ const CompanyAnalyzer = () => {
     const normalizedUrl = normalizeUrl(url);
     setUrl(normalizedUrl);
 
-    if (!session?.access_token) {
+    if (!user?.access_token) {
       toast({
         title: "Error",
         description: "Please log in to analyze companies",
@@ -62,7 +63,7 @@ const CompanyAnalyzer = () => {
     }
 
     // Defensive: error if no access token
-    if (!session.access_token) {
+    if (!user.access_token) {
       toast({
         title: "Auth Error",
         description: "No access token found. Please log in again.",
@@ -77,12 +78,12 @@ const CompanyAnalyzer = () => {
       console.log('=== Starting Company Analysis ===');
       console.log('URL:', normalizedUrl);
       console.log('User ID:', user?.id);
-      console.log('Session token available:', !!session?.access_token);
+      console.log('Session token available:', !!user?.access_token);
       
       const response = await fetch('https://hbogcsztrryrepudceww.supabase.co/functions/v1/company-analyze', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${user.access_token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ url: normalizedUrl, user_id: user?.id })
@@ -182,22 +183,22 @@ const CompanyAnalyzer = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={authLoading}
+                disabled={!user?.access_token || !url.trim()}
                 className="text-base"
                 autoComplete="off"
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={authLoading || !session?.access_token || !url.trim()} className="w-full">
-              {authLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading user session...
-                </>
-              ) : (
+            <Button type="submit" disabled={!user?.access_token || !url.trim()} className="w-full">
+              {user?.access_token ? (
                 <>
                   <Search className="mr-2 h-4 w-4" />
                   Analyze Company
+                </>
+              ) : (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading user session...
                 </>
               )}
             </Button>

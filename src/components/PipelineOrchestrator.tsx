@@ -7,6 +7,7 @@ import { PipelineStatus } from './pipeline/PipelineStatus';
 import { usePipelineOperations } from './pipeline/usePipelineOperations';
 import { PipelineState } from './pipeline/types';
 import { getCache, setCache } from '../lib/utils';
+import { useUser } from '../hooks/useUserData';
 
 export default function PipelineOrchestrator() {
   const [url, setUrl] = useState('');
@@ -18,16 +19,19 @@ export default function PipelineOrchestrator() {
   const [showApiSetup, setShowApiSetup] = useState(false);
   const { toast } = useToast();
   const { startPipeline, pollPipelineStatus, fetchResults } = usePipelineOperations();
+  const { user, session } = useUser();
 
   // Show cached pipeline state/results instantly
   useEffect(() => {
-    const cachedState = getCache<any>('pipeline_state', null);
-    const cachedResults = getCache<any>('pipeline_results', null);
+    if (!user?.id) return;
+    const cachedState = getCache<any>(`pipeline_state_${user.id}`, null);
+    const cachedResults = getCache<any>(`pipeline_results_${user.id}`, null);
     if (cachedState) setPipelineState(cachedState);
     if (cachedResults) setResults(cachedResults);
-  }, []);
+  }, [user]);
 
   const handleStartPipeline = async () => {
+    if (!user?.id || !session?.access_token) return;
     setIsLoading(true);
     try {
       const newPipelineState = await startPipeline({
@@ -38,7 +42,7 @@ export default function PipelineOrchestrator() {
       });
       
       setPipelineState(newPipelineState);
-      setCache('pipeline_state', newPipelineState);
+      setCache(`pipeline_state_${user.id}`, newPipelineState);
       startPolling(newPipelineState.id);
     } catch (error: any) {
       if (error.message === 'API_CONFIG_REQUIRED') {
@@ -56,10 +60,11 @@ export default function PipelineOrchestrator() {
 
   const startPolling = (pipelineId: string) => {
     const pollInterval = setInterval(async () => {
+      if (!user?.id || !session?.access_token) return;
       try {
         const updatedState = await pollPipelineStatus(pipelineId);
         setPipelineState(updatedState);
-        setCache('pipeline_state', updatedState);
+        setCache(`pipeline_state_${user.id}`, updatedState);
         
         if (updatedState.status === 'completed' || updatedState.status === 'failed') {
           clearInterval(pollInterval);
@@ -67,7 +72,7 @@ export default function PipelineOrchestrator() {
           if (updatedState.status === 'completed') {
             const pipelineResults = await fetchResults(pipelineId);
             setResults(pipelineResults);
-            setCache('pipeline_results', pipelineResults);
+            setCache(`pipeline_results_${user.id}`, pipelineResults);
             toast({
               title: "Pipeline Completed",
               description: `Successfully processed ${updatedState.companiesProcessed} companies and found ${updatedState.contactsFound} contacts.`,

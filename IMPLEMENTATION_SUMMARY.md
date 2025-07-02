@@ -347,4 +347,24 @@ The LLM and backend always return this object:
 
 ---
 
-*This document is auto-generated and should be updated with every major change to the Company Analyzer LLM module or its schema.* 
+*This document is auto-generated and should be updated with every major change to the Company Analyzer LLM module or its schema.*
+
+# Global Data-Fetching Pattern – Implementation Summary
+
+## Why This Pattern?
+
+- Prevents infinite fetch loops and quota exhaustion on Supabase
+- Ensures all user/session-aware fetches are stable, single-shot, and scoped
+- Guarantees a SaaS-grade, production-ready experience
+
+## Key Enforcement Steps
+
+- All user/session state comes from the `useUser` hook (`src/hooks/useUserData.ts`)
+- All Supabase queries use the memoized client from `src/lib/supabase.ts`
+- All fetches are guarded (`if (!user?.id) return;`) and only run once per session
+- All queries are scoped by user ID and sanitized before setting state
+- All legacy imports from `@/integrations/supabase/client` are being removed
+- No direct calls to `supabase.auth.getSession()` or `onAuthStateChange` outside `useUser`
+- All fetches are in guarded `useEffect` or event handlers, never in render
+
+See [README.md](README.md) for the full pattern and rules. 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "lucide-react";
 import { SectionLabel } from "./ui/section-label";
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../lib/supabase'; // See README for global pattern
 import EmptyState from './ui/EmptyState';
 import { getCache, setCache } from '../lib/utils';
 

@@ -1,4 +1,54 @@
-# PersonaOps
+# PersonaOps 2.0 – Global Data-Fetching & Session Pattern
+
+## 🚨 Global SaaS-Grade Data-Fetching Pattern (MANDATORY)
+
+PersonaOps 2.0 enforces a single, robust, and scalable pattern for all user/session-aware data fetching. This is critical to prevent infinite fetch loops, quota exhaustion, and UI instability.
+
+### **Key Rules:**
+
+1. **Canonical User/Session State:**
+   - All user/session state must come from the `useUser` hook in [`src/hooks/useUserData.ts`](src/hooks/useUserData.ts).
+   - No component, hook, or context may call `supabase.auth.getSession()` or `supabase.auth.onAuthStateChange` directly—only `useUser` manages this.
+
+2. **Memoized Supabase Client:**
+   - All Supabase queries must use the client exported from [`src/lib/supabase.ts`](src/lib/supabase.ts).
+   - Remove all imports from `@/integrations/supabase/client` or any other duplicate client files.
+
+3. **Fetch Guards:**
+   - All Supabase fetches must be guarded: `if (!user?.id) return;` (or equivalent) before any query.
+   - Never fetch in render functions. Only fetch in guarded `useEffect` or event handlers.
+   - Use refs (e.g., `hasFetched.current`) to ensure fetches only run once per user/session, unless explicitly retried.
+
+4. **Query Scoping:**
+   - All queries must be scoped: `.eq('user_id', user.id)` (or equivalent) to prevent data leaks and reduce load.
+
+5. **Data Sanitization:**
+   - Always sanitize fetched data before setting state: `JSON.parse(JSON.stringify(data))`.
+
+6. **No Infinite Loops:**
+   - Never trigger fetches on every render or in unguarded effects. Use stable dependencies and guards.
+
+7. **Testing & Monitoring:**
+   - Use Supabase logs and browser devtools to confirm only a single fetch per user/session per component.
+
+---
+
+## Example Usage
+
+```tsx
+import { useUser } from '../hooks/useUserData';
+import { supabase } from '../lib/supabase';
+
+function MyComponent() {
+  const user = useUser();
+  useEffect(() => {
+    if (!user?.id) return;
+    // Fetch data here, scoped by user.id
+  }, [user]);
+}
+```
+
+---
 
 ## 🚀 Enterprise AI Sales Intelligence Platform
 

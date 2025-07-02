@@ -15,9 +15,10 @@ import { useAuth } from "@/context/AuthContext";
 import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../lib/supabase'; // See README for global pattern
 import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
+import { useUser } from '../hooks/useUserData';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
@@ -71,7 +72,7 @@ const ICPGenerator = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { research } = useCompany();
-  const { session, user } = useAuth();
+  const { user, session } = useUser();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [companies, setCompanies] = useState<any[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);

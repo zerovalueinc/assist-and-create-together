@@ -7,10 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Target, Users, TrendingUp, MessageSquare, BookOpen, BarChart, Lightbulb, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '../lib/supabase'; // See README for global pattern
 import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
+import { useUser } from '../hooks/useUserData';
 
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
@@ -19,7 +20,7 @@ const GTMGenerator = () => {
   const [useExistingAnalysis, setUseExistingAnalysis] = useState(false);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState(null);
   const { toast } = useToast();
-  const { user, session } = useAuth();
+  const { user, session } = useUser();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 

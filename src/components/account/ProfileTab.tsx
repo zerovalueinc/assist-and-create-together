@@ -8,7 +8,7 @@ import { Check, Upload } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '../../lib/supabase'; // See README for global pattern
 
 const ProfileTab = () => {
   const { user, profile } = useAuth();

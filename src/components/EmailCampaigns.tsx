@@ -7,6 +7,7 @@ import { Loader2, Mail, Send, Users, BarChart3, ExternalLink, Bot, Zap, Trending
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { getCache, setCache } from '../lib/utils';
+import { useUser } from '../hooks/useUserData';
 
 const EmailCampaigns = () => {
   const [selectedPlatform, setSelectedPlatform] = useState('instantly');
@@ -14,6 +15,7 @@ const EmailCampaigns = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { session } = useAuth();
+  const { user } = useUser();
 
   // Mock real-time campaign data
   const activeCampaigns = [
@@ -77,6 +79,7 @@ const EmailCampaigns = () => {
   }, []);
 
   const launchAICampaign = async () => {
+    if (!user?.id || !session?.access_token) return;
     setLoading(true);
     try {
       // Simulate API call to launch campaign

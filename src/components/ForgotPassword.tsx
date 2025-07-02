@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -7,7 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../lib/supabase'; // See README for global pattern
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();

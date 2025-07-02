@@ -1,5 +1,4 @@
-
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../../lib/supabase'; // See README for global pattern
 import { AuditResult } from '../types';
 
 const DATABASE_TABLES = ['profiles', 'pipeline_states', 'pipeline_results'] as const;
