@@ -247,7 +247,7 @@ const CompanyAnalyzer = () => {
         </div>
       ) : reports.length === 0 ? (
         <EmptyState message="No company analysis reports found. Run an analysis first." />
-      ) : (
+      ) : analysis ? (
         <div className="space-y-6">
           {/* Company Overview */}
           <Card>
@@ -424,6 +424,25 @@ const CompanyAnalyzer = () => {
               <p className="text-sm leading-relaxed">
                 {analysis.researchSummary || 'Multi-phase analysis completed with comprehensive company intelligence'}
               </p>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Your Company Analysis Reports</CardTitle>
+              <CardDescription>Select a report to view details.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-2">
+                {reports.map((report) => (
+                  <Button key={report.id} variant="outline" className="justify-start" onClick={() => setAnalysis(report)}>
+                    <span className="font-semibold">{report.companyName || 'Untitled'}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
+                  </Button>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
