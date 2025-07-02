@@ -1,26 +1,14 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Globe, Building, Users, TrendingUp, Target, AlertTriangle, MapPin, DollarSign, ArrowUpRight, Eye } from "lucide-react";
+import { Loader2, Search, Building, Users, TrendingUp, Target, AlertTriangle, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { SectionLabel } from "@/components/ui/section-label";
-
-// Helper to get favicon from a URL
-const getFaviconUrl = (url: string) => {
-  try {
-    const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
-    return `https://www.google.com/s2/favicons?domain=${domain}`;
-  } catch {
-    return '/favicon.ico';
-  }
-};
 
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
@@ -28,10 +16,8 @@ const CompanyAnalyzer = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { setResearch } = useCompany();
-  const [report, setReport] = useState(null);
   const { user, session } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
-  const pillsRef = useRef<HTMLDivElement>(null);
 
   // Fetch recent reports
   const fetchReports = async () => {
@@ -69,26 +55,39 @@ const CompanyAnalyzer = () => {
       return;
     }
 
+    if (!session?.access_token) {
+      toast({
+        title: "Error",
+        description: "Please log in to analyze companies",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setAnalysis(null);
-    setReport(null);
 
     try {
       console.log('Starting company analysis for:', url);
+      console.log('Session token available:', !!session?.access_token);
       
       const { data, error } = await supabase.functions.invoke('company-analyze', {
-        body: { url: url.trim() }
+        body: { url: url.trim() },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
+
+      console.log('Supabase function response:', { data, error });
 
       if (error) {
         console.error('Supabase function error:', error);
         throw new Error(error.message || 'Analysis failed');
       }
 
-      if (data.success) {
+      if (data?.success) {
         console.log('Analysis completed:', data.analysis);
         setAnalysis(data.analysis);
-        setReport(data.analysis);
         setResearch({
           companyAnalysis: data.analysis,
           isCached: false,
@@ -101,7 +100,7 @@ const CompanyAnalyzer = () => {
         // Refresh reports after analysis
         fetchReports();
       } else {
-        throw new Error(data.error || 'Analysis failed');
+        throw new Error(data?.error || 'Analysis failed');
       }
     } catch (error: any) {
       console.error('Analysis error:', error);
@@ -119,50 +118,6 @@ const CompanyAnalyzer = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
-    }
-  };
-
-  // Helper to trigger analysis for a given URL
-  const triggerAnalysis = async (companyUrl: string) => {
-    setUrl(companyUrl);
-    if (!companyUrl.trim()) return;
-    setLoading(true);
-    setAnalysis(null);
-    setReport(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('company-analyze', {
-        body: { url: companyUrl.trim() }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Analysis failed');
-      }
-
-      if (data.success) {
-        setAnalysis(data.analysis);
-        setReport(data.analysis);
-        setResearch({
-          companyAnalysis: data.analysis,
-          isCached: false,
-          timestamp: new Date().toISOString()
-        });
-        toast({
-          title: "Analysis Complete",
-          description: "Company analysis generated successfully",
-        });
-        fetchReports();
-      } else {
-        throw new Error(data.error || 'Analysis failed');
-      }
-    } catch (error: any) {
-      console.error('Analysis error:', error);
-      toast({
-        title: "Analysis Failed",
-        description: error.message || "Failed to analyze company",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -312,7 +267,7 @@ const CompanyAnalyzer = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
+                <Building className="h-5 w-5" />
                 Technology Stack
               </CardTitle>
               <CardDescription>

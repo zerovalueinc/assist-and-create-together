@@ -31,13 +31,27 @@ interface CompanyAnalysisResult {
 }
 
 serve(async (req) => {
+  console.log('Company analyze function called');
+  console.log('Request method:', req.method);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { url: companyUrl } = await req.json() as CompanyAnalysisRequest;
+    const requestBody = await req.text();
+    console.log('Request body:', requestBody);
+
+    let companyUrl: string;
+    try {
+      const { url } = JSON.parse(requestBody) as CompanyAnalysisRequest;
+      companyUrl = url;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Invalid JSON in request body');
+    }
     
     if (!companyUrl) {
       throw new Error('Company URL is required');
@@ -53,11 +67,24 @@ serve(async (req) => {
 
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '');
-    const { data: { user } } = await supabaseClient.auth.getUser(authHeader);
+    console.log('Auth header present:', !!authHeader);
+    
+    if (!authHeader) {
+      throw new Error('Authorization header required');
+    }
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader);
+    
+    if (userError) {
+      console.error('User auth error:', userError);
+      throw new Error('Authentication failed');
+    }
     
     if (!user) {
       throw new Error('User not authenticated');
     }
+
+    console.log('User authenticated:', user.id);
 
     // Phase 1: Initial Company Research
     console.log('Phase 1: Initial Company Research');
@@ -135,6 +162,8 @@ async function callOpenRouter(prompt: string, systemMessage?: string): Promise<s
     throw new Error('OpenRouter API key not configured');
   }
 
+  console.log('Calling OpenRouter API...');
+
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -153,10 +182,13 @@ async function callOpenRouter(prompt: string, systemMessage?: string): Promise<s
   });
 
   if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('OpenRouter API error:', response.status, errorText);
+    throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
+  console.log('OpenRouter response received');
   return data.choices[0].message.content;
 }
 
