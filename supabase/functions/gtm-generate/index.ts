@@ -144,7 +144,7 @@ serve(async (req) => {
         .from('saved_reports')
         .select('*')
         .eq('id', gtmRequest.analysisId)
-        .eq('user_id', parseInt(user.id))
+        .eq('user_id', user.id)
         .single();
       
       if (!reportError && reportData) {

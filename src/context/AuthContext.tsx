@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -194,23 +193,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        toast({
-          title: "Sign Out Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        if (error.name === 'AuthSessionMissingError') {
+          toast({
+            title: "Signed Out",
+            description: "You have been signed out successfully.",
+          });
+        } else {
+          toast({
+            title: "Sign Out Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Signed Out",
           description: "You have been signed out successfully.",
         });
       }
+      setSession(null);
+      setUser(null);
+      setProfile(null);
     } catch (error: any) {
-      toast({
-        title: "Sign Out Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error?.name === 'AuthSessionMissingError') {
+        toast({
+          title: "Signed Out",
+          description: "You have been signed out successfully.",
+        });
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      } else {
+        toast({
+          title: "Sign Out Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 

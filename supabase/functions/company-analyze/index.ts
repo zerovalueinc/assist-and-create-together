@@ -143,27 +143,49 @@ serve(async (req) => {
     console.log('Analysis generated for:', finalAnalysis.companyName);
 
     // Sanitize and validate before insert
-    if (!finalAnalysis.companyName || typeof finalAnalysis.companyName !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'LLM did not return a valid company name.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    function safeString(val: any): string {
+      return typeof val === 'string' ? val : '';
     }
+    function safeArray(val: any): any[] {
+      return Array.isArray(val) ? val : [];
+    }
+    function safeCompanyProfile(profile: any) {
+      return {
+        industry: safeString(profile?.industry),
+        companySize: safeString(profile?.companySize),
+        revenueRange: safeString(profile?.revenueRange),
+      };
+    }
+    const sanitizedAnalysis = {
+      companyName: safeString(finalAnalysis.companyName),
+      companyProfile: safeCompanyProfile(finalAnalysis.companyProfile),
+      decisionMakers: safeArray(finalAnalysis.decisionMakers),
+      painPoints: safeArray(finalAnalysis.painPoints),
+      technologies: safeArray(finalAnalysis.technologies),
+      location: safeString(finalAnalysis.location),
+      marketTrends: safeArray(finalAnalysis.marketTrends),
+      competitiveLandscape: safeArray(finalAnalysis.competitiveLandscape),
+      goToMarketStrategy: safeString(finalAnalysis.goToMarketStrategy),
+      researchSummary: safeString(finalAnalysis.researchSummary),
+      website: safeString(finalAnalysis.website),
+    };
+    console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
     // Prepare ICP insert object
     const icpInsert = {
       user_id: user.id,
-      persona: finalAnalysis.companyName,
-      job_titles: JSON.stringify(finalAnalysis.decisionMakers || []),
-      company_size: JSON.stringify([finalAnalysis.companyProfile?.companySize || '']),
-      industries: JSON.stringify([finalAnalysis.companyProfile?.industry || '']),
-      location_country: JSON.stringify([finalAnalysis.location || '']),
-      technologies: JSON.stringify(finalAnalysis.technologies || []),
-      pain_points: JSON.stringify(finalAnalysis.painPoints || []),
-      valid_use_case: finalAnalysis.goToMarketStrategy || finalAnalysis.researchSummary || '',
+      persona: sanitizedAnalysis.companyName,
+      job_titles: JSON.stringify(sanitizedAnalysis.decisionMakers),
+      company_size: JSON.stringify([sanitizedAnalysis.companyProfile.companySize]),
+      industries: JSON.stringify([sanitizedAnalysis.companyProfile.industry]),
+      location_country: JSON.stringify([sanitizedAnalysis.location]),
+      technologies: JSON.stringify(sanitizedAnalysis.technologies),
+      pain_points: JSON.stringify(sanitizedAnalysis.painPoints),
+      valid_use_case: sanitizedAnalysis.goToMarketStrategy || sanitizedAnalysis.researchSummary,
       funding: '', // Not available from LLM result
       created_at: new Date().toISOString()
     };
+    console.log('ICP insert object:', JSON.stringify(icpInsert));
 
     // Insert into icps table
     try {
