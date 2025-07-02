@@ -1,55 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "lucide-react";
 import { SectionLabel } from "./ui/section-label";
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import EmptyState from './ui/EmptyState';
 
 const SalesIntelligence = () => {
   const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const hasFetched = useRef(false);
 
-  // Mock data - will connect to your /api/sales-intelligence endpoint
   useEffect(() => {
-    setReports([
-      {
-        id: 1,
-        title: "Q4 Lead Analysis",
-        type: "Lead Performance",
-        date: "2024-01-15",
-        status: "Complete",
-        insights: {
-          totalLeads: 1247,
-          qualifiedLeads: 423,
-          conversionRate: "33.9%",
-          avgDealSize: "$12,400"
-        }
-      },
-      {
-        id: 2,
-        title: "ICP Validation Report",
-        type: "Market Analysis",
-        date: "2024-01-12",
-        status: "Complete",
-        insights: {
-          icpMatch: "78%",
-          topIndustries: ["SaaS", "FinTech", "E-commerce"],
-          growthOpportunity: "High"
-        }
-      },
-      {
-        id: 3,
-        title: "Competitor Intelligence",
-        type: "Competitive Analysis",
-        date: "2024-01-10",
-        status: "Processing",
-        insights: {
-          marketShare: "12.3%",
-          competitorCount: 47,
-          threatLevel: "Medium"
-        }
+    if (!user || hasFetched.current) return;
+    hasFetched.current = true;
+    setLoading(true);
+    setError(null);
+    const fetchReports = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('saved_reports')
+          .select('*')
+          .eq('user_id', Number(user.id))
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setReports(data || []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch sales intelligence reports.');
+        console.error('Failed to fetch reports:', err);
+      } finally {
+        setLoading(false);
       }
-    ]);
-  }, []);
+    };
+    fetchReports();
+  }, [user]);
 
   return (
     <Card className="w-full">
@@ -119,29 +107,37 @@ const SalesIntelligence = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {reports.map((report) => (
-                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
-                      <Calendar className="h-5 w-5 text-gray-400" />
+            {loading ? (
+              <div className="py-8 text-center text-slate-400">Loading reports...</div>
+            ) : error ? (
+              <div className="py-8 text-center text-red-500">{error}</div>
+            ) : reports.length === 0 ? (
+              <EmptyState message="No sales intelligence reports found. Run an analysis first." />
+            ) : (
+              <div className="space-y-4">
+                {reports.map((report) => (
+                  <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <Calendar className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{report.title}</h3>
+                        <p className="text-sm text-gray-500">{report.type} • {report.date}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium">{report.title}</h3>
-                      <p className="text-sm text-gray-500">{report.type} • {report.date}</p>
+                    <div className="flex items-center space-x-3">
+                      <Badge variant={report.status === 'Complete' ? 'default' : 'secondary'}>
+                        {report.status}
+                      </Badge>
+                      <Button size="sm" variant="outline">
+                        View Report
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <Badge variant={report.status === 'Complete' ? 'default' : 'secondary'}>
-                      {report.status}
-                    </Badge>
-                    <Button size="sm" variant="outline">
-                      View Report
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
