@@ -30,6 +30,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
   const [retryCount, setRetryCount] = useState(0);
   const lastFetchRef = useRef(0);
   let globalFetchCount = 0;
+  const hasFetched = useRef(false);
 
   const retry = () => setRetryCount((c) => c + 1);
 
@@ -39,8 +40,11 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       setPreloadError(null);
       setDashboardData(null);
+      hasFetched.current = false;
       return;
     }
+    if (hasFetched.current && retryCount === 0) return;
+    hasFetched.current = true;
     let cancelled = false;
     setLoading(true);
     setPreloadError(null);
