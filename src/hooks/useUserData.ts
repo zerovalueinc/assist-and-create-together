@@ -1,19 +1,24 @@
-
 import { useAuth } from '@/context/AuthContext';
 
 export const useUserData = () => {
   const { user, profile } = useAuth();
   
+  // Helper to capitalize first letter
+  const capitalize = (str?: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
+
+  const firstName = capitalize(profile?.first_name) || '';
+  const lastName = capitalize(profile?.last_name) || '';
+
   return {
     email: user?.email || '',
-    firstName: profile?.first_name || '',
-    lastName: profile?.last_name || '',
+    firstName,
+    lastName,
     company: profile?.company || '',
-    fullName: profile?.first_name && profile?.last_name 
-      ? `${profile.first_name} ${profile.last_name}`
+    fullName: firstName && lastName
+      ? `${firstName} ${lastName}`
       : user?.email || '',
-    initials: profile?.first_name && profile?.last_name
-      ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
+    initials: firstName && lastName
+      ? `${firstName[0]}${lastName[0]}`.toUpperCase()
       : user?.email?.[0]?.toUpperCase() || 'U'
   };
 };

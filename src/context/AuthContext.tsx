@@ -214,6 +214,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(null);
       setUser(null);
       setProfile(null);
+      // Force reload to clear all cached state/UI
+      window.location.reload();
     } catch (error: any) {
       if (error?.name === 'AuthSessionMissingError') {
         toast({
@@ -223,6 +225,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setSession(null);
         setUser(null);
         setProfile(null);
+        window.location.reload();
       } else {
         toast({
           title: "Sign Out Failed",
