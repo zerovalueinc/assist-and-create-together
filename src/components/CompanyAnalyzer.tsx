@@ -48,8 +48,16 @@ const CompanyAnalyzer = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    if (!user?.access_token) return; // Guard: don't submit if not logged in
-    console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session });
+    console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session, isLoading });
+    if (!session?.access_token) {
+      toast({
+        title: "Auth Error",
+        description: "No access token found. Please log in again.",
+        variant: "destructive",
+      });
+      console.error('[CompanyAnalyzer] No access token found', { user, session });
+      return;
+    }
     if (!url.trim()) {
       toast({
         title: "Error",
@@ -59,7 +67,6 @@ const CompanyAnalyzer = () => {
       return;
     }
     const normalizedUrl = normalizeUrl(url);
-    setUrl(normalizedUrl);
 
     setAnalysis(null);
 
@@ -67,12 +74,12 @@ const CompanyAnalyzer = () => {
       console.log('=== Starting Company Analysis ===');
       console.log('URL:', normalizedUrl);
       console.log('User ID:', user?.id);
-      console.log('Session token available:', !!user?.access_token);
+      console.log('Session token available:', !!session?.access_token);
       
       const response = await fetch('https://hbogcsztrryrepudceww.supabase.co/functions/v1/company-analyze', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ url: normalizedUrl, user_id: user?.id })
@@ -167,7 +174,7 @@ const CompanyAnalyzer = () => {
               </label>
               <Input
                 id="url"
-                type="url"
+                type="text"
                 placeholder="e.g., outbound.ai, notion.so, zapier.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
