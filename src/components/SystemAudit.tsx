@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AuditResult } from './audit/types';
 import { AuditResultCard } from './audit/AuditResultCard';
 import { AuditSummary } from './audit/AuditSummary';
+import { NetworkDiagnostics } from './audit/NetworkDiagnostics';
 import { testSupabaseConnection, testEdgeFunctions, testDatabaseTables } from './audit/auditTests';
 
 export function SystemAudit() {
@@ -18,10 +19,22 @@ export function SystemAudit() {
     setResults([]);
     const auditResults: AuditResult[] = [];
 
-    // Run all tests
-    await testSupabaseConnection(auditResults);
-    await testEdgeFunctions(auditResults);
-    await testDatabaseTables(auditResults);
+    console.log('Starting system audit...');
+
+    // Run all tests with better error handling
+    try {
+      await testSupabaseConnection(auditResults);
+      await testEdgeFunctions(auditResults);
+      await testDatabaseTables(auditResults);
+    } catch (error) {
+      console.error('Audit failed with error:', error);
+      auditResults.push({
+        component: 'System Audit',
+        status: 'fail',
+        message: 'Audit process failed',
+        details: [error instanceof Error ? error.message : 'Unknown error']
+      });
+    }
 
     setResults(auditResults);
     setIsRunning(false);
@@ -30,6 +43,8 @@ export function SystemAudit() {
     const passed = auditResults.filter(r => r.status === 'pass').length;
     const failed = auditResults.filter(r => r.status === 'fail').length;
     const warnings = auditResults.filter(r => r.status === 'warning').length;
+    
+    console.log(`Audit completed: ${passed} passed, ${warnings} warnings, ${failed} failed`);
     
     toast({
       title: "Audit Complete",
@@ -48,6 +63,8 @@ export function SystemAudit() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <NetworkDiagnostics />
+          
           <Button 
             onClick={runAudit} 
             disabled={isRunning}
