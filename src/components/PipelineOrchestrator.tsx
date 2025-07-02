@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,7 +60,6 @@ export default function PipelineOrchestrator() {
       if (error) {
         console.error('Pipeline start error:', error);
         
-        // Check if it's an API key related error
         if (error.message?.includes('API key') || error.message?.includes('configuration')) {
           setShowApiSetup(true);
           toast({
@@ -74,7 +74,7 @@ export default function PipelineOrchestrator() {
       }
 
       if (data.success) {
-        setPipelineState({
+        const newPipelineState: PipelineState = {
           id: data.pipelineId,
           status: data.status,
           currentPhase: 'icp_generation',
@@ -83,9 +83,9 @@ export default function PipelineOrchestrator() {
           contactsFound: 0,
           emailsGenerated: 0,
           updatedAt: new Date().toISOString()
-        });
+        };
         
-        // Start polling for status updates
+        setPipelineState(newPipelineState);
         pollPipelineStatus(data.pipelineId);
         
         toast({

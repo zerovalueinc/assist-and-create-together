@@ -25,191 +25,13 @@ export function SystemAudit() {
     const auditResults: AuditResult[] = [];
 
     // 1. Test Supabase Connection
-    try {
-      const { data, error } = await supabase.from('profiles').select('count').limit(1);
-      auditResults.push({
-        component: 'Supabase Connection',
-        status: error ? 'fail' : 'pass',
-        message: error ? `Connection failed: ${error.message}` : 'Connection successful',
-        details: error ? [error.hint || ''] : ['Database accessible']
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Supabase Connection',
-        status: 'fail',
-        message: 'Connection error',
-        details: [String(err)]
-      });
-    }
-
-    // 2. Test Pipeline Orchestrator Edge Function
-    try {
-      const { data, error } = await supabase.functions.invoke('pipeline-orchestrator', {
-        body: { action: 'status', pipelineId: 'test' }
-      });
-      auditResults.push({
-        component: 'Pipeline Orchestrator',
-        status: error && !error.message?.includes('Pipeline not found') ? 'fail' : 'pass',
-        message: error && !error.message?.includes('Pipeline not found') ? 
-          `Function error: ${error.message}` : 'Function responding correctly',
-        details: ['Edge function deployed and accessible']
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Pipeline Orchestrator',
-        status: 'fail',
-        message: 'Edge function not accessible',
-        details: [String(err)]
-      });
-    }
-
-    // 3. Test GTM Generate Function
-    try {
-      const { data, error } = await supabase.functions.invoke('gtm-generate', {
-        body: { websiteUrl: 'https://example.com' }
-      });
-      auditResults.push({
-        component: 'GTM Generator',
-        status: error && !error.message?.includes('API key') ? 'fail' : 
-                error?.message?.includes('API key') ? 'warning' : 'pass',
-        message: error?.message?.includes('API key') ? 
-          'Function works but needs API key configuration' :
-          error ? `Function error: ${error.message}` : 'Function operational',
-        details: error?.message?.includes('API key') ? 
-          ['Configure OPENROUTER_API_KEY in Supabase secrets'] : []
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'GTM Generator',
-        status: 'fail',
-        message: 'Edge function error',
-        details: [String(err)]
-      });
-    }
-
-    // 4. Test Company Discovery Function
-    try {
-      const { data, error } = await supabase.functions.invoke('company-discovery', {
-        body: { icpData: { firmographics: { industry: 'Technology' } }, batchSize: 1 }
-      });
-      auditResults.push({
-        component: 'Company Discovery',
-        status: error && !error.message?.includes('API key') ? 'fail' : 
-                error?.message?.includes('API key') ? 'warning' : 'pass',
-        message: error?.message?.includes('API key') ? 
-          'Function works but needs Apollo API key' :
-          error ? `Function error: ${error.message}` : 'Function operational',
-        details: error?.message?.includes('API key') ? 
-          ['Configure APOLLO_API_KEY in Supabase secrets'] : []
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Company Discovery',
-        status: 'fail',
-        message: 'Edge function error',
-        details: [String(err)]
-      });
-    }
-
-    // 5. Test Contact Discovery Function
-    try {
-      const { data, error } = await supabase.functions.invoke('contact-discovery', {
-        body: { companies: [{ name: 'Test', domain: 'test.com' }], targetPersonas: [] }
-      });
-      auditResults.push({
-        component: 'Contact Discovery',
-        status: error && !error.message?.includes('API key') ? 'fail' : 
-                error?.message?.includes('API key') ? 'warning' : 'pass',
-        message: error?.message?.includes('API key') ? 
-          'Function works but needs Apollo API key' :
-          error ? `Function error: ${error.message}` : 'Function operational',
-        details: error?.message?.includes('API key') ? 
-          ['Configure APOLLO_API_KEY in Supabase secrets'] : []
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Contact Discovery',
-        status: 'fail',
-        message: 'Edge function error',
-        details: [String(err)]
-      });
-    }
-
-    // 6. Test Email Personalization Function
-    try {
-      const { data, error } = await supabase.functions.invoke('email-personalization', {
-        body: { contacts: [], icpData: {} }
-      });
-      auditResults.push({
-        component: 'Email Personalization',
-        status: error && !error.message?.includes('API key') ? 'fail' : 
-                error?.message?.includes('API key') ? 'warning' : 'pass',
-        message: error?.message?.includes('API key') ? 
-          'Function works but needs OpenRouter API key' :
-          error ? `Function error: ${error.message}` : 'Function operational',
-        details: error?.message?.includes('API key') ? 
-          ['Configure OPENROUTER_API_KEY in Supabase secrets'] : []
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Email Personalization',
-        status: 'fail',
-        message: 'Edge function error',
-        details: [String(err)]
-      });
-    }
-
-    // 7. Check Database Tables - using explicit table names instead of dynamic strings
-    try {
-      const { data, error } = await supabase.from('profiles').select('*').limit(1);
-      auditResults.push({
-        component: 'Database Table: profiles',
-        status: error ? 'fail' : 'pass',
-        message: error ? `Table error: ${error.message}` : 'Table accessible',
-        details: error ? [] : ['Table structure validated']
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Database Table: profiles',
-        status: 'fail',
-        message: 'Table access error',
-        details: [String(err)]
-      });
-    }
-
-    try {
-      const { data, error } = await supabase.from('pipeline_states').select('*').limit(1);
-      auditResults.push({
-        component: 'Database Table: pipeline_states',
-        status: error ? 'fail' : 'pass',
-        message: error ? `Table error: ${error.message}` : 'Table accessible',
-        details: error ? [] : ['Table structure validated']
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Database Table: pipeline_states',
-        status: 'fail',
-        message: 'Table access error',
-        details: [String(err)]
-      });
-    }
-
-    try {
-      const { data, error } = await supabase.from('pipeline_results').select('*').limit(1);
-      auditResults.push({
-        component: 'Database Table: pipeline_results',
-        status: error ? 'fail' : 'pass',
-        message: error ? `Table error: ${error.message}` : 'Table accessible',
-        details: error ? [] : ['Table structure validated']
-      });
-    } catch (err) {
-      auditResults.push({
-        component: 'Database Table: pipeline_results',
-        status: 'fail',
-        message: 'Table access error',
-        details: [String(err)]
-      });
-    }
+    await testSupabaseConnection(auditResults);
+    
+    // 2. Test Edge Functions
+    await testEdgeFunctions(auditResults);
+    
+    // 3. Test Database Tables
+    await testDatabaseTables(auditResults);
 
     setResults(auditResults);
     setIsRunning(false);
@@ -224,6 +46,108 @@ export function SystemAudit() {
       description: `${passed} passed, ${warnings} warnings, ${failed} failed`,
       variant: failed > 0 ? "destructive" : warnings > 0 ? "default" : "default"
     });
+  };
+
+  const testSupabaseConnection = async (results: AuditResult[]) => {
+    try {
+      const { data, error } = await supabase.from('profiles').select('count').limit(1);
+      results.push({
+        component: 'Supabase Connection',
+        status: error ? 'fail' : 'pass',
+        message: error ? `Connection failed: ${error.message}` : 'Connection successful',
+        details: error ? [error.hint || ''] : ['Database accessible']
+      });
+    } catch (err) {
+      results.push({
+        component: 'Supabase Connection',
+        status: 'fail',
+        message: 'Connection error',
+        details: [String(err)]
+      });
+    }
+  };
+
+  const testEdgeFunctions = async (results: AuditResult[]) => {
+    const functions = [
+      {
+        name: 'Pipeline Orchestrator',
+        functionName: 'pipeline-orchestrator',
+        testPayload: { action: 'status', pipelineId: 'test' }
+      },
+      {
+        name: 'GTM Generator',
+        functionName: 'gtm-generate',
+        testPayload: { websiteUrl: 'https://example.com' }
+      },
+      {
+        name: 'Company Discovery',
+        functionName: 'company-discovery',
+        testPayload: { icpData: { firmographics: { industry: 'Technology' } }, batchSize: 1 }
+      },
+      {
+        name: 'Contact Discovery',
+        functionName: 'contact-discovery',
+        testPayload: { companies: [{ name: 'Test', domain: 'test.com' }], targetPersonas: [] }
+      },
+      {
+        name: 'Email Personalization',
+        functionName: 'email-personalization',
+        testPayload: { contacts: [], icpData: {} }
+      }
+    ];
+
+    for (const func of functions) {
+      try {
+        const { data, error } = await supabase.functions.invoke(func.functionName, {
+          body: func.testPayload
+        });
+        
+        const isApiKeyError = error?.message?.includes('API key');
+        const isPipelineNotFound = error?.message?.includes('Pipeline not found');
+        
+        results.push({
+          component: func.name,
+          status: error && !isApiKeyError && !isPipelineNotFound ? 'fail' : 
+                  isApiKeyError ? 'warning' : 'pass',
+          message: isApiKeyError ? 
+            'Function works but needs API key configuration' :
+            isPipelineNotFound ? 'Function responding correctly' :
+            error ? `Function error: ${error.message}` : 'Function operational',
+          details: isApiKeyError ? 
+            ['Configure API keys in Supabase Edge Function Secrets'] : []
+        });
+      } catch (err) {
+        results.push({
+          component: func.name,
+          status: 'fail',
+          message: 'Edge function error',
+          details: [String(err)]
+        });
+      }
+    }
+  };
+
+  const testDatabaseTables = async (results: AuditResult[]) => {
+    const tables = ['profiles', 'pipeline_states', 'pipeline_results'] as const;
+    
+    for (const tableName of tables) {
+      try {
+        const { data, error } = await supabase.from(tableName).select('*').limit(1);
+        results.push({
+          component: `Database Table: ${tableName}`,
+          status: error ? 'fail' : 'pass',
+          message: error ? `Table error: ${error.message}` : 'Table accessible',
+          details: error ? [] : ['Table structure validated']
+        });
+      } catch (err) {
+        results.push({
+          component: `Database Table: ${tableName}`,
+          status: 'fail',
+          message: 'Table access error',
+          details: [String(err)]
+        });
+      }
+    }
   };
 
   const getStatusIcon = (status: string) => {
