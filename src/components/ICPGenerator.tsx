@@ -82,13 +82,16 @@ const ICPGenerator = () => {
 
   // Fetch analyzed companies (CompanyAnalyzer reports)
   useEffect(() => {
+    let cancelled = false;
     const fetchCompanies = async () => {
+      setLoading(true);
       if (!session?.access_token) {
         toast({
           title: "Auth Error",
           description: "No access token found. Please log in again.",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
       try {
@@ -96,21 +99,40 @@ const ICPGenerator = () => {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
-        if (data.success) {
-          setCompanies(data.reports.map((r: any) => ({
-            ...r,
-            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-          })));
+        if (!cancelled) {
+          if (data.success) {
+            setCompanies(data.reports.map((r: any) => ({
+              ...r,
+              companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+            })));
+          } else {
+            toast({
+              title: "Error fetching companies",
+              description: data.error || "Failed to fetch company analyses.",
+              variant: "destructive",
+            });
+          }
         }
-      } catch (err) {
-        console.error('Error fetching companies:', err);
+      } catch (err: any) {
+        if (!cancelled) {
+          toast({
+            title: "Error fetching companies",
+            description: err.message || "Failed to fetch company analyses.",
+            variant: "destructive",
+          });
+          console.error('Error fetching companies:', err);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
     fetchCompanies();
+    return () => { cancelled = true; };
   }, [session?.access_token]);
 
   // Fetch recent/generated ICPs
   useEffect(() => {
+    let cancelled = false;
     const fetchICPs = async () => {
       if (!session?.access_token) {
         toast({
@@ -125,17 +147,35 @@ const ICPGenerator = () => {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
-        if (data.success) setRecentICPs(data.icps);
-        else console.error('Failed to fetch ICPs:', data);
-      } catch (err) {
-        console.error('Error fetching ICPs:', err);
+        if (!cancelled) {
+          if (data.success) setRecentICPs(data.icps);
+          else {
+            toast({
+              title: "Error fetching ICPs",
+              description: data.error || "Failed to fetch ICPs.",
+              variant: "destructive",
+            });
+            console.error('Failed to fetch ICPs:', data);
+          }
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          toast({
+            title: "Error fetching ICPs",
+            description: err.message || "Failed to fetch ICPs.",
+            variant: "destructive",
+          });
+          console.error('Error fetching ICPs:', err);
+        }
       }
     };
     fetchICPs();
-  }, [session?.access_token, icp]);
+    return () => { cancelled = true; };
+  }, [session?.access_token]);
 
   // Fetch recent playbooks
   useEffect(() => {
+    let cancelled = false;
     const fetchPlaybooks = async () => {
       if (!session?.access_token) {
         toast({
@@ -150,13 +190,31 @@ const ICPGenerator = () => {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
-        if (data.success) setRecentPlaybooks(data.playbooks);
-      } catch (err) {
-        console.error('Error fetching playbooks:', err);
+        if (!cancelled) {
+          if (data.success) setRecentPlaybooks(data.playbooks);
+          else {
+            toast({
+              title: "Error fetching playbooks",
+              description: data.error || "Failed to fetch playbooks.",
+              variant: "destructive",
+            });
+            console.error('Failed to fetch playbooks:', data);
+          }
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          toast({
+            title: "Error fetching playbooks",
+            description: err.message || "Failed to fetch playbooks.",
+            variant: "destructive",
+          });
+          console.error('Error fetching playbooks:', err);
+        }
       }
     };
     fetchPlaybooks();
-  }, [session?.access_token, icp]);
+    return () => { cancelled = true; };
+  }, [session?.access_token]);
 
   // Auto-load saved playbooks
   useEffect(() => {

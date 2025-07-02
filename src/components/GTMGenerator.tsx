@@ -21,7 +21,9 @@ const GTMGenerator = () => {
 
   // Fetch available company analyses for reuse
   useEffect(() => {
+    let cancelled = false;
     const fetchAnalyses = async () => {
+      setLoading(true);
       if (!user) return;
       try {
         const { data, error } = await supabase
@@ -30,24 +32,40 @@ const GTMGenerator = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching analyses:', error);
-        } else {
-          // Normalize field names for pills/selector
-          const normalized = (data || []).map((row: any) => ({
-            ...row,
-            companyName: row.companyName || row.company_name || '',
-            companyUrl: row.companyUrl || row.website || row.company_url || '',
-            createdAt: row.createdAt || row.created_at || '',
-          }));
-          setAvailableAnalyses(normalized);
+        if (!cancelled) {
+          if (error) {
+            toast({
+              title: "Error fetching analyses",
+              description: error.message || "Failed to fetch company analyses.",
+              variant: "destructive",
+            });
+            console.error('Error fetching analyses:', error);
+          } else {
+            // Normalize field names for pills/selector
+            const normalized = (data || []).map((row: any) => ({
+              ...row,
+              companyName: row.companyName || row.company_name || '',
+              companyUrl: row.companyUrl || row.website || row.company_url || '',
+              createdAt: row.createdAt || row.created_at || '',
+            }));
+            setAvailableAnalyses(normalized);
+          }
         }
-      } catch (err) {
-        console.error('Error fetching analyses:', err);
+      } catch (err: any) {
+        if (!cancelled) {
+          toast({
+            title: "Error fetching analyses",
+            description: err.message || "Failed to fetch company analyses.",
+            variant: "destructive",
+          });
+          console.error('Error fetching analyses:', err);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
-
     fetchAnalyses();
+    return () => { cancelled = true; };
   }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -22,6 +22,7 @@ export default function YourWork() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
       setAnalyzeLoading(true);
       setAnalyzeError(null);
@@ -32,12 +33,17 @@ export default function YourWork() {
           .eq('user_id', session?.user?.id)
           .order('created_at', { ascending: false })
           .limit(50);
-        if (error) throw error;
-        setAnalyzeWork(data || []);
-      } catch (err) {
-        setAnalyzeError('Failed to load Company Analyzer reports.');
+        if (!cancelled) {
+          if (error) throw error;
+          setAnalyzeWork(data || []);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setAnalyzeError(err.message || 'Failed to load Company Analyzer reports.');
+          console.error('Error fetching company analyzer reports:', err);
+        }
       } finally {
-        setAnalyzeLoading(false);
+        if (!cancelled) setAnalyzeLoading(false);
       }
     };
     const fetchGTM = async () => {
@@ -56,17 +62,21 @@ export default function YourWork() {
         const playbooks = playbookRes.ok ? (await playbookRes.json()).playbooks || [] : [];
         // Merge and dedupe by id (if needed)
         const allGTM = [...icps, ...playbooks].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-        setGtmWork(allGTM);
-      } catch (err) {
-        setGtmError('Failed to load GTM Generator reports.');
+        if (!cancelled) setGtmWork(allGTM);
+      } catch (err: any) {
+        if (!cancelled) {
+          setGtmError(err.message || 'Failed to load GTM Generator reports.');
+          console.error('Error fetching GTM Generator reports:', err);
+        }
       } finally {
-        setGtmLoading(false);
+        if (!cancelled) setGtmLoading(false);
       }
     };
     if (session?.access_token) {
       fetchCompanyAnalyzer();
       fetchGTM();
     }
+    return () => { cancelled = true; };
   }, [session?.access_token]);
 
   return (
