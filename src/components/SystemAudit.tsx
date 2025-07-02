@@ -159,25 +159,56 @@ export function SystemAudit() {
       });
     }
 
-    // 7. Check Database Tables
-    const requiredTables = ['profiles', 'pipeline_states', 'pipeline_results'];
-    for (const table of requiredTables) {
-      try {
-        const { data, error } = await supabase.from(table).select('*').limit(1);
-        auditResults.push({
-          component: `Database Table: ${table}`,
-          status: error ? 'fail' : 'pass',
-          message: error ? `Table error: ${error.message}` : 'Table accessible',
-          details: error ? [] : ['Table structure validated']
-        });
-      } catch (err) {
-        auditResults.push({
-          component: `Database Table: ${table}`,
-          status: 'fail',
-          message: 'Table access error',
-          details: [String(err)]
-        });
-      }
+    // 7. Check Database Tables - using explicit table names instead of dynamic strings
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').limit(1);
+      auditResults.push({
+        component: 'Database Table: profiles',
+        status: error ? 'fail' : 'pass',
+        message: error ? `Table error: ${error.message}` : 'Table accessible',
+        details: error ? [] : ['Table structure validated']
+      });
+    } catch (err) {
+      auditResults.push({
+        component: 'Database Table: profiles',
+        status: 'fail',
+        message: 'Table access error',
+        details: [String(err)]
+      });
+    }
+
+    try {
+      const { data, error } = await supabase.from('pipeline_states').select('*').limit(1);
+      auditResults.push({
+        component: 'Database Table: pipeline_states',
+        status: error ? 'fail' : 'pass',
+        message: error ? `Table error: ${error.message}` : 'Table accessible',
+        details: error ? [] : ['Table structure validated']
+      });
+    } catch (err) {
+      auditResults.push({
+        component: 'Database Table: pipeline_states',
+        status: 'fail',
+        message: 'Table access error',
+        details: [String(err)]
+      });
+    }
+
+    try {
+      const { data, error } = await supabase.from('pipeline_results').select('*').limit(1);
+      auditResults.push({
+        component: 'Database Table: pipeline_results',
+        status: error ? 'fail' : 'pass',
+        message: error ? `Table error: ${error.message}` : 'Table accessible',
+        details: error ? [] : ['Table structure validated']
+      });
+    } catch (err) {
+      auditResults.push({
+        component: 'Database Table: pipeline_results',
+        status: 'fail',
+        message: 'Table access error',
+        details: [String(err)]
+      });
     }
 
     setResults(auditResults);
