@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, UserPlus, Link, Key, Settings as SettingsIcon, Mail } from 'lucide-react';
 import { useState } from 'react';
+import { useUser } from '../hooks/useUserData';
 
 const MOCK_TEAMMATES = [
   { name: 'Alice Johnson', email: 'alice@acme.com', role: 'Owner', status: 'Active' },
@@ -26,9 +27,17 @@ const MOCK_API_KEYS = [
 ];
 
 export default function Workspace() {
+  const { user, isLoading } = useUser();
   const [inviteEmail, setInviteEmail] = useState('');
   const [apiKeys, setApiKeys] = useState(MOCK_API_KEYS);
   const [newKeys, setNewKeys] = useState({ OpenRouter: '', Apollo: '', Instantly: '' });
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100"><span>Loading user session...</span></div>;
+  }
+  if (!user) {
+    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100"><span>Please log in to access your workspace.</span></div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">

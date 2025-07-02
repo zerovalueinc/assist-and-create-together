@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
@@ -13,7 +13,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
 
 export default function YourWork() {
   const { session } = useAuth();
-  const user = useUser();
+  const { user, isLoading } = useUser();
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
@@ -23,12 +23,8 @@ export default function YourWork() {
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
 
-  const hasFetchedAnalyze = useRef(false);
-  const hasFetchedGTM = useRef(false);
-  const lastFetchRef = useRef(0);
-
   useEffect(() => {
-    if (!user) return;
+    if (isLoading || !user?.id) return;
     // Show cached data instantly
     const cachedAnalyze = getCache<any[]>('yourwork_analyze', []);
     const cachedGTM = getCache<any[]>('yourwork_gtm', []);
@@ -39,19 +35,6 @@ export default function YourWork() {
 
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
-      const now = Date.now();
-      if (!user.id) {
-        console.error('[YourWork] Blocked fetch: invalid user', { user });
-        return;
-      }
-      if (now - lastFetchRef.current < 1000) {
-        console.warn('[YourWork] Blocked fetch: too frequent');
-        return;
-      }
-      lastFetchRef.current = now;
-      console.log('[YourWork] Fetching analyze work for user', { user });
-      if (hasFetchedAnalyze.current) return;
-      hasFetchedAnalyze.current = true;
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
@@ -82,8 +65,6 @@ export default function YourWork() {
       }
     };
     const fetchGTM = async () => {
-      if (hasFetchedGTM.current) return;
-      hasFetchedGTM.current = true;
       setGtmLoading(true);
       setGtmError(null);
       try {
@@ -107,12 +88,17 @@ export default function YourWork() {
         setGtmLoading(false);
       }
     };
-    if (user.access_token) {
-      fetchCompanyAnalyzer();
-      fetchGTM();
-    }
+    fetchCompanyAnalyzer();
+    fetchGTM();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [isLoading, user?.id]);
+
+  if (isLoading) {
+    return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Loading user session...</span></div>;
+  }
+  if (!user) {
+    return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Please log in to view your work.</span></div>;
+  }
 
   return (
     <div className="min-h-[80vh] w-full flex flex-col items-center justify-start bg-slate-50 py-12">
