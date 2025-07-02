@@ -33,7 +33,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || !session) {
+    if (!user || !user.id || !session) {
       setLoading(false);
       setPreloadError(null);
       setDashboardData(null);
@@ -45,6 +45,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
     setDashboardData(null);
 
     const fetchAll = async () => {
+      if (!user || !user.id) return;
       try {
         const [companyAnalyzer, icps, playbooks, salesintel] = await Promise.all([
           supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
