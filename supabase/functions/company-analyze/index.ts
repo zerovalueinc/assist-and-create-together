@@ -137,9 +137,11 @@ serve(async (req) => {
 
     console.log('User authenticated successfully:', user.id);
 
-    // Use the modular LLMCompanyAnalyzer agent for dynamic analysis
+    // Normalize company URL
+    const normalizedUrl = normalizeUrl(companyUrl);
+    // Use normalizedUrl for analysis and saving
     const analyzer = new LLMCompanyAnalyzer();
-    const finalAnalysis = await analyzer.analyzeCompany(companyUrl);
+    const finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
     console.log('Analysis generated for:', finalAnalysis.companyName);
 
     // Sanitize and validate before insert
@@ -186,7 +188,7 @@ serve(async (req) => {
       competitive_landscape: JSON.stringify(sanitizedAnalysis.competitiveLandscape),
       go_to_market_strategy: sanitizedAnalysis.goToMarketStrategy,
       research_summary: sanitizedAnalysis.researchSummary,
-      website: sanitizedAnalysis.website,
+      website: normalizedUrl,
       created_at: new Date().toISOString()
     };
     console.log('Company Analyzer output insert object:', JSON.stringify(outputInsert));
@@ -296,4 +298,12 @@ function extractDomain(url: string): string {
     const cleaned = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
     return cleaned.split('.')[0] || url;
   }
+}
+
+function normalizeUrl(input: string): string {
+  let url = input.trim().toLowerCase();
+  url = url.replace(/^https?:\/\//, ''); // Remove protocol
+  url = url.replace(/^www\./, ''); // Remove www.
+  url = url.replace(/\/$/, ''); // Remove trailing slash
+  return `https://${url}`;
 }

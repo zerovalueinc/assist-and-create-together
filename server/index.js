@@ -22,7 +22,6 @@ const enrich_1 = require("./routes/enrich");
 const email_1 = require("./routes/email");
 const upload_1 = require("./routes/upload");
 const salesIntelligence_1 = __importDefault(require("./routes/salesIntelligence"));
-const init_1 = require("./database/init");
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -68,8 +67,8 @@ app.use('*', (req, res) => {
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield (0, init_1.initDatabase)();
-            console.log('✅ Database initialized successfully');
+            // Supabase is now used for all persistence. No local DB init required.
+            console.log('✅ Supabase is now the primary database. No local DB init.');
             app.listen(PORT, () => {
                 console.log(`🚀 PersonaOps API server running on http://localhost:${PORT}`);
                 console.log(`📊 Health check: http://localhost:${PORT}/health`);

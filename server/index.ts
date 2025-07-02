@@ -10,7 +10,6 @@ import { uploadRoutes } from './routes/upload';
 import salesIntelligenceRoutes from './routes/salesIntelligence';
 import companyAnalyzeRoutes from './routes/companyAnalyze';
 import authRoutes from './routes/auth';
-import { initDatabase, runQuery, getCachedResult } from './database/init';
 import workflowRoutes from './routes/workflow';
 
 // Load environment variables
@@ -49,12 +48,14 @@ app.use(express.urlencoded({ extended: true }));
 // Enhanced health check endpoint with system status
 app.get('/health', async (req, res) => {
   try {
-    // Check database connection
-    const dbStatus = await checkDatabaseHealth();
-    
+    // Check Supabase connection
+    const { data, error } = await require('../src/integrations/supabase/client').supabase
+      .from('profiles')
+      .select('id')
+      .limit(1);
+    const dbStatus = error ? { status: 'error', message: error.message } : { status: 'connected' };
     // Check API key availability
     const apiKeysStatus = checkAPIKeys();
-    
     res.json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
@@ -108,15 +109,17 @@ app.get('/api/status', async (req, res) => {
 app.get('/health/detailed', async (req, res) => {
   try {
     const startTime = Date.now();
-    
-    // Test database connectivity
+    // Test Supabase connectivity
     let dbStatus = 'unknown';
     let dbLatency = 0;
     try {
       const dbStart = Date.now();
-      await runQuery('SELECT 1 as test');
+      const { error } = await require('../src/integrations/supabase/client').supabase
+        .from('profiles')
+        .select('id')
+        .limit(1);
       dbLatency = Date.now() - dbStart;
-      dbStatus = 'connected';
+      dbStatus = error ? 'error' : 'connected';
     } catch (error) {
       dbStatus = 'error';
     }
@@ -199,7 +202,7 @@ app.get('/health/detailed', async (req, res) => {
       database: {
         status: dbStatus,
         latency: dbLatency,
-        message: dbStatus === 'connected' ? 'Database is healthy' : 'Database connection failed'
+        message: dbStatus === 'connected' ? 'Supabase is healthy' : 'Supabase connection failed'
       },
       apis: apiTests,
       performance: {
@@ -224,20 +227,27 @@ app.post('/test/system', async (req, res) => {
       database: { passed: false, details: '' },
       apis: { passed: false, details: '' },
       agents: { passed: false, details: '' },
-      cache: { passed: false, details: '' },
+      cache: { passed: false, details: 'Cache tests removed (legacy)' },
       overall: false
     };
-    
     console.log('🧪 Starting comprehensive system test...');
-    
-    // Test 1: Database operations
+    // Test 1: Supabase database operations
     try {
-      await runQuery('SELECT COUNT(*) as count FROM icps');
-      await runQuery('SELECT COUNT(*) as count FROM leads');
-      await runQuery('SELECT COUNT(*) as count FROM sales_intelligence_reports');
-      testResults.database = { passed: true, details: 'All database tables accessible' };
+      const { error: err1 } = await require('../src/integrations/supabase/client').supabase
+        .from('company_analyzer_outputs')
+        .select('id')
+        .limit(1);
+      const { error: err2 } = await require('../src/integrations/supabase/client').supabase
+        .from('icps')
+        .select('id')
+        .limit(1);
+      if (!err1 && !err2) {
+        testResults.database = { passed: true, details: 'Supabase tables accessible' };
+      } else {
+        testResults.database = { passed: false, details: `Supabase error: ${err1?.message || err2?.message}` };
+      }
     } catch (error) {
-      testResults.database = { passed: false, details: `Database test failed: ${error}` };
+      testResults.database = { passed: false, details: `Supabase test failed: ${error}` };
     }
     
     // Test 2: API connectivity
@@ -338,72 +348,23 @@ app.post('/test/performance', async (req, res) => {
       apollo: { calls: 0, avgLatency: 0 },
       cache: { operations: 0, avgLatency: 0 }
     };
-    
     console.log('⚡ Starting performance benchmarks...');
-    
-    // Database benchmark
+    // Supabase database benchmark
     const dbStart = Date.now();
     for (let i = 0; i < 10; i++) {
-      await runQuery('SELECT COUNT(*) as count FROM icps');
+      await require('../src/integrations/supabase/client').supabase
+        .from('icps')
+        .select('id')
+        .limit(1);
     }
     const dbEnd = Date.now();
-    benchmarks.database = {
-      operations: 10,
-      avgLatency: (dbEnd - dbStart) / 10
-    };
-    
-    // Cache benchmark
-    const cacheStart = Date.now();
-    for (let i = 0; i < 20; i++) {
-      await getCachedResult(`benchmark-${i}`, false);
-    }
-    const cacheEnd = Date.now();
-    benchmarks.cache = {
-      operations: 20,
-      avgLatency: (cacheEnd - cacheStart) / 20
-    };
-    
-    // Claude benchmark (limited to 1 call to avoid costs)
-    try {
-      const { callClaude3 } = await import('../agents/claude');
-      const claudeStart = Date.now();
-      await callClaude3('Test response', 1);
-      const claudeEnd = Date.now();
-      benchmarks.claude = {
-        calls: 1,
-        avgLatency: claudeEnd - claudeStart
-      };
-    } catch (error) {
-      benchmarks.claude = { calls: 0, avgLatency: 0 };
-    }
-    
-    // Apollo benchmark (limited to 1 call to avoid rate limits)
-    try {
-      const { searchApolloLeads } = await import('../agents/apolloAgent');
-      const apolloStart = Date.now();
-      await searchApolloLeads({ industry: 'Technology' }, 1);
-      const apolloEnd = Date.now();
-      benchmarks.apollo = {
-        calls: 1,
-        avgLatency: apolloEnd - apolloStart
-      };
-    } catch (error) {
-      benchmarks.apollo = { calls: 0, avgLatency: 0 };
-    }
-    
-    console.log('✅ Performance benchmarks completed');
-    
+    benchmarks.database = { operations: 10, avgLatency: (dbEnd - dbStart) / 10 };
+    // ... skip cache ...
     res.json({
       success: true,
       benchmarks,
-      timestamp: new Date().toISOString(),
-      summary: {
-        databasePerformance: benchmarks.database.avgLatency < 50 ? 'Excellent' : 'Good',
-        cachePerformance: benchmarks.cache.avgLatency < 10 ? 'Excellent' : 'Good',
-        apiPerformance: 'Limited test due to rate limits'
-      }
+      timestamp: new Date().toISOString()
     });
-    
   } catch (error) {
     console.error('Performance test failed:', error);
     res.status(500).json({
@@ -546,16 +507,7 @@ app.use('*', (req, res) => {
   });
 });
 
-// Helper functions
-async function checkDatabaseHealth(): Promise<any> {
-  try {
-    const { getRow } = await import('./database/init');
-    await getRow('SELECT 1 as health_check');
-    return { status: 'connected', message: 'Database is healthy' };
-  } catch (error) {
-    return { status: 'error', message: 'Database connection failed' };
-  }
-}
+// Supabase is now used for all persistence. No local DB init required.
 
 function checkAPIKeys(): any {
   return {
@@ -596,9 +548,6 @@ async function getDatabaseStats(): Promise<any> {
 async function startServer() {
   try {
     console.log('🔧 Initializing PersonaOps API server...');
-    
-    await initDatabase();
-    console.log('✅ Database initialized successfully');
     
     app.listen(PORT, () => {
       console.log(`🚀 PersonaOps API server running on http://localhost:${PORT}`);

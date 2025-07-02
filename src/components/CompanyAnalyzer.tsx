@@ -11,6 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
 
+function normalizeUrl(input: string): string {
+  let url = input.trim().toLowerCase();
+  url = url.replace(/^https?:\/\//, ''); // Remove protocol
+  url = url.replace(/^www\./, ''); // Remove www.
+  url = url.replace(/\/$/, ''); // Remove trailing slash
+  return `https://${url}`;
+}
+
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const [analysis, setAnalysis] = useState(null);
@@ -89,6 +97,8 @@ const CompanyAnalyzer = () => {
       });
       return;
     }
+    const normalizedUrl = normalizeUrl(url);
+    setUrl(normalizedUrl);
 
     if (!session?.access_token) {
       toast({
@@ -114,7 +124,7 @@ const CompanyAnalyzer = () => {
 
     try {
       console.log('=== Starting Company Analysis ===');
-      console.log('URL:', url);
+      console.log('URL:', normalizedUrl);
       console.log('User ID:', user?.id);
       console.log('Session token available:', !!session?.access_token);
       
@@ -124,7 +134,7 @@ const CompanyAnalyzer = () => {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ url: url.trim(), user_id: user?.id })
+        body: JSON.stringify({ url: normalizedUrl, user_id: user?.id })
       });
       const data = await response.json();
       const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;
