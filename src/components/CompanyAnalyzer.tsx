@@ -39,12 +39,14 @@ const CompanyAnalyzer = () => {
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
   // Use preloaded reports or fallback to cache
-  let reports = preloadData?.companyAnalyzer || [];
-  if (!reports.length) {
-    reports = getCache('yourwork_analyze', []);
+  let initialReports = preloadData?.companyAnalyzer || [];
+  if (!initialReports.length) {
+    initialReports = getCache('yourwork_analyze', []);
   }
+  const [reports, setReports] = useState(initialReports);
   const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -67,9 +69,8 @@ const CompanyAnalyzer = () => {
       return;
     }
     const normalizedUrl = normalizeUrl(url);
-
     setAnalysis(null);
-
+    setIsAnalyzing(true);
     try {
       console.log('=== Starting Company Analysis ===');
       console.log('URL:', normalizedUrl);
@@ -104,6 +105,9 @@ const CompanyAnalyzer = () => {
           isCached: false,
           timestamp: new Date().toISOString()
         });
+        // Prepend new report to reports and update pills/inline
+        setReports(prev => [data.analysis, ...prev]);
+        setSelectedReportId(data.analysis.id || null);
         toast({
           title: "Analysis Complete",
           description: `Successfully analyzed ${data.analysis.companyName}`,
@@ -117,12 +121,13 @@ const CompanyAnalyzer = () => {
       console.error('Error type:', typeof error);
       console.error('Error message:', error.message);
       console.error('Full error:', error);
-      
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze company. Please check the URL and try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -179,17 +184,22 @@ const CompanyAnalyzer = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading}
+                disabled={isLoading || isAnalyzing}
                 className="text-base"
                 autoComplete="off"
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={isLoading || !url.trim()} className="w-full">
+            <Button type="submit" disabled={isLoading || isAnalyzing || !url.trim()} className="w-full">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading user session...
+                </>
+              ) : isAnalyzing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing...
                 </>
               ) : user ? (
                 <>
