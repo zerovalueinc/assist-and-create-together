@@ -41,6 +41,9 @@ pop3_port = 54327
 [functions.company-analyze]
 verify_jwt = false
 
+[functions.gtm-generate]
+verify_jwt = false
+
 [auth]
 enabled = true
 port = 54326
