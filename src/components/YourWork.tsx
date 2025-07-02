@@ -120,13 +120,7 @@ export default function YourWork() {
           </CardHeader>
           {analyzeExpanded && (
             <CardContent className="px-6 pb-6 pt-2">
-              {analyzeLoading ? (
-                <div className="flex flex-col gap-2 py-8">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : analyzeError ? (
+              {analyzeError ? (
                 <div className="py-8 text-center text-red-500">{analyzeError}</div>
               ) : analyzeWork.length === 0 ? (
                 <EmptyState message="No company analysis reports found. Run an analysis first." />
@@ -171,13 +165,7 @@ export default function YourWork() {
           </CardHeader>
           {gtmExpanded && (
             <CardContent className="px-6 pb-6 pt-2">
-              {gtmLoading ? (
-                <div className="flex flex-col gap-2 py-8">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : gtmError ? (
+              {gtmError ? (
                 <div className="py-8 text-center text-red-500">{gtmError}</div>
               ) : gtmWork.length === 0 ? (
                 <EmptyState message="No GTM or ICP reports found. Generate a playbook or ICP first." />

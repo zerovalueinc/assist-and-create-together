@@ -112,9 +112,7 @@ const SalesIntelligence = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="py-8 text-center text-slate-400">Loading reports...</div>
-            ) : error ? (
+            {error ? (
               <div className="py-8 text-center text-red-500">{error}</div>
             ) : reports.length === 0 ? (
               <EmptyState message="No sales intelligence reports found. Run an analysis first." />
