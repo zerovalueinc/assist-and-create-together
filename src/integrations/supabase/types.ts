@@ -22,7 +22,7 @@ export type Database = {
           pain_points: string | null
           persona: string | null
           technologies: string | null
-          user_id: number
+          user_id: string
           valid_use_case: string | null
         }
         Insert: {
@@ -37,7 +37,7 @@ export type Database = {
           pain_points?: string | null
           persona?: string | null
           technologies?: string | null
-          user_id: number
+          user_id: string
           valid_use_case?: string | null
         }
         Update: {
@@ -52,7 +52,7 @@ export type Database = {
           pain_points?: string | null
           persona?: string | null
           technologies?: string | null
-          user_id?: number
+          user_id?: string
           valid_use_case?: string | null
         }
         Relationships: [
@@ -179,7 +179,7 @@ export type Database = {
           icp_id: number | null
           id: number
           url: string | null
-          user_id: number
+          user_id: string
         }
         Insert: {
           company_name?: string | null
@@ -187,7 +187,7 @@ export type Database = {
           icp_id?: number | null
           id?: number
           url?: string | null
-          user_id: number
+          user_id: string
         }
         Update: {
           company_name?: string | null
@@ -195,7 +195,7 @@ export type Database = {
           icp_id?: number | null
           id?: number
           url?: string | null
-          user_id?: number
+          user_id?: string
         }
         Relationships: [
           {
