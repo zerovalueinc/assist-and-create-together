@@ -17,7 +17,7 @@ const CompanyAnalyzer = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { setResearch } = useCompany();
-  const { user, session } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [showICPModal, setShowICPModal] = useState(false);
   const [modalICP, setModalICP] = useState<any>(null);
@@ -170,8 +170,13 @@ const CompanyAnalyzer = () => {
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={loading || !url.trim()} className="w-full">
-              {loading ? (
+            <Button type="submit" disabled={authLoading || loading || !session?.access_token || !url.trim()} className="w-full">
+              {authLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading user session...
+                </>
+              ) : loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Analyzing (5-Phase Research)...
