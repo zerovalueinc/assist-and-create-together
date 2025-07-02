@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, FolderOpen, BarChart3, Users, Zap, Settings, Link2, FileText, Trash2, Eye, Plus, Search } from 'lucide-react';
@@ -8,10 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { useUserData } from '@/hooks/useUserData';
+import { supabase } from '@/integrations/supabase/client';
 import AppHeader from '@/components/ui/AppHeader';
 import YourWork from '@/components/YourWork';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 export default function Workspace() {
   const { user, session } = useAuth();
@@ -34,32 +34,47 @@ export default function Workspace() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch Company Analyzer data
+      if (!user) return;
+
+      // Fetch saved reports (company analyses)
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
-        const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {};
-        const res = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setAnalyzeWork(data.reports || []);
+        const { data: reportsData, error: reportsError } = await supabase
+          .from('saved_reports')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (reportsError) {
+          console.error('Error fetching reports:', reportsError);
+          setAnalyzeError('Failed to load reports.');
+        } else {
+          setAnalyzeWork(reportsData || []);
         }
       } catch (err) {
+        console.error('Error fetching reports:', err);
         setAnalyzeError('Failed to load reports.');
       } finally {
         setAnalyzeLoading(false);
       }
 
-      // Fetch Playbooks data (only from /api/icp/playbooks)
+      // Fetch ICPs (playbooks)
       setPlaybooksLoading(true);
       setPlaybooksError(null);
       try {
-        const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {};
-        const playbookRes = await fetch(`${API_BASE_URL}/api/icp/playbooks`, { headers });
-        const playbooksData = playbookRes.ok ? (await playbookRes.json()) : {};
-        const playbooksArray = playbooksData.playbooks || [];
-        setPlaybooks(playbooksArray);
+        const { data: icpsData, error: icpsError } = await supabase
+          .from('icps')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (icpsError) {
+          console.error('Error fetching ICPs:', icpsError);
+          setPlaybooksError('Failed to load playbooks.');
+        } else {
+          setPlaybooks(icpsData || []);
+        }
       } catch (err) {
+        console.error('Error fetching ICPs:', err);
         setPlaybooksError('Failed to load playbooks.');
       } finally {
         setPlaybooksLoading(false);
@@ -67,14 +82,48 @@ export default function Workspace() {
     };
 
     fetchData();
-  }, [session?.access_token]);
+  }, [user]);
+
+  const handleDeleteReport = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('saved_reports')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting report:', error);
+      } else {
+        setAnalyzeWork(prev => prev.filter(item => item.id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting report:', err);
+    }
+  };
+
+  const handleDeleteICP = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('icps')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting ICP:', error);
+      } else {
+        setPlaybooks(prev => prev.filter(item => item.id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting ICP:', err);
+    }
+  };
 
   const filteredAnalyzeWork = analyzeWork.filter(item => 
-    (item.companyName || item.company || item.title || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (item.company_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredPlaybooks = playbooks.filter(item => 
-    (item.companyName || item.company || item.title || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (item.industry || item.persona || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -199,10 +248,10 @@ export default function Workspace() {
                       <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition">
                         <div className="flex-1">
                           <h3 className="font-medium text-slate-900">
-                            {item.companyName || item.company || item.title || item.companyUrl || 'Untitled Analysis'}
+                            {item.company_name || 'Untitled Analysis'}
                           </h3>
                           <p className="text-sm text-slate-500 mt-1">
-                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}
+                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'No date'}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -210,7 +259,12 @@ export default function Workspace() {
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
-                          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => handleDeleteReport(item.id)}
+                          >
                             <Trash2 className="h-4 w-4 mr-1" />
                             Delete
                           </Button>
@@ -246,10 +300,10 @@ export default function Workspace() {
                       <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition">
                         <div className="flex-1">
                           <h3 className="font-medium text-slate-900">
-                            {item.companyName || item.company || item.title || item.companyUrl || 'Untitled Playbook'}
+                            {item.industry || item.persona || 'Untitled Playbook'}
                           </h3>
                           <p className="text-sm text-slate-500 mt-1">
-                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'No date'}
+                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'No date'}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -257,7 +311,12 @@ export default function Workspace() {
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
-                          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => handleDeleteICP(item.id)}
+                          >
                             <Trash2 className="h-4 w-4 mr-1" />
                             Delete
                           </Button>
