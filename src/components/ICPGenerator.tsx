@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
@@ -85,33 +86,22 @@ const ICPGenerator = () => {
     let cancelled = false;
     const fetchCompanies = async () => {
       setLoading(true);
-      if (!session?.access_token) {
-        toast({
-          title: "Auth Error",
-          description: "No access token found. Please log in again.",
-          variant: "destructive",
-        });
+      if (!user) {
         setLoading(false);
         return;
       }
       try {
-        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/company-analyze-reports`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        const data = await response.json();
+        const { data, error } = await supabase
+          .from('company_analyzer_outputs_unrestricted')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
         if (!cancelled) {
-          if (data.success) {
-            setCompanies(data.reports.map((r: any) => ({
-              ...r,
-              companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-            })));
-          } else {
-            toast({
-              title: "Error fetching companies",
-              description: data.error || "Failed to fetch company analyses.",
-              variant: "destructive",
-            });
-          }
+          if (error) throw error;
+          setCompanies((data || []).map((r: any) => ({
+            ...r,
+            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+          })));
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -120,7 +110,6 @@ const ICPGenerator = () => {
             description: err.message || "Failed to fetch company analyses.",
             variant: "destructive",
           });
-          console.error('Error fetching companies:', err);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -128,35 +117,22 @@ const ICPGenerator = () => {
     };
     fetchCompanies();
     return () => { cancelled = true; };
-  }, [session?.access_token]);
+  }, [user]);
 
   // Fetch recent/generated ICPs
   useEffect(() => {
     let cancelled = false;
     const fetchICPs = async () => {
-      if (!session?.access_token) {
-        toast({
-          title: "Auth Error",
-          description: "No access token found. Please log in again.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (!user) return;
       try {
-        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp-reports`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        const data = await response.json();
+        const { data, error } = await supabase
+          .from('icps')
+          .select('*')
+          .eq('user_id', Number(user.id))
+          .order('created_at', { ascending: false });
         if (!cancelled) {
-          if (data.success) setRecentICPs(data.icps);
-          else {
-            toast({
-              title: "Error fetching ICPs",
-              description: data.error || "Failed to fetch ICPs.",
-              variant: "destructive",
-            });
-            console.error('Failed to fetch ICPs:', data);
-          }
+          if (error) throw error;
+          setRecentICPs(data || []);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -165,41 +141,27 @@ const ICPGenerator = () => {
             description: err.message || "Failed to fetch ICPs.",
             variant: "destructive",
           });
-          console.error('Error fetching ICPs:', err);
         }
       }
     };
     fetchICPs();
     return () => { cancelled = true; };
-  }, [session?.access_token]);
+  }, [user]);
 
   // Fetch recent playbooks
   useEffect(() => {
     let cancelled = false;
     const fetchPlaybooks = async () => {
-      if (!session?.access_token) {
-        toast({
-          title: "Auth Error",
-          description: "No access token found. Please log in again.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (!user) return;
       try {
-        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp-playbooks`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        const data = await response.json();
+        const { data, error } = await supabase
+          .from('saved_reports')
+          .select('*')
+          .eq('user_id', Number(user.id))
+          .order('created_at', { ascending: false });
         if (!cancelled) {
-          if (data.success) setRecentPlaybooks(data.playbooks);
-          else {
-            toast({
-              title: "Error fetching playbooks",
-              description: data.error || "Failed to fetch playbooks.",
-              variant: "destructive",
-            });
-            console.error('Failed to fetch playbooks:', data);
-          }
+          if (error) throw error;
+          setRecentPlaybooks(data || []);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -208,13 +170,12 @@ const ICPGenerator = () => {
             description: err.message || "Failed to fetch playbooks.",
             variant: "destructive",
           });
-          console.error('Error fetching playbooks:', err);
         }
       }
     };
     fetchPlaybooks();
     return () => { cancelled = true; };
-  }, [session?.access_token]);
+  }, [user]);
 
   // Auto-load saved playbooks
   useEffect(() => {

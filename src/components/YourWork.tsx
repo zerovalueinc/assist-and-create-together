@@ -50,26 +50,19 @@ export default function YourWork() {
       setGtmLoading(true);
       setGtmError(null);
       try {
-        const [icpRes, playbookRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/icp/reports`, { 
-            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
-          }),
-          fetch(`${API_BASE_URL}/api/icp/playbooks`, { 
-            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
-          }),
+        const [{ data: icps, error: icpError }, { data: playbooks, error: playbookError }] = await Promise.all([
+          supabase.from('icps').select('*').eq('user_id', Number(session?.user?.id)).order('created_at', { ascending: false }),
+          supabase.from('saved_reports').select('*').eq('user_id', Number(session?.user?.id)).order('created_at', { ascending: false })
         ]);
-        const icps = icpRes.ok ? (await icpRes.json()).icps || [] : [];
-        const playbooks = playbookRes.ok ? (await playbookRes.json()).playbooks || [] : [];
+        if (icpError || playbookError) throw icpError || playbookError;
         // Merge and dedupe by id (if needed)
-        const allGTM = [...icps, ...playbooks].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-        if (!cancelled) setGtmWork(allGTM);
+        const allGTM = [...(icps || []), ...(playbooks || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        setGtmWork(allGTM);
       } catch (err: any) {
-        if (!cancelled) {
-          setGtmError(err.message || 'Failed to load GTM Generator reports.');
-          console.error('Error fetching GTM Generator reports:', err);
-        }
+        setGtmError(err.message || 'Failed to load GTM Generator reports.');
+        console.error('Error fetching GTM Generator reports:', err);
       } finally {
-        if (!cancelled) setGtmLoading(false);
+        setGtmLoading(false);
       }
     };
     if (session?.access_token) {
