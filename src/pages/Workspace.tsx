@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, FolderOpen, BarChart3, Users, Zap, Settings, Link2, FileText, Trash2, Eye, Plus, Search } from 'lucide-react';
@@ -43,7 +42,7 @@ export default function Workspace() {
         const { data: reportsData, error: reportsError } = await supabase
           .from('saved_reports')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', parseInt(user.id));
 
         if (reportsError) {
           console.error('Error fetching reports:', reportsError);
@@ -65,7 +64,7 @@ export default function Workspace() {
         const { data: icpsData, error: icpsError } = await supabase
           .from('icps')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', parseInt(user.id));
 
         if (icpsError) {
           console.error('Error fetching ICPs:', icpsError);
@@ -84,7 +83,7 @@ export default function Workspace() {
     fetchData();
   }, [user]);
 
-  const handleDeleteReport = async (id: string) => {
+  const handleDeleteReport = async (id: number) => {
     try {
       const { error } = await supabase
         .from('saved_reports')
@@ -101,7 +100,7 @@ export default function Workspace() {
     }
   };
 
-  const handleDeleteICP = async (id: string) => {
+  const handleDeleteICP = async (id: number) => {
     try {
       const { error } = await supabase
         .from('icps')
