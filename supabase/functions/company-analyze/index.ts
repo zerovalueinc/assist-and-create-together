@@ -178,8 +178,10 @@ serve(async (req) => {
     function safeString(val: any): string {
       return typeof val === 'string' ? val : '';
     }
-    function safeArray(val: any): any[] {
-      return Array.isArray(val) ? val : [];
+    function toArray(val: any): string[] {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+      return [];
     }
     function safeCompanyProfile(profile: any) {
       return {
@@ -189,14 +191,15 @@ serve(async (req) => {
       };
     }
     const sanitizedAnalysis = {
+      schemaVersion: 1,
       companyName: safeString(finalAnalysis.companyName),
       companyProfile: safeCompanyProfile(finalAnalysis.companyProfile),
-      decisionMakers: safeArray(finalAnalysis.decisionMakers),
-      painPoints: safeArray(finalAnalysis.painPoints),
-      technologies: safeArray(finalAnalysis.technologies),
+      decisionMakers: toArray(finalAnalysis.decisionMakers),
+      painPoints: toArray(finalAnalysis.painPoints),
+      technologies: toArray(finalAnalysis.technologies),
       location: safeString(finalAnalysis.location),
-      marketTrends: safeArray(finalAnalysis.marketTrends),
-      competitiveLandscape: safeArray(finalAnalysis.competitiveLandscape),
+      marketTrends: toArray(finalAnalysis.marketTrends),
+      competitiveLandscape: toArray(finalAnalysis.competitiveLandscape),
       goToMarketStrategy: safeString(finalAnalysis.goToMarketStrategy),
       researchSummary: safeString(finalAnalysis.researchSummary),
       website: safeString(finalAnalysis.website),
