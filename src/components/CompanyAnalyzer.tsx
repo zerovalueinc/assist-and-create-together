@@ -8,6 +8,7 @@ import { Loader2, Search, Globe, Building, Users, TrendingUp, Target, AlertTrian
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { SectionLabel } from "@/components/ui/section-label";
 
@@ -34,23 +35,28 @@ const CompanyAnalyzer = () => {
 
   // Fetch recent reports
   const fetchReports = async () => {
-    if (!session?.access_token) return;
+    if (!user) return;
     try {
-      const response = await fetch('http://localhost:3001/api/company-analyze/reports', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      const data = await response.json();
-      if (data.success) setReports(data.reports);
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('saved_reports')
+        .select('*')
+        .eq('user_id', parseInt(user.id))
+        .order('created_at', { ascending: false });
+
+      if (reportsError) {
+        console.error('Error fetching reports:', reportsError);
+      } else {
+        setReports(reportsData || []);
+      }
     } catch (err) {
-      // Optionally handle error
+      console.error('Error fetching reports:', err);
     }
   };
 
   // Fetch on mount
   useEffect(() => {
     fetchReports();
-    // eslint-disable-next-line
-  }, [session?.access_token]);
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,39 +74,36 @@ const CompanyAnalyzer = () => {
     setReport(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/company-analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-        },
-        body: JSON.stringify({ url: url.trim() }),
+      console.log('Starting company analysis for:', url);
+      
+      const { data, error } = await supabase.functions.invoke('company-analyze', {
+        body: { url: url.trim() }
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Analysis failed');
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Analysis failed');
       }
 
       if (data.success) {
+        console.log('Analysis completed:', data.analysis);
         setAnalysis(data.analysis);
-        setReport(data.report);
+        setReport(data.analysis);
         setResearch({
           companyAnalysis: data.analysis,
-          isCached: data.isCached,
+          isCached: false,
           timestamp: new Date().toISOString()
         });
         toast({
           title: "Analysis Complete",
-          description: data.isCached ? "Retrieved from cache" : "New analysis generated",
+          description: "Company analysis generated successfully",
         });
         // Refresh reports after analysis
         fetchReports();
       } else {
         throw new Error(data.error || 'Analysis failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Analysis error:', error);
       toast({
         title: "Analysis Failed",
@@ -119,7 +122,7 @@ const CompanyAnalyzer = () => {
     }
   };
 
-  // Helper to trigger analysis for a given URL (simulate form submit)
+  // Helper to trigger analysis for a given URL
   const triggerAnalysis = async (companyUrl: string) => {
     setUrl(companyUrl);
     if (!companyUrl.trim()) return;
@@ -127,29 +130,25 @@ const CompanyAnalyzer = () => {
     setAnalysis(null);
     setReport(null);
     try {
-      const response = await fetch('http://localhost:3001/api/company-analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-        },
-        body: JSON.stringify({ url: companyUrl.trim() }),
+      const { data, error } = await supabase.functions.invoke('company-analyze', {
+        body: { url: companyUrl.trim() }
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Analysis failed');
+
+      if (error) {
+        throw new Error(error.message || 'Analysis failed');
       }
+
       if (data.success) {
         setAnalysis(data.analysis);
-        setReport(data.report);
+        setReport(data.analysis);
         setResearch({
           companyAnalysis: data.analysis,
-          isCached: data.isCached,
+          isCached: false,
           timestamp: new Date().toISOString()
         });
         toast({
           title: "Analysis Complete",
-          description: data.isCached ? "Retrieved from cache" : "New analysis generated",
+          description: "Company analysis generated successfully",
         });
         fetchReports();
       } else {
@@ -176,7 +175,7 @@ const CompanyAnalyzer = () => {
             Company Analysis
           </CardTitle>
           <CardDescription>
-            Enter a company URL to generate comprehensive business intelligence
+            Enter a company URL to generate comprehensive business intelligence using our 5-phase research process
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -202,7 +201,7 @@ const CompanyAnalyzer = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  Analyzing (5-Phase Research)...
                 </>
               ) : (
                 <>
@@ -273,7 +272,7 @@ const CompanyAnalyzer = () => {
                 Decision Makers
               </CardTitle>
               <CardDescription>
-                Key roles and decision makers at the company
+                Key roles and decision makers identified through Phase 1 research
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -295,7 +294,7 @@ const CompanyAnalyzer = () => {
                 Pain Points
               </CardTitle>
               <CardDescription>
-                Identified challenges and pain points
+                Challenges identified through Phase 4 technology analysis
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -317,7 +316,7 @@ const CompanyAnalyzer = () => {
                 Technology Stack
               </CardTitle>
               <CardDescription>
-                Technologies and tools used by the company
+                Technologies analyzed in Phase 4 research
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -339,7 +338,7 @@ const CompanyAnalyzer = () => {
                 Market Intelligence
               </CardTitle>
               <CardDescription>
-                Market trends and competitive landscape
+                Insights from Phase 2 & 3 competitive analysis
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -373,6 +372,9 @@ const CompanyAnalyzer = () => {
                 <Target className="h-5 w-5" />
                 Go-to-Market Strategy
               </CardTitle>
+              <CardDescription>
+                Strategic insights from Phase 5 synthesis
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm leading-relaxed">
@@ -384,36 +386,14 @@ const CompanyAnalyzer = () => {
           {/* Research Summary */}
           <Card>
             <CardHeader>
-              <CardTitle>Research Summary</CardTitle>
+              <CardTitle>5-Phase Research Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm leading-relaxed">
-                {analysis.researchSummary || 'No summary available'}
+                {analysis.researchSummary || 'Multi-phase analysis completed with comprehensive company intelligence'}
               </p>
             </CardContent>
           </Card>
-
-          {/* Report Info */}
-          {report && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Report Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Report ID:</span> {report.id}
-                  </div>
-                  <div>
-                    <span className="font-medium">Created:</span> {new Date(report.created_at).toLocaleString()}
-                  </div>
-                  <div>
-                    <span className="font-medium">Score:</span> {report.icpFitScore || 'N/A'}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
     </div>
