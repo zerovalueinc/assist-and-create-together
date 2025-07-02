@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
@@ -10,64 +9,121 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      'Content-Type': 'application/json'
+    }
   }
 })
 
-// Enhanced connection test with optimized RLS policy awareness
+// Enhanced connection test with better error handling and diagnostics
 export const testConnection = async () => {
   try {
-    console.log('Testing Supabase connection with optimized RLS policies...');
+    console.log('Testing Supabase connection with enhanced diagnostics...');
+    console.log('Supabase URL:', SUPABASE_URL);
+    console.log('Using key ending in:', SUPABASE_PUBLISHABLE_KEY.slice(-8));
     
-    // Test basic connectivity with a simple query that expects RLS protection
+    // First test: Simple REST API health check
+    const healthCheckUrl = `${SUPABASE_URL}/rest/v1/`;
+    console.log('Testing basic REST API accessibility...');
+    
+    try {
+      const response = await fetch(healthCheckUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+        }
+      });
+      
+      console.log('REST API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`REST API returned ${response.status}: ${response.statusText}`);
+      }
+    } catch (fetchError) {
+      console.error('Direct fetch to REST API failed:', fetchError);
+      
+      // Check if it's a network connectivity issue
+      if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
+        return {
+          success: false,
+          error: 'Network connectivity issue - cannot reach Supabase servers',
+          details: 'This could be due to firewall restrictions, VPN issues, or DNS problems',
+          message: 'Cannot establish connection to Supabase'
+        };
+      }
+      
+      return {
+        success: false,
+        error: fetchError instanceof Error ? fetchError.message : 'Unknown fetch error',
+        details: fetchError,
+        message: 'Direct API connection failed'
+      };
+    }
+    
+    // Second test: Test with Supabase client
+    console.log('Testing Supabase client connection...');
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
       .limit(1);
     
-    // With optimized RLS enabled, we expect either data (if authenticated) or an RLS/auth error
     if (error) {
-      // These are "good" errors that indicate Supabase is reachable and optimized RLS is working
+      // These are expected errors that indicate Supabase is reachable and RLS is working
       if (error.message.includes('JWT') || 
           error.message.includes('RLS') || 
           error.message.includes('policy') ||
-          error.message.includes('row-level security')) {
-        console.log('Supabase connection successful (optimized RLS protecting data as expected)');
+          error.message.includes('row-level security') ||
+          error.code === 'PGRST301') {
+        console.log('Supabase connection successful - RLS policies are working correctly');
         return { 
           success: true, 
-          message: 'Connection successful - optimized RLS policies active',
+          message: 'Connection successful with optimized RLS policies active',
           details: 'Database is reachable and properly secured with performance optimizations'
         };
       }
       
-      // Other errors might indicate real connectivity issues
-      console.error('Supabase connection error:', error);
+      // Other database errors
+      console.error('Supabase client error:', error);
       return { 
         success: false, 
         error: error.message, 
         details: error,
-        message: 'Database error - check configuration'
+        message: 'Database configuration issue'
       };
     }
     
-    // If we get data without authentication, that's also success
-    console.log('Supabase connection test successful with data access and optimized RLS');
+    // Success case
+    console.log('Supabase connection test completely successful');
     return { 
       success: true, 
       data, 
-      message: 'Connection successful with data access and optimized performance'
+      message: 'Connection successful with full data access'
     };
     
   } catch (err) {
-    console.error('Supabase connection test error:', err);
+    console.error('Connection test failed with exception:', err);
     
-    // Network-level errors
+    // Enhanced error classification
     if (err instanceof Error) {
       if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
         return { 
           success: false, 
-          error: 'Network connectivity issue',
-          details: err,
-          message: 'Cannot reach Supabase - check internet connection'
+          error: 'Network connectivity issue - cannot reach Supabase',
+          details: 'Check your internet connection, VPN settings, or firewall configuration',
+          message: 'Cannot establish network connection to Supabase'
+        };
+      }
+      
+      if (err.message.includes('CORS')) {
+        return {
+          success: false,
+          error: 'CORS policy error',
+          details: 'Cross-origin request blocked. Check Supabase project settings.',
+          message: 'CORS configuration issue'
         };
       }
     }
@@ -76,7 +132,7 @@ export const testConnection = async () => {
       success: false, 
       error: err instanceof Error ? err.message : 'Unknown connection error',
       details: err,
-      message: 'Connection test failed'
+      message: 'Connection test failed with unknown error'
     };
   }
 }
