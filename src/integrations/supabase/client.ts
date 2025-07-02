@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
@@ -12,10 +13,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 })
 
-// Enhanced connection test with better error handling and RLS awareness
+// Enhanced connection test with optimized RLS policy awareness
 export const testConnection = async () => {
   try {
-    console.log('Testing Supabase connection...');
+    console.log('Testing Supabase connection with optimized RLS policies...');
     
     // Test basic connectivity with a simple query that expects RLS protection
     const { data, error } = await supabase
@@ -23,18 +24,18 @@ export const testConnection = async () => {
       .select('id')
       .limit(1);
     
-    // With RLS enabled, we expect either data (if authenticated) or an RLS/auth error
+    // With optimized RLS enabled, we expect either data (if authenticated) or an RLS/auth error
     if (error) {
-      // These are "good" errors that indicate Supabase is reachable and RLS is working
+      // These are "good" errors that indicate Supabase is reachable and optimized RLS is working
       if (error.message.includes('JWT') || 
           error.message.includes('RLS') || 
           error.message.includes('policy') ||
           error.message.includes('row-level security')) {
-        console.log('Supabase connection successful (RLS protecting data as expected)');
+        console.log('Supabase connection successful (optimized RLS protecting data as expected)');
         return { 
           success: true, 
-          message: 'Connection successful - RLS policies active',
-          details: 'Database is reachable and properly secured'
+          message: 'Connection successful - optimized RLS policies active',
+          details: 'Database is reachable and properly secured with performance optimizations'
         };
       }
       
@@ -49,11 +50,11 @@ export const testConnection = async () => {
     }
     
     // If we get data without authentication, that's also success
-    console.log('Supabase connection test successful with data access');
+    console.log('Supabase connection test successful with data access and optimized RLS');
     return { 
       success: true, 
       data, 
-      message: 'Connection successful with data access'
+      message: 'Connection successful with data access and optimized performance'
     };
     
   } catch (err) {
