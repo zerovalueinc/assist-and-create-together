@@ -148,6 +148,27 @@ const GTMGenerator = () => {
     }
   };
 
+  // Pills selector for company analyses
+  const renderCompanyPills = () => (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {availableAnalyses.map((analysis) => (
+        <Badge
+          key={analysis.id}
+          variant={selectedAnalysisId === analysis.id ? 'default' : 'secondary'}
+          className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedAnalysisId === analysis.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
+          onClick={() => {
+            setSelectedAnalysisId(analysis.id);
+            setUrl(analysis.companyUrl);
+            setUseExistingAnalysis(true);
+          }}
+        >
+          <span className="font-semibold">{analysis.companyName || 'Untitled'}</span>
+          <span className="ml-2 text-xs text-muted-foreground">{analysis.createdAt ? new Date(analysis.createdAt).toLocaleDateString() : ''}</span>
+        </Badge>
+      ))}
+    </div>
+  );
+
   const renderICPSection = (icp: any) => (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -216,6 +237,8 @@ const GTMGenerator = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Pills selector for company analyses */}
+          {availableAnalyses.length > 0 && renderCompanyPills()}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="url" className="text-sm font-medium">
@@ -246,21 +269,6 @@ const GTMGenerator = () => {
                     Use existing company analysis
                   </label>
                 </div>
-
-                {useExistingAnalysis && (
-                  <select
-                    value={selectedAnalysisId || ''}
-                    onChange={(e) => setSelectedAnalysisId(e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full p-2 border rounded-md"
-                  >
-                    <option value="">Select existing analysis...</option>
-                    {availableAnalyses.map((analysis: any) => (
-                      <option key={analysis.id} value={analysis.id}>
-                        {analysis.companyName} - {analysis.createdAt ? new Date(analysis.createdAt).toLocaleDateString() : ''}
-                      </option>
-                    ))}
-                  </select>
-                )}
               </div>
             )}
 
