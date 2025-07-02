@@ -16,7 +16,7 @@ import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
 const GTMICPSchemaZod = z.object({
   schemaVersion: z.string(),
@@ -85,12 +85,11 @@ const ICPGenerator = () => {
     const fetchCompanies = async () => {
       if (!session?.access_token) return;
       try {
-        const response = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, {
+        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/company-analyze-reports`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
         if (data.success) {
-          // Map to ensure each company has a companyUrl field
           setCompanies(data.reports.map((r: any) => ({
             ...r,
             companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
@@ -108,7 +107,7 @@ const ICPGenerator = () => {
     const fetchICPs = async () => {
       if (!session?.access_token) return;
       try {
-        const response = await fetch(`${API_BASE_URL}/api/icp/reports`, {
+        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp-reports`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
@@ -126,7 +125,7 @@ const ICPGenerator = () => {
     const fetchPlaybooks = async () => {
       if (!session?.access_token) return;
       try {
-        const response = await fetch(`${API_BASE_URL}/api/icp/playbooks`, {
+        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp-playbooks`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         const data = await response.json();
@@ -214,7 +213,7 @@ const ICPGenerator = () => {
         additionalContext
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/workflow/start`, {
+      const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/workflow/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -260,7 +259,7 @@ const ICPGenerator = () => {
     const poll = async () => {
       attempts++;
       try {
-        const response = await fetch(`${API_BASE_URL}/api/workflow/state?workflowName=icp-generator&sessionId=${encodeURIComponent(sessionId)}`, {
+        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/workflow/state?workflowName=icp-generator&sessionId=${encodeURIComponent(sessionId)}`, {
           headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
         });
         const data = await response.json();
@@ -274,7 +273,7 @@ const ICPGenerator = () => {
             });
             // Auto-save the result
             try {
-              await fetch(`${API_BASE_URL}/api/icp/playbooks`, {
+              await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp/playbooks`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
