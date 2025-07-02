@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import EmptyState from './ui/EmptyState';
-import { capitalizeFirstLetter } from '../lib/utils';
+import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
@@ -86,6 +86,9 @@ const ICPGenerator = () => {
   // Fetch analyzed companies (CompanyAnalyzer reports)
   const hasFetchedCompanies = useRef(false);
   useEffect(() => {
+    // Show cached companies instantly
+    const cachedCompanies = getCache<any[]>('icp_companies', []);
+    if (cachedCompanies.length > 0) setCompanies(cachedCompanies);
     if (hasFetchedCompanies.current) return;
     hasFetchedCompanies.current = true;
     let cancelled = false;
@@ -103,12 +106,14 @@ const ICPGenerator = () => {
           .order('created_at', { ascending: false });
         if (!cancelled) {
           if (error) throw error;
-          setCompanies((data || []).map((r: any) => ({
+          const normalized = (data || []).map((r: any) => ({
             ...r,
             companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
             companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
             createdAt: r.createdAt || r.created_at || '',
-          })));
+          }));
+          setCompanies(normalized);
+          setCache('icp_companies', normalized);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -129,6 +134,9 @@ const ICPGenerator = () => {
   // Fetch recent/generated ICPs
   const hasFetchedICPs = useRef(false);
   useEffect(() => {
+    // Show cached ICPs instantly
+    const cachedICPs = getCache<any[]>('icp_icps', []);
+    if (cachedICPs.length > 0) setRecentICPs(cachedICPs);
     if (hasFetchedICPs.current) return;
     hasFetchedICPs.current = true;
     let cancelled = false;
@@ -143,6 +151,7 @@ const ICPGenerator = () => {
         if (!cancelled) {
           if (error) throw error;
           setRecentICPs(data || []);
+          setCache('icp_icps', data || []);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -161,6 +170,9 @@ const ICPGenerator = () => {
   // Fetch recent playbooks
   const hasFetchedPlaybooks = useRef(false);
   useEffect(() => {
+    // Show cached playbooks instantly
+    const cachedPlaybooks = getCache<any[]>('icp_playbooks', []);
+    if (cachedPlaybooks.length > 0) setRecentPlaybooks(cachedPlaybooks);
     if (hasFetchedPlaybooks.current) return;
     hasFetchedPlaybooks.current = true;
     let cancelled = false;
@@ -175,6 +187,7 @@ const ICPGenerator = () => {
         if (!cancelled) {
           if (error) throw error;
           setRecentPlaybooks(data || []);
+          setCache('icp_playbooks', data || []);
         }
       } catch (err: any) {
         if (!cancelled) {

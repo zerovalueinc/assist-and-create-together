@@ -7,6 +7,7 @@ import { SectionLabel } from "./ui/section-label";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import EmptyState from './ui/EmptyState';
+import { getCache, setCache } from '../lib/utils';
 
 const SalesIntelligence = () => {
   const [reports, setReports] = useState([]);
@@ -16,6 +17,9 @@ const SalesIntelligence = () => {
   const hasFetched = useRef(false);
 
   useEffect(() => {
+    // Show cached reports instantly
+    const cachedReports = getCache<any[]>('salesintel_reports', []);
+    if (cachedReports.length > 0) setReports(cachedReports);
     if (!user || hasFetched.current) return;
     hasFetched.current = true;
     setLoading(true);
@@ -29,6 +33,7 @@ const SalesIntelligence = () => {
           .order('created_at', { ascending: false });
         if (error) throw error;
         setReports(data || []);
+        setCache('salesintel_reports', data || []);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch sales intelligence reports.');
         console.error('Failed to fetch reports:', err);

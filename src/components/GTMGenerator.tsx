@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import EmptyState from './ui/EmptyState';
-import { capitalizeFirstLetter } from '../lib/utils';
+import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
@@ -21,6 +21,12 @@ const GTMGenerator = () => {
   const { toast } = useToast();
   const { user, session } = useAuth();
   const hasFetched = useRef(false);
+
+  // Show cached analyses instantly
+  useEffect(() => {
+    const cachedAnalyses = getCache<any[]>('yourwork_analyze', []);
+    if (cachedAnalyses.length > 0) setAvailableAnalyses(cachedAnalyses);
+  }, []);
 
   // Fetch available company analyses for reuse
   useEffect(() => {
@@ -54,6 +60,7 @@ const GTMGenerator = () => {
               createdAt: row.createdAt || row.created_at || '',
             }));
             setAvailableAnalyses(normalized);
+            setCache('yourwork_analyze', normalized);
           }
         }
       } catch (err: any) {
