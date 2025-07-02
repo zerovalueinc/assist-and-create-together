@@ -19,37 +19,77 @@ export function SystemAudit() {
     setResults([]);
     const auditResults: AuditResult[] = [];
 
-    console.log('Starting system audit...');
+    console.log('Starting comprehensive system audit...');
 
-    // Run all tests with better error handling
     try {
+      // Test Supabase connection first
       await testSupabaseConnection(auditResults);
-      await testEdgeFunctions(auditResults);
-      await testDatabaseTables(auditResults);
+      
+      // Only test other components if basic connection works
+      const connectionPassed = auditResults.some(r => 
+        r.component === 'Supabase Connection' && r.status === 'pass'
+      );
+      
+      if (connectionPassed) {
+        console.log('Basic connection successful, testing edge functions...');
+        await testEdgeFunctions(auditResults);
+        
+        console.log('Testing database tables...');
+        await testDatabaseTables(auditResults);
+      } else {
+        console.log('Skipping further tests due to basic connection failure');
+        auditResults.push({
+          component: 'System Status',
+          status: 'fail',
+          message: 'Cannot proceed with full audit due to connection issues',
+          details: [
+            'Fix Supabase connection first',
+            'Check network connectivity',
+            'Verify project configuration'
+          ]
+        });
+      }
     } catch (error) {
-      console.error('Audit failed with error:', error);
+      console.error('Audit process failed:', error);
       auditResults.push({
         component: 'System Audit',
         status: 'fail',
-        message: 'Audit process failed',
-        details: [error instanceof Error ? error.message : 'Unknown error']
+        message: 'Audit process encountered an error',
+        details: [
+          error instanceof Error ? error.message : 'Unknown error',
+          'Try running the audit again'
+        ]
       });
     }
 
     setResults(auditResults);
     setIsRunning(false);
 
-    // Show summary toast
+    // Enhanced summary reporting
     const passed = auditResults.filter(r => r.status === 'pass').length;
     const failed = auditResults.filter(r => r.status === 'fail').length;
     const warnings = auditResults.filter(r => r.status === 'warning').length;
     
     console.log(`Audit completed: ${passed} passed, ${warnings} warnings, ${failed} failed`);
     
+    let toastVariant: "default" | "destructive" = "default";
+    let toastTitle = "Audit Complete";
+    let toastDescription = `${passed} passed, ${warnings} warnings, ${failed} failed`;
+    
+    if (failed > 0) {
+      toastVariant = "destructive";
+      toastTitle = "Issues Found";
+      toastDescription += " - Check results for details";
+    } else if (warnings > 0) {
+      toastTitle = "Audit Complete with Warnings";
+    } else {
+      toastTitle = "All Systems Operational";
+    }
+    
     toast({
-      title: "Audit Complete",
-      description: `${passed} passed, ${warnings} warnings, ${failed} failed`,
-      variant: failed > 0 ? "destructive" : warnings > 0 ? "default" : "default"
+      title: toastTitle,
+      description: toastDescription,
+      variant: toastVariant
     });
   };
 
@@ -70,15 +110,33 @@ export function SystemAudit() {
             disabled={isRunning}
             className="mb-6"
           >
-            {isRunning ? 'Running Audit...' : 'Run System Audit'}
+            {isRunning ? 'Running Comprehensive Audit...' : 'Run System Audit'}
           </Button>
 
           {results.length > 0 && (
             <div className="space-y-4">
               <AuditSummary results={results} />
-              {results.map((result, index) => (
-                <AuditResultCard key={index} result={result} />
-              ))}
+              
+              <div className="space-y-3">
+                {results.map((result, index) => (
+                  <AuditResultCard key={index} result={result} />
+                ))}
+              </div>
+              
+              {results.some(r => r.status === 'fail') && (
+                <Card className="border-red-200 bg-red-50">
+                  <CardContent className="pt-4">
+                    <h4 className="font-medium text-red-900 mb-2">Troubleshooting Steps</h4>
+                    <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
+                      <li>Check your internet connection stability</li>
+                      <li>Verify Supabase project is active and accessible</li>
+                      <li>Confirm API keys are configured correctly</li>
+                      <li>Try refreshing the page and running the audit again</li>
+                      <li>Check browser console for additional error details</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </CardContent>

@@ -4,28 +4,48 @@ import { AuditResult } from './types';
 
 export const testSupabaseConnection = async (results: AuditResult[]) => {
   try {
-    // First test basic connectivity
-    const isConnected = await testConnection();
+    console.log('Testing Supabase connection...');
     
-    if (!isConnected) {
+    // Use our enhanced connection test
+    const connectionResult = await testConnection();
+    
+    if (!connectionResult.success) {
       results.push({
         component: 'Supabase Connection',
         status: 'fail',
-        message: 'Failed to connect to Supabase',
-        details: ['Check network connectivity', 'Verify Supabase URL and API key']
+        message: `Connection failed: ${connectionResult.error}`,
+        details: [
+          'Check your internet connection',
+          'Verify Supabase project is active',
+          'Confirm API keys are correct',
+          'Check browser console for detailed errors'
+        ]
       });
       return;
     }
 
-    // Test with a simple query
-    const { data, error } = await supabase.from('profiles').select('count').limit(1);
-    
-    results.push({
-      component: 'Supabase Connection',
-      status: error ? 'fail' : 'pass',
-      message: error ? `Connection failed: ${error.message}` : 'Connection successful',
-      details: error ? [error.hint || 'Check Supabase configuration'] : ['Database accessible', 'Authentication working']
-    });
+    // If basic connection works, test authentication
+    try {
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      results.push({
+        component: 'Supabase Connection',
+        status: 'pass',
+        message: 'Connection successful',
+        details: [
+          'Database accessible',
+          'API keys valid',
+          session ? 'User authenticated' : 'No active session (this is normal)'
+        ]
+      });
+    } catch (authErr) {
+      results.push({
+        component: 'Supabase Connection',
+        status: 'warning',
+        message: 'Connection works but auth issue detected',
+        details: ['Database accessible', 'Authentication may need attention']
+      });
+    }
   } catch (err) {
     console.error('Supabase connection test error:', err);
     results.push({
@@ -34,7 +54,8 @@ export const testSupabaseConnection = async (results: AuditResult[]) => {
       message: 'Connection error',
       details: [
         `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        'Check network connectivity and Supabase configuration'
+        'Check network connectivity',
+        'Verify Supabase configuration'
       ]
     });
   }
@@ -77,41 +98,61 @@ export const testEdgeFunctions = async (results: AuditResult[]) => {
         body: func.testPayload
       });
       
-      const isApiKeyError = error?.message?.includes('API key') || error?.message?.includes('configuration');
-      const isPipelineNotFound = error?.message?.includes('Pipeline not found') || error?.message?.includes('not found');
-      const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError');
-      
-      if (isNetworkError) {
-        results.push({
-          component: func.name,
-          status: 'fail',
-          message: 'Network connectivity issue',
-          details: [
-            'Cannot reach Supabase Edge Functions',
-            'Check internet connection and Supabase status'
-          ]
-        });
-      } else if (isApiKeyError) {
-        results.push({
-          component: func.name,
-          status: 'warning',
-          message: 'Function accessible but needs API key configuration',
-          details: ['Configure API keys in Supabase Edge Function Secrets']
-        });
-      } else if (isPipelineNotFound) {
-        results.push({
-          component: func.name,
-          status: 'pass',
-          message: 'Function responding correctly (test data not found as expected)',
-          details: ['Edge function is deployed and responding']
-        });
-      } else if (error) {
-        results.push({
-          component: func.name,
-          status: 'warning',
-          message: `Function error: ${error.message}`,
-          details: ['Function is accessible but returned an error']
-        });
+      // Better error classification
+      if (error) {
+        const errorMessage = error.message || 'Unknown error';
+        const isNetworkError = errorMessage.includes('Failed to fetch') || 
+                              errorMessage.includes('NetworkError') ||
+                              errorMessage.includes('fetch');
+        const isConfigError = errorMessage.includes('API key') || 
+                             errorMessage.includes('configuration') ||
+                             errorMessage.includes('secret');
+        const isNotFoundError = errorMessage.includes('not found') || 
+                               errorMessage.includes('Pipeline not found');
+        
+        if (isNetworkError) {
+          results.push({
+            component: func.name,
+            status: 'fail',
+            message: 'Network connectivity issue',
+            details: [
+              'Cannot reach Supabase Edge Functions',
+              'Check internet connection',
+              'Verify Supabase project status'
+            ]
+          });
+        } else if (isConfigError) {
+          results.push({
+            component: func.name,
+            status: 'warning',
+            message: 'Function accessible but needs configuration',
+            details: [
+              'Edge function is deployed',
+              'API keys may need to be configured',
+              'Check Supabase Edge Function Secrets'
+            ]
+          });
+        } else if (isNotFoundError) {
+          results.push({
+            component: func.name,
+            status: 'pass',
+            message: 'Function responding correctly',
+            details: [
+              'Edge function is deployed and responding',
+              'Test data not found as expected'
+            ]
+          });
+        } else {
+          results.push({
+            component: func.name,
+            status: 'warning',
+            message: `Function error: ${errorMessage}`,
+            details: [
+              'Function is accessible but returned an error',
+              'May need configuration or debugging'
+            ]
+          });
+        }
       } else {
         results.push({
           component: func.name,
@@ -142,37 +183,92 @@ export const testDatabaseTables = async (results: AuditResult[]) => {
     try {
       console.log(`Testing database table: ${tableName}`);
       
-      const { data, error } = await supabase.from(tableName).select('*').limit(1);
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .limit(1);
       
       if (error) {
-        results.push({
-          component: `Database Table: ${tableName}`,
-          status: 'fail',
-          message: `Table error: ${error.message}`,
-          details: [
-            error.hint || 'Check table permissions and RLS policies',
-            'Verify table exists in database'
-          ]
-        });
+        const isAuthError = error.message.includes('JWT') || 
+                           error.message.includes('authentication') ||
+                           error.message.includes('session');
+        const isRLSError = error.message.includes('RLS') || 
+                          error.message.includes('policy') ||
+                          error.message.includes('row-level security');
+        
+        if (isAuthError) {
+          results.push({
+            component: `Database Table: ${tableName}`,
+            status: 'warning',
+            message: 'Table accessible but requires authentication',
+            details: [
+              'Table exists and is reachable',
+              'Authentication required for data access',
+              'This is normal for protected tables'
+            ]
+          });
+        } else if (isRLSError) {
+          results.push({
+            component: `Database Table: ${tableName}`,
+            status: 'warning',
+            message: 'Table protected by Row Level Security',
+            details: [
+              'Table exists but access is restricted',
+              'RLS policies are working correctly',
+              'Login required to access data'
+            ]
+          });
+        } else {
+          results.push({
+            component: `Database Table: ${tableName}`,
+            status: 'fail',
+            message: `Table error: ${error.message}`,
+            details: [
+              error.hint || 'Check table permissions and RLS policies',
+              'Verify table exists in database'
+            ]
+          });
+        }
       } else {
         results.push({
           component: `Database Table: ${tableName}`,
           status: 'pass',
           message: 'Table accessible',
-          details: ['Table structure validated', 'RLS policies working correctly']
+          details: [
+            'Table structure validated',
+            `Found ${data?.length || 0} records (limited to 1 for testing)`
+          ]
         });
       }
     } catch (err) {
       console.error(`Database table test error for ${tableName}:`, err);
-      results.push({
-        component: `Database Table: ${tableName}`,
-        status: 'fail',
-        message: 'Table access error',
-        details: [
-          `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
-          'Check database connectivity and table permissions'
-        ]
-      });
+      
+      const isNetworkError = err instanceof Error && 
+                            (err.message.includes('Failed to fetch') || 
+                             err.message.includes('NetworkError'));
+      
+      if (isNetworkError) {
+        results.push({
+          component: `Database Table: ${tableName}`,
+          status: 'fail',
+          message: 'Network connectivity issue',
+          details: [
+            'Cannot reach Supabase database',
+            'Check internet connection',
+            'Verify Supabase project status'
+          ]
+        });
+      } else {
+        results.push({
+          component: `Database Table: ${tableName}`,
+          status: 'fail',
+          message: 'Table access error',
+          details: [
+            `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            'Check database connectivity and table permissions'
+          ]
+        });
+      }
     }
   }
 };

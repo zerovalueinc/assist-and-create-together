@@ -10,26 +10,34 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'supabase-js-web'
-    }
   }
 })
 
-// Test connection function
+// Enhanced connection test with better error handling
 export const testConnection = async () => {
   try {
-    const { data, error } = await supabase.from('profiles').select('count').limit(1);
-    if (error) {
-      console.error('Supabase connection test failed:', error);
-      return false;
+    console.log('Testing Supabase connection...');
+    
+    // Test basic connectivity first
+    const { data: healthCheck, error: healthError } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1)
+      .single();
+    
+    if (healthError) {
+      console.error('Supabase health check failed:', healthError);
+      return { success: false, error: healthError.message, details: healthError };
     }
+    
     console.log('Supabase connection test successful');
-    return true;
+    return { success: true, data: healthCheck };
   } catch (err) {
     console.error('Supabase connection test error:', err);
-    return false;
+    return { 
+      success: false, 
+      error: err instanceof Error ? err.message : 'Unknown connection error',
+      details: err
+    };
   }
 }
