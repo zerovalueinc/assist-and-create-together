@@ -29,6 +29,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const lastFetchRef = useRef(0);
+  let globalFetchCount = 0;
 
   const retry = () => setRetryCount((c) => c + 1);
 
@@ -56,6 +57,8 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       lastFetchRef.current = now;
+      globalFetchCount++;
+      console.log(`[DataPreloadProvider] Fetch #${globalFetchCount} for user`, { user, stack: new Error().stack });
       console.log('[DataPreloadProvider] Fetching dashboard data for user', { user });
       try {
         const [companyAnalyzer, icps, playbooks, salesintel] = await Promise.all([
