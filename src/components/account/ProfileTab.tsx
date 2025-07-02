@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,15 +28,42 @@ const ProfileTab = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setProfileData({
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
-      company: company,
-      phone: '',
-      jobTitle: '',
-      timezone: 'UTC-8',
-    });
+    let cancelled = false;
+    let failureCount = 0;
+    const maxFailures = 3;
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true);
+        // Simulate fetch (replace with real fetch if needed)
+        setProfileData({
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          company: company,
+          phone: '',
+          jobTitle: '',
+          timezone: 'UTC-8',
+        });
+        setLoading(false);
+        failureCount = 0;
+      } catch (err) {
+        failureCount++;
+        if (failureCount >= maxFailures) {
+          if (!cancelled) {
+            toast({
+              title: "Profile Load Failed",
+              description: "Could not load your profile after multiple attempts. Please refresh or contact support.",
+              variant: 'destructive',
+            });
+          }
+          setLoading(false);
+          return;
+        }
+        setLoading(false);
+      }
+    };
+    fetchProfileData();
+    return () => { cancelled = true; };
   }, [firstName, lastName, email, company]);
 
   const handleProfileSave = async () => {

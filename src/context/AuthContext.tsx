@@ -44,17 +44,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { toast } = useToast();
 
   const fetchProfile = async (userId: string) => {
+    let cancelled = false;
+    let failureCount = 0;
+    const maxFailures = 3;
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
       if (!error && data) {
-        setProfile(data);
+        if (!cancelled) setProfile(data);
+        failureCount = 0;
       } else {
-        // Create a basic profile from user data if no profile exists
+        failureCount++;
+        if (failureCount >= maxFailures) {
+          if (!cancelled) {
+            toast({
+              title: "Profile Load Failed",
+              description: "Could not load your profile after multiple attempts. Please refresh or contact support.",
+              variant: "destructive",
+            });
+          }
+          return;
+        }
+        // Fallback to basic profile from user data if no profile exists
         const basicProfile: Profile = {
           id: userId,
           email: user?.email || '',
@@ -62,10 +76,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           last_name: user?.user_metadata?.last_name,
           company: user?.user_metadata?.company,
         };
-        setProfile(basicProfile);
+        if (!cancelled) setProfile(basicProfile);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      failureCount++;
+      if (failureCount >= maxFailures) {
+        if (!cancelled) {
+          toast({
+            title: "Profile Load Failed",
+            description: "Could not load your profile after multiple attempts. Please refresh or contact support.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
       // Fallback to basic profile from user metadata
       if (user) {
         const basicProfile: Profile = {
@@ -75,7 +99,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           last_name: user.user_metadata?.last_name,
           company: user.user_metadata?.company,
         };
-        setProfile(basicProfile);
+        if (!cancelled) setProfile(basicProfile);
       }
     }
   };
