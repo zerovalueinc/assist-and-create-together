@@ -237,8 +237,14 @@ const GTMGenerator = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Pills selector for company analyses */}
-          {availableAnalyses.length > 0 && renderCompanyPills()}
+          <div className="mb-2">
+            <div className="font-semibold text-base mb-1">Select Target Company</div>
+            {availableAnalyses.length > 0 ? (
+              renderCompanyPills()
+            ) : (
+              <div className="text-muted-foreground mb-2">No companies analyzed yet. Use Company Analyzer first.</div>
+            )}
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="url" className="text-sm font-medium">
