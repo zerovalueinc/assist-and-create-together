@@ -113,20 +113,20 @@ const CompanyAnalyzer = () => {
         throw new Error(error.message || 'Analysis request failed');
       }
 
-      if (data?.success && data?.analysis) {
-        console.log('Analysis successful:', data.analysis);
-        setAnalysis(data.analysis);
+      if (data?.success && data?.output) {
+        console.log('Analysis successful:', data.output);
+        setAnalysis(data.output);
         setResearch({
-          companyAnalysis: data.analysis,
+          companyAnalysis: data.output,
           isCached: false,
           timestamp: new Date().toISOString()
         });
         // Prepend new report to reports and update pills/inline
-        setReports(prev => [data.analysis, ...prev]);
-        setSelectedReportId(data.analysis.id || null);
+        setReports(prev => [data.output, ...prev]);
+        setSelectedReportId(data.output.id || null);
         toast({
           title: "Analysis Complete",
-          description: `Successfully analyzed ${data.analysis.companyName}`,
+          description: `Successfully analyzed ${data.output.company_name || data.output.companyName}`,
         });
       } else {
         console.error('Analysis failed - no success flag or analysis data');
@@ -437,8 +437,10 @@ const CompanyAnalyzer = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed">
-                    {analysis.researchSummary || 'Multi-phase analysis completed with comprehensive company intelligence'}
+                    {analysis.research_summary || analysis.researchSummary || 'Multi-phase analysis completed with comprehensive company intelligence'}
                   </p>
+                  {/* Optionally show full LLM JSON for debugging */}
+                  {/* <pre className="mt-4 text-xs bg-slate-100 p-2 rounded overflow-x-auto">{JSON.stringify(analysis, null, 2)}</pre> */}
                 </CardContent>
               </Card>
             </div>
