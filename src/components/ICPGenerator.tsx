@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import EmptyState from './ui/EmptyState';
+import { capitalizeFirstLetter } from '../lib/utils';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
@@ -82,7 +84,10 @@ const ICPGenerator = () => {
   console.log('recentICPs:', recentICPs);
 
   // Fetch analyzed companies (CompanyAnalyzer reports)
+  const hasFetchedCompanies = useRef(false);
   useEffect(() => {
+    if (hasFetchedCompanies.current) return;
+    hasFetchedCompanies.current = true;
     let cancelled = false;
     const fetchCompanies = async () => {
       setLoading(true);
@@ -100,7 +105,9 @@ const ICPGenerator = () => {
           if (error) throw error;
           setCompanies((data || []).map((r: any) => ({
             ...r,
+            companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
             companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+            createdAt: r.createdAt || r.created_at || '',
           })));
         }
       } catch (err: any) {
@@ -120,7 +127,10 @@ const ICPGenerator = () => {
   }, [user]);
 
   // Fetch recent/generated ICPs
+  const hasFetchedICPs = useRef(false);
   useEffect(() => {
+    if (hasFetchedICPs.current) return;
+    hasFetchedICPs.current = true;
     let cancelled = false;
     const fetchICPs = async () => {
       if (!user) return;
@@ -149,7 +159,10 @@ const ICPGenerator = () => {
   }, [user]);
 
   // Fetch recent playbooks
+  const hasFetchedPlaybooks = useRef(false);
   useEffect(() => {
+    if (hasFetchedPlaybooks.current) return;
+    hasFetchedPlaybooks.current = true;
     let cancelled = false;
     const fetchPlaybooks = async () => {
       if (!user) return;
@@ -374,6 +387,9 @@ const ICPGenerator = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Saved GTM Playbook Pills */}
+        {companies.length === 0 && <EmptyState message="No companies analyzed yet. Run an analysis first." />}
+        {recentICPs.length === 0 && <EmptyState message="No ICPs found. Generate an ICP first." />}
+        {recentPlaybooks.length === 0 && <EmptyState message="No playbooks found. Generate a playbook first." />}
         {recentICPs.length > 0 && (
           <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
             {recentICPs.map((icpObj) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Loader2, Target, Users, TrendingUp, MessageSquare, BookOpen, BarChart, 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import EmptyState from './ui/EmptyState';
+import { capitalizeFirstLetter } from '../lib/utils';
 
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
@@ -18,9 +20,12 @@ const GTMGenerator = () => {
   const [selectedAnalysisId, setSelectedAnalysisId] = useState(null);
   const { toast } = useToast();
   const { user, session } = useAuth();
+  const hasFetched = useRef(false);
 
   // Fetch available company analyses for reuse
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     let cancelled = false;
     const fetchAnalyses = async () => {
       setLoading(true);
@@ -44,7 +49,7 @@ const GTMGenerator = () => {
             // Normalize field names for pills/selector
             const normalized = (data || []).map((row: any) => ({
               ...row,
-              companyName: row.companyName || row.company_name || '',
+              companyName: capitalizeFirstLetter(row.companyName || row.company_name || ''),
               companyUrl: row.companyUrl || row.website || row.company_url || '',
               createdAt: row.createdAt || row.created_at || '',
             }));
@@ -375,7 +380,11 @@ const GTMGenerator = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {renderICPSection(gtmPlaybook.gtmPlaybook?.idealCustomerProfile)}
+                    {availableAnalyses.length === 0 ? (
+                      <EmptyState message="No company analyses found. Run an analysis first." />
+                    ) : (
+                      renderICPSection(gtmPlaybook.gtmPlaybook?.idealCustomerProfile)
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

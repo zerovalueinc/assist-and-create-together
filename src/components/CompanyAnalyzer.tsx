@@ -10,6 +10,8 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
+import EmptyState from './ui/EmptyState';
+import { capitalizeFirstLetter } from '../lib/utils';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -30,6 +32,7 @@ const CompanyAnalyzer = () => {
   const [showICPModal, setShowICPModal] = useState(false);
   const [modalICP, setModalICP] = useState<any>(null);
   const lastFetchedUserId = useRef<string | null>(null);
+  const hasFetchedReports = useRef(false);
 
   // Fetch recent reports
   const fetchReports = async () => {
@@ -42,7 +45,12 @@ const CompanyAnalyzer = () => {
         .order('created_at', { ascending: false })
         .limit(50);
       if (fallbackError) throw fallbackError;
-      setReports(fallbackData || []);
+      setReports((fallbackData || []).map((r: any) => ({
+        ...r,
+        companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
+        companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+        createdAt: r.createdAt || r.created_at || '',
+      })));
       return;
     } catch (fallbackErr) {
       setReports([]);
@@ -58,8 +66,8 @@ const CompanyAnalyzer = () => {
   // Fetch on mount
   useEffect(() => {
     if (!user?.id) return;
-    if (lastFetchedUserId.current === user.id) return;
-    lastFetchedUserId.current = user.id;
+    if (hasFetchedReports.current) return;
+    hasFetchedReports.current = true;
     fetchReports();
   }, [user?.id]);
 
@@ -402,6 +410,8 @@ const CompanyAnalyzer = () => {
           </Card>
         </div>
       )}
+
+      {reports.length === 0 && <EmptyState message="No company analysis reports found. Run an analysis first." />}
 
       <Dialog open={showICPModal} onOpenChange={setShowICPModal}>
         <DialogContent className="max-w-2xl w-full">

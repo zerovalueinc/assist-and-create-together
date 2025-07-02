@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import EmptyState from './ui/EmptyState';
+import { capitalizeFirstLetter } from '../lib/utils';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -22,8 +24,12 @@ export default function YourWork() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    const hasFetchedAnalyze = useRef(false);
+    const hasFetchedGTM = useRef(false);
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
+      if (hasFetchedAnalyze.current) return;
+      hasFetchedAnalyze.current = true;
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
@@ -35,7 +41,12 @@ export default function YourWork() {
           .limit(50);
         if (!cancelled) {
           if (error) throw error;
-          setAnalyzeWork(data || []);
+          setAnalyzeWork((data || []).map((r: any) => ({
+            ...r,
+            companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
+            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+            createdAt: r.createdAt || r.created_at || '',
+          })));
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -47,6 +58,8 @@ export default function YourWork() {
       }
     };
     const fetchGTM = async () => {
+      if (hasFetchedGTM.current) return;
+      hasFetchedGTM.current = true;
       setGtmLoading(true);
       setGtmError(null);
       try {
@@ -56,7 +69,12 @@ export default function YourWork() {
         ]);
         if (icpError || playbookError) throw icpError || playbookError;
         // Merge and dedupe by id (if needed)
-        const allGTM = [...(icps || []), ...(playbooks || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        const allGTM = [...(icps || []), ...(playbooks || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).map((r: any) => ({
+          ...r,
+          companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
+          companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+          createdAt: r.createdAt || r.created_at || '',
+        }));
         setGtmWork(allGTM);
       } catch (err: any) {
         setGtmError(err.message || 'Failed to load GTM Generator reports.');
@@ -98,14 +116,14 @@ export default function YourWork() {
               ) : analyzeError ? (
                 <div className="py-8 text-center text-red-500">{analyzeError}</div>
               ) : analyzeWork.length === 0 ? (
-                <div className="py-8 text-center text-slate-400">No Company Analyzer reports yet.<br/>Run an analysis to see it here!</div>
+                <EmptyState message="No company analysis reports found. Run an analysis first." />
               ) : (
                 <div className="flex flex-col gap-4">
                   {analyzeWork.map((item) => (
                     <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between bg-white rounded-lg border px-4 py-3 hover:shadow-sm transition">
                       <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-lg text-slate-900">{item.company_name || 'Untitled'}</span>
-                        <span className="text-xs text-slate-500">{item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</span>
+                        <span className="font-semibold text-lg text-slate-900">{item.companyName || 'Untitled'}</span>
+                        <span className="text-xs text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}</span>
                       </div>
                       <div className="flex gap-2 mt-2 md:mt-0">
                         <Button size="sm" variant="outline" className="flex items-center gap-1" onClick={() => { setModalOutput(item); setShowModal(true); }}>
@@ -125,7 +143,7 @@ export default function YourWork() {
                   <DialogHeader>
                     <DialogTitle>Company Analysis Details</DialogTitle>
                     <DialogDescription>
-                      {modalOutput?.company_name}
+                      {modalOutput?.companyName}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-2">
@@ -140,7 +158,7 @@ export default function YourWork() {
                     <div><b>Competitive Landscape:</b> {Array.isArray(modalOutput?.competitive_landscape) ? modalOutput.competitive_landscape.join(', ') : (modalOutput?.competitive_landscape || '')}</div>
                     <div><b>Go To Market Strategy:</b> {modalOutput?.go_to_market_strategy}</div>
                     <div><b>Research Summary:</b> {modalOutput?.research_summary}</div>
-                    <div><b>Website:</b> {modalOutput?.website}</div>
+                    <div><b>Website:</b> {modalOutput?.companyUrl}</div>
                   </div>
                   <DialogClose asChild>
                     <Button variant="outline">Close</Button>
@@ -173,13 +191,13 @@ export default function YourWork() {
               ) : gtmError ? (
                 <div className="py-8 text-center text-red-500">{gtmError}</div>
               ) : gtmWork.length === 0 ? (
-                <div className="py-8 text-center text-slate-400">No GTM Playbooks yet.<br/>Generate a GTM Playbook to see it here!</div>
+                <EmptyState message="No GTM or ICP reports found. Generate a playbook or ICP first." />
               ) : (
                 <div className="flex flex-col gap-4">
                   {gtmWork.map((item) => (
                     <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between bg-white rounded-lg border px-4 py-3 hover:shadow-sm transition">
                       <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-lg text-slate-900">{item.companyName || item.company || item.title || item.companyUrl || 'Untitled GTM Playbook'}</span>
+                        <span className="font-semibold text-lg text-slate-900">{item.companyName || 'Untitled GTM Playbook'}</span>
                         <span className="text-xs text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}</span>
                       </div>
                       <div className="flex gap-2 mt-2 md:mt-0">
