@@ -20,9 +20,10 @@ export default function YourWork() {
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
 
+  const hasFetchedAnalyze = useRef(false);
+  const hasFetchedGTM = useRef(false);
+
   useEffect(() => {
-    const hasFetchedAnalyze = useRef(false);
-    const hasFetchedGTM = useRef(false);
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
       if (hasFetchedAnalyze.current) return;
