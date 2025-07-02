@@ -88,22 +88,11 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
 
   if (authLoading) return <>{children}</>; // Never block public routes
 
-  if (user && session && loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Skeleton className="w-32 h-32 mb-4" />
-        {preloadError && (
-          <div className="text-red-600 text-center">
-            <div className="mb-2">{preloadError}</div>
-            <button onClick={retry} className="px-4 py-2 bg-blue-600 text-white rounded">Retry</button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <DataPreloadContext.Provider value={{ loading, preloadError, data: dashboardData, retry }}>
+      {preloadError && (
+        <div className="w-full bg-red-100 text-red-700 text-center py-2">{preloadError}</div>
+      )}
       {children}
     </DataPreloadContext.Provider>
   );

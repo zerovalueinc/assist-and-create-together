@@ -13,38 +13,18 @@ import { Loader2 } from 'lucide-react';
 import { DataPreloadProvider } from '@/context/DataPreloadProvider';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-  
+  const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
-  
   return <>{children}</>;
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-  
+  const { isAuthenticated } = useAuth();
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-  
   return <>{children}</>;
 };
 
