@@ -58,7 +58,7 @@ const CompanyAnalyzer = () => {
       setReports(normalized);
       setCache('companyanalyzer_reports', normalized);
     } catch (fallbackErr) {
-      setReports([]);
+      // Do NOT clear reports on error, just show toast
       toast({
         title: "Error fetching reports",
         description: "Could not load your company analysis reports. Please try again later.",
@@ -247,6 +247,7 @@ const CompanyAnalyzer = () => {
           ))}
         </div>
       ) : reports.length === 0 ? (
+        // Only show empty state if both cache and fetch are empty
         <EmptyState message="No company analysis reports found. Run an analysis first." />
       ) : (
         <div className="space-y-6">
