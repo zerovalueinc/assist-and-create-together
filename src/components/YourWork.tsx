@@ -23,6 +23,7 @@ export default function YourWork() {
 
   const hasFetchedAnalyze = useRef(false);
   const hasFetchedGTM = useRef(false);
+  const lastFetchRef = useRef(0);
 
   useEffect(() => {
     // Show cached data instantly
@@ -35,6 +36,17 @@ export default function YourWork() {
 
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
+      const now = Date.now();
+      if (!session?.user?.id) {
+        console.error('[YourWork] Blocked fetch: invalid user', { session });
+        return;
+      }
+      if (now - lastFetchRef.current < 1000) {
+        console.warn('[YourWork] Blocked fetch: too frequent');
+        return;
+      }
+      lastFetchRef.current = now;
+      console.log('[YourWork] Fetching analyze work for user', { session });
       if (hasFetchedAnalyze.current) return;
       hasFetchedAnalyze.current = true;
       setAnalyzeLoading(true);

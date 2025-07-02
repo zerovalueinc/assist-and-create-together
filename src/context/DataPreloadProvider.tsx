@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getCache, setCache } from '@/lib/utils';
 import { useAuth } from './AuthContext';
@@ -28,6 +28,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
   const [preloadError, setPreloadError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const lastFetchRef = useRef(0);
 
   const retry = () => setRetryCount((c) => c + 1);
 
@@ -45,7 +46,17 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
     setDashboardData(null);
 
     const fetchAll = async () => {
-      if (!user || !user.id) return;
+      const now = Date.now();
+      if (!user || !user.id) {
+        console.error('[DataPreloadProvider] Blocked fetch: invalid user', { user });
+        return;
+      }
+      if (now - lastFetchRef.current < 1000) {
+        console.warn('[DataPreloadProvider] Blocked fetch: too frequent');
+        return;
+      }
+      lastFetchRef.current = now;
+      console.log('[DataPreloadProvider] Fetching dashboard data for user', { user });
       try {
         const [companyAnalyzer, icps, playbooks, salesintel] = await Promise.all([
           supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
