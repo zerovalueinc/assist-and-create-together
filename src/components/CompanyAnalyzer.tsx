@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { CheckCircle } from 'lucide-react';
 import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
+import { Skeleton } from './ui/skeleton';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -33,9 +34,11 @@ const CompanyAnalyzer = () => {
   const [modalICP, setModalICP] = useState<any>(null);
   const lastFetchedUserId = useRef<string | null>(null);
   const hasFetchedReports = useRef(false);
+  const [loadingReports, setLoadingReports] = useState(true);
 
   // Fetch recent reports
   const fetchReports = async () => {
+    setLoadingReports(true);
     if (!user) return;
     try {
       const { data: fallbackData, error: fallbackError } = await supabase
@@ -53,7 +56,6 @@ const CompanyAnalyzer = () => {
       }));
       setReports(normalized);
       setCache('companyanalyzer_reports', normalized);
-      return;
     } catch (fallbackErr) {
       setReports([]);
       toast({
@@ -62,6 +64,8 @@ const CompanyAnalyzer = () => {
         variant: "destructive",
       });
       console.error('CompanyAnalyzer: Fetch failed:', fallbackErr);
+    } finally {
+      setLoadingReports(false);
     }
   };
 
@@ -70,6 +74,7 @@ const CompanyAnalyzer = () => {
     // Show cached reports instantly
     const cachedReports = getCache<any[]>('companyanalyzer_reports', []);
     if (cachedReports.length > 0) setReports(cachedReports);
+    setLoadingReports(false);
     if (!user?.id) return;
     if (hasFetchedReports.current) return;
     hasFetchedReports.current = true;
@@ -234,7 +239,15 @@ const CompanyAnalyzer = () => {
       </Card>
 
       {/* Results */}
-      {analysis && (
+      {loadingReports ? (
+        <div className="flex flex-col gap-2 py-8">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      ) : reports.length === 0 ? (
+        <EmptyState message="No company analysis reports found. Run an analysis first." />
+      ) : (
         <div className="space-y-6">
           {/* Company Overview */}
           <Card>
@@ -415,8 +428,6 @@ const CompanyAnalyzer = () => {
           </Card>
         </div>
       )}
-
-      {reports.length === 0 && <EmptyState message="No company analysis reports found. Run an analysis first." />}
 
       <Dialog open={showICPModal} onOpenChange={setShowICPModal}>
         <DialogContent className="max-w-2xl w-full">
