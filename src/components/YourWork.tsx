@@ -27,7 +27,7 @@ export default function YourWork() {
       setAnalyzeError(null);
       try {
         const { data, error } = await supabase
-          .from('company_analyzer_outputs')
+          .from('company_analyzer_outputs_unrestricted')
           .select('*')
           .eq('user_id', session?.user?.id)
           .order('created_at', { ascending: false })

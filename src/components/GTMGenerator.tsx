@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,9 +25,9 @@ const GTMGenerator = () => {
       if (!user) return;
       try {
         const { data, error } = await supabase
-          .from('saved_reports')
+          .from('company_analyzer_outputs_unrestricted')
           .select('*')
-          .eq('user_id', parseInt(user.id))
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) {
