@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Mail, Send, Users, BarChart3, ExternalLink, Bot, Zap, TrendingUp, Clock, Target, CheckCircle2, ArrowUpRight, Play, Pause, Settings, Brain, BookOpen, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { getCache, setCache } from '../lib/utils';
 
 const EmailCampaigns = () => {
   const [selectedPlatform, setSelectedPlatform] = useState('instantly');
@@ -68,6 +69,12 @@ const EmailCampaigns = () => {
       lastUpdated: "Launch in 2 hours"
     }
   ];
+
+  useEffect(() => {
+    // Show cached campaigns instantly
+    const cachedCampaigns = getCache<any[]>('email_campaigns', []);
+    if (cachedCampaigns.length > 0) setCampaigns(cachedCampaigns);
+  }, []);
 
   const launchAICampaign = async () => {
     setLoading(true);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -7,6 +6,7 @@ import { PipelineForm } from './pipeline/PipelineForm';
 import { PipelineStatus } from './pipeline/PipelineStatus';
 import { usePipelineOperations } from './pipeline/usePipelineOperations';
 import { PipelineState } from './pipeline/types';
+import { getCache, setCache } from '../lib/utils';
 
 export default function PipelineOrchestrator() {
   const [url, setUrl] = useState('');
@@ -19,6 +19,14 @@ export default function PipelineOrchestrator() {
   const { toast } = useToast();
   const { startPipeline, pollPipelineStatus, fetchResults } = usePipelineOperations();
 
+  // Show cached pipeline state/results instantly
+  useEffect(() => {
+    const cachedState = getCache<any>('pipeline_state', null);
+    const cachedResults = getCache<any>('pipeline_results', null);
+    if (cachedState) setPipelineState(cachedState);
+    if (cachedResults) setResults(cachedResults);
+  }, []);
+
   const handleStartPipeline = async () => {
     setIsLoading(true);
     try {
@@ -30,6 +38,7 @@ export default function PipelineOrchestrator() {
       });
       
       setPipelineState(newPipelineState);
+      setCache('pipeline_state', newPipelineState);
       startPolling(newPipelineState.id);
     } catch (error: any) {
       if (error.message === 'API_CONFIG_REQUIRED') {
@@ -50,6 +59,7 @@ export default function PipelineOrchestrator() {
       try {
         const updatedState = await pollPipelineStatus(pipelineId);
         setPipelineState(updatedState);
+        setCache('pipeline_state', updatedState);
         
         if (updatedState.status === 'completed' || updatedState.status === 'failed') {
           clearInterval(pollInterval);
@@ -57,6 +67,7 @@ export default function PipelineOrchestrator() {
           if (updatedState.status === 'completed') {
             const pipelineResults = await fetchResults(pipelineId);
             setResults(pipelineResults);
+            setCache('pipeline_results', pipelineResults);
             toast({
               title: "Pipeline Completed",
               description: `Successfully processed ${updatedState.companiesProcessed} companies and found ${updatedState.contactsFound} contacts.`,

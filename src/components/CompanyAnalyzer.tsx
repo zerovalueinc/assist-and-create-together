@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
 import EmptyState from './ui/EmptyState';
-import { capitalizeFirstLetter } from '../lib/utils';
+import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -45,12 +45,14 @@ const CompanyAnalyzer = () => {
         .order('created_at', { ascending: false })
         .limit(50);
       if (fallbackError) throw fallbackError;
-      setReports((fallbackData || []).map((r: any) => ({
+      const normalized = (fallbackData || []).map((r: any) => ({
         ...r,
         companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
         companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
         createdAt: r.createdAt || r.created_at || '',
-      })));
+      }));
+      setReports(normalized);
+      setCache('companyanalyzer_reports', normalized);
       return;
     } catch (fallbackErr) {
       setReports([]);
@@ -65,6 +67,9 @@ const CompanyAnalyzer = () => {
 
   // Fetch on mount
   useEffect(() => {
+    // Show cached reports instantly
+    const cachedReports = getCache<any[]>('companyanalyzer_reports', []);
+    if (cachedReports.length > 0) setReports(cachedReports);
     if (!user?.id) return;
     if (hasFetchedReports.current) return;
     hasFetchedReports.current = true;

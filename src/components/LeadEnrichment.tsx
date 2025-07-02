@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Loader2, Users, Upload, Download, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { SectionLabel } from "./ui/section-label";
+import { getCache, setCache } from '../lib/utils';
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +44,7 @@ const LeadEnrichment = () => {
 
       const data = await response.json();
       setLeads(data.leads || []);
+      setCache('lead_enrichment_leads', data.leads || []);
       
       toast({
         title: "Leads Found",
@@ -86,6 +88,12 @@ const LeadEnrichment = () => {
       });
     }
   };
+
+  // Show cached leads instantly
+  useEffect(() => {
+    const cachedLeads = getCache<any[]>('lead_enrichment_leads', []);
+    if (cachedLeads.length > 0) setLeads(cachedLeads);
+  }, []);
 
   return (
     <Card className="w-full">
