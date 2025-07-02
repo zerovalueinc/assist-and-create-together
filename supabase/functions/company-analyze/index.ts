@@ -142,14 +142,23 @@ serve(async (req) => {
     const finalAnalysis = await analyzer.analyzeCompany(companyUrl);
     console.log('Analysis generated for:', finalAnalysis.companyName);
 
+    // Sanitize and validate before insert
+    if (!finalAnalysis.companyName || typeof finalAnalysis.companyName !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'LLM did not return a valid company name.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Try to save to database
     try {
       const { data: savedReport, error: saveError } = await supabaseClient
         .from('saved_reports')
         .insert({
-          user_id: parseInt(user.id),
+          user_id: user.id, // UUID string
           company_name: finalAnalysis.companyName,
           url: companyUrl,
+          report_data: finalAnalysis, // Save the full analysis as JSONB
           created_at: new Date().toISOString()
         })
         .select()

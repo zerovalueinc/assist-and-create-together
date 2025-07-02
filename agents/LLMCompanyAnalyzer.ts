@@ -1,6 +1,4 @@
 // @ts-ignore: Deno runtime provides Deno.env in edge functions
-// @ts-expect-error: OpenAI import must be available in the edge function environment
-import OpenAI from 'openai';
 
 export interface CompanyAnalysisResult {
   companyName: string;
@@ -21,16 +19,12 @@ export interface CompanyAnalysisResult {
 }
 
 export class LLMCompanyAnalyzer {
-  private openai: any;
+  private apiKey: string;
 
   constructor(apiKey?: string) {
     // Deno.env is available in edge function runtime
     // @ts-ignore
-    const key = apiKey || (typeof Deno !== 'undefined' ? Deno.env.get('OPENROUTER_API_KEY') : '');
-    this.openai = new OpenAI({
-      apiKey: key,
-      baseURL: 'https://openrouter.ai/api/v1',
-    });
+    this.apiKey = apiKey || (typeof Deno !== 'undefined' ? Deno.env.get('OPENROUTER_API_KEY') : '');
   }
 
   async analyzeCompany(url: string): Promise<CompanyAnalysisResult> {
@@ -58,13 +52,26 @@ export class LLMCompanyAnalyzer {
       Be concise but thorough. Use real data if possible, otherwise make plausible inferences.
     `;
 
-    const response = await this.openai.chat.completions.create({
-      model: 'anthropic/claude-3.5-sonnet',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+      }),
     });
 
-    const content = response.choices[0].message.content || '';
+    if (!response.ok) {
+      throw new Error(`OpenRouter API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0].message.content || '';
+    
     // Try to parse the LLM's response as JSON
     let result: CompanyAnalysisResult;
     try {

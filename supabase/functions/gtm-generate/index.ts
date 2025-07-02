@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -184,9 +183,10 @@ serve(async (req) => {
     const { data: savedPlaybook, error: saveError } = await supabaseClient
       .from('saved_reports')
       .insert({
-        user_id: parseInt(user.id),
+        user_id: user.id,
         company_name: finalPlaybook.gtmPlaybook.idealCustomerProfile?.firmographics?.industry?.[0] || extractDomain(gtmRequest.websiteUrl),
         url: gtmRequest.websiteUrl,
+        report_data: finalPlaybook,
         created_at: new Date().toISOString()
       })
       .select()
