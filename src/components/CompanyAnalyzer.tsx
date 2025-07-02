@@ -181,22 +181,17 @@ const CompanyAnalyzer = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={preloadLoading}
+                disabled={authLoading}
                 className="text-base"
                 autoComplete="off"
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={authLoading || preloadLoading || !session?.access_token || !url.trim()} className="w-full">
+            <Button type="submit" disabled={authLoading || !session?.access_token || !url.trim()} className="w-full">
               {authLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading user session...
-                </>
-              ) : preloadLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing (5-Phase Research)...
                 </>
               ) : (
                 <>
@@ -210,14 +205,7 @@ const CompanyAnalyzer = () => {
       </Card>
 
       {/* Results */}
-      {preloadLoading ? (
-        <div className="flex flex-col gap-2 py-8">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
-      ) : reports.length === 0 ? (
-        // Only show empty state if both cache and fetch are empty
+      {reports.length === 0 ? (
         <EmptyState message="No company analysis reports found. Run an analysis first." />
       ) : (
         <div className="space-y-6">
