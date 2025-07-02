@@ -28,18 +28,22 @@ export const useUserData = () => {
 export function useUser() {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
+    setIsLoading(true);
     supabase.auth.getSession().then(({ data }) => {
       if (mounted) {
         setUser(data?.session?.user ?? null);
         setSession(data?.session ?? null);
+        setIsLoading(false);
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setSession(session ?? null);
+      setIsLoading(false);
     });
     return () => {
       mounted = false;
@@ -47,5 +51,5 @@ export function useUser() {
     };
   }, []);
 
-  return { user, session };
+  return { user, session, isLoading };
 }

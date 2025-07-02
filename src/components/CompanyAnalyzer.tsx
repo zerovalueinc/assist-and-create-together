@@ -28,7 +28,7 @@ const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
   const { setResearch } = useCompany();
-  const { user, session } = useUser();
+  const { user, session, isLoading } = useUser();
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
   // Use preloaded reports or fallback to cache
@@ -41,6 +41,7 @@ const CompanyAnalyzer = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (!user?.access_token) return; // Guard: don't submit if not logged in
     console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session });
     if (!url.trim()) {
       toast({
@@ -52,25 +53,6 @@ const CompanyAnalyzer = () => {
     }
     const normalizedUrl = normalizeUrl(url);
     setUrl(normalizedUrl);
-
-    if (!user?.access_token) {
-      toast({
-        title: "Error",
-        description: "Please log in to analyze companies",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Defensive: error if no access token
-    if (!user.access_token) {
-      toast({
-        title: "Auth Error",
-        description: "No access token found. Please log in again.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setAnalysis(null);
 
@@ -183,22 +165,27 @@ const CompanyAnalyzer = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={!user?.access_token || !url.trim()}
+                disabled={isLoading}
                 className="text-base"
                 autoComplete="off"
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={!user?.access_token || !url.trim()} className="w-full">
-              {user?.access_token ? (
+            <Button type="submit" disabled={isLoading || !url.trim()} className="w-full">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading user session...
+                </>
+              ) : user ? (
                 <>
                   <Search className="mr-2 h-4 w-4" />
                   Analyze Company
                 </>
               ) : (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading user session...
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Please log in
                 </>
               )}
             </Button>
