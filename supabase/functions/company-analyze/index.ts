@@ -171,34 +171,38 @@ serve(async (req) => {
     };
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
-    // Prepare ICP insert object
-    const icpInsert = {
+    // Prepare insert object for new table
+    const outputInsert = {
       user_id: user.id,
-      persona: sanitizedAnalysis.companyName,
-      job_titles: JSON.stringify(sanitizedAnalysis.decisionMakers),
-      company_size: JSON.stringify([sanitizedAnalysis.companyProfile.companySize]),
-      industries: JSON.stringify([sanitizedAnalysis.companyProfile.industry]),
-      location_country: JSON.stringify([sanitizedAnalysis.location]),
-      technologies: JSON.stringify(sanitizedAnalysis.technologies),
+      company_name: sanitizedAnalysis.companyName,
+      industry: sanitizedAnalysis.companyProfile.industry,
+      company_size: sanitizedAnalysis.companyProfile.companySize,
+      revenue_range: sanitizedAnalysis.companyProfile.revenueRange,
+      decision_makers: JSON.stringify(sanitizedAnalysis.decisionMakers),
       pain_points: JSON.stringify(sanitizedAnalysis.painPoints),
-      valid_use_case: sanitizedAnalysis.goToMarketStrategy || sanitizedAnalysis.researchSummary,
-      funding: '', // Not available from LLM result
+      technologies: JSON.stringify(sanitizedAnalysis.technologies),
+      location: sanitizedAnalysis.location,
+      market_trends: JSON.stringify(sanitizedAnalysis.marketTrends),
+      competitive_landscape: JSON.stringify(sanitizedAnalysis.competitiveLandscape),
+      go_to_market_strategy: sanitizedAnalysis.goToMarketStrategy,
+      research_summary: sanitizedAnalysis.researchSummary,
+      website: sanitizedAnalysis.website,
       created_at: new Date().toISOString()
     };
-    console.log('ICP insert object:', JSON.stringify(icpInsert));
+    console.log('Company Analyzer output insert object:', JSON.stringify(outputInsert));
 
-    // Insert into icps table
+    // Insert into new table
     try {
-      const { data: icp, error: icpError } = await supabaseClient
-        .from('icps')
-        .insert(icpInsert)
+      const { data: output, error: outputError } = await supabaseClient
+        .from('company_analyzer_outputs')
+        .insert(outputInsert)
         .select()
         .single();
 
-      if (icpError) {
-        console.error('Error saving ICP:', icpError);
+      if (outputError) {
+        console.error('Error saving Company Analyzer output:', outputError);
         return new Response(
-          JSON.stringify({ error: 'Failed to save ICP', details: icpError.message }),
+          JSON.stringify({ error: 'Failed to save Company Analyzer output', details: outputError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -206,9 +210,9 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          icp,
-          analysis: finalAnalysis,
-          icpId: icp?.id || null
+          output,
+          analysis: sanitizedAnalysis,
+          outputId: output?.id || null
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -220,8 +224,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          analysis: finalAnalysis,
-          icpId: null,
+          analysis: sanitizedAnalysis,
+          outputId: null,
           warning: 'Analysis completed but not saved to database'
         }),
         {

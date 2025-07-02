@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      company_analyzer_outputs: {
+        Row: {
+          company_name: string | null
+          company_size: string | null
+          competitive_landscape: Json | null
+          created_at: string | null
+          decision_makers: Json | null
+          go_to_market_strategy: string | null
+          id: string
+          industry: string | null
+          location: string | null
+          market_trends: Json | null
+          pain_points: Json | null
+          research_summary: string | null
+          revenue_range: string | null
+          technologies: Json | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          company_size?: string | null
+          competitive_landscape?: Json | null
+          created_at?: string | null
+          decision_makers?: Json | null
+          go_to_market_strategy?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          market_trends?: Json | null
+          pain_points?: Json | null
+          research_summary?: string | null
+          revenue_range?: string | null
+          technologies?: Json | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          company_size?: string | null
+          competitive_landscape?: Json | null
+          created_at?: string | null
+          decision_makers?: Json | null
+          go_to_market_strategy?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          market_trends?: Json | null
+          pain_points?: Json | null
+          research_summary?: string | null
+          revenue_range?: string | null
+          technologies?: Json | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_analyzer_outputs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       icps: {
         Row: {
           company_size: string | null
@@ -22,7 +87,7 @@ export type Database = {
           pain_points: string | null
           persona: string | null
           technologies: string | null
-          user_id: string
+          user_id: number
           valid_use_case: string | null
         }
         Insert: {
@@ -37,7 +102,7 @@ export type Database = {
           pain_points?: string | null
           persona?: string | null
           technologies?: string | null
-          user_id: string
+          user_id: number
           valid_use_case?: string | null
         }
         Update: {
@@ -52,7 +117,7 @@ export type Database = {
           pain_points?: string | null
           persona?: string | null
           technologies?: string | null
-          user_id?: string
+          user_id?: number
           valid_use_case?: string | null
         }
         Relationships: [
@@ -179,7 +244,7 @@ export type Database = {
           icp_id: number | null
           id: number
           url: string | null
-          user_id: string
+          user_id: number
         }
         Insert: {
           company_name?: string | null
@@ -187,7 +252,7 @@ export type Database = {
           icp_id?: number | null
           id?: number
           url?: string | null
-          user_id: string
+          user_id: number
         }
         Update: {
           company_name?: string | null
@@ -195,7 +260,7 @@ export type Database = {
           icp_id?: number | null
           id?: number
           url?: string | null
-          user_id?: string
+          user_id?: number
         }
         Relationships: [
           {

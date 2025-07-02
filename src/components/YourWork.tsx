@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -16,18 +18,21 @@ export default function YourWork() {
   const [gtmError, setGtmError] = useState<string | null>(null);
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
+  const [modalOutput, setModalOutput] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchCompanyAnalyzer = async () => {
       setAnalyzeLoading(true);
       setAnalyzeError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/company-analyze/reports`, { 
-          headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
-        });
-        if (!res.ok) throw new Error('Failed to fetch Company Analyzer reports');
-        const data = await res.json();
-        setAnalyzeWork(data.reports || []);
+        const { data, error } = await supabase
+          .from('company_analyzer_outputs')
+          .select('*')
+          .eq('user_id', session?.user?.id)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setAnalyzeWork(data || []);
       } catch (err) {
         setAnalyzeError('Failed to load Company Analyzer reports.');
       } finally {
@@ -95,11 +100,11 @@ export default function YourWork() {
                   {analyzeWork.map((item) => (
                     <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between bg-white rounded-lg border px-4 py-3 hover:shadow-sm transition">
                       <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-lg text-slate-900">{item.companyName || item.company || item.title || item.companyUrl || 'Untitled'}</span>
-                        <span className="text-xs text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}</span>
+                        <span className="font-semibold text-lg text-slate-900">{item.company_name || 'Untitled'}</span>
+                        <span className="text-xs text-slate-500">{item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</span>
                       </div>
                       <div className="flex gap-2 mt-2 md:mt-0">
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
+                        <Button size="sm" variant="outline" className="flex items-center gap-1" onClick={() => { setModalOutput(item); setShowModal(true); }}>
                           <Eye className="h-4 w-4" /> View
                         </Button>
                         <Button size="sm" variant="destructive" className="flex items-center gap-1">
@@ -110,6 +115,34 @@ export default function YourWork() {
                   ))}
                 </div>
               )}
+              {/* Modal for viewing full output */}
+              <Dialog open={showModal} onOpenChange={setShowModal}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Company Analysis Details</DialogTitle>
+                    <DialogDescription>
+                      {modalOutput?.company_name}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <div><b>Industry:</b> {modalOutput?.industry}</div>
+                    <div><b>Company Size:</b> {modalOutput?.company_size}</div>
+                    <div><b>Revenue Range:</b> {modalOutput?.revenue_range}</div>
+                    <div><b>Location:</b> {modalOutput?.location}</div>
+                    <div><b>Technologies:</b> {Array.isArray(modalOutput?.technologies) ? modalOutput.technologies.join(', ') : (modalOutput?.technologies || '')}</div>
+                    <div><b>Decision Makers:</b> {Array.isArray(modalOutput?.decision_makers) ? modalOutput.decision_makers.join(', ') : (modalOutput?.decision_makers || '')}</div>
+                    <div><b>Pain Points:</b> {Array.isArray(modalOutput?.pain_points) ? modalOutput.pain_points.join(', ') : (modalOutput?.pain_points || '')}</div>
+                    <div><b>Market Trends:</b> {Array.isArray(modalOutput?.market_trends) ? modalOutput.market_trends.join(', ') : (modalOutput?.market_trends || '')}</div>
+                    <div><b>Competitive Landscape:</b> {Array.isArray(modalOutput?.competitive_landscape) ? modalOutput.competitive_landscape.join(', ') : (modalOutput?.competitive_landscape || '')}</div>
+                    <div><b>Go To Market Strategy:</b> {modalOutput?.go_to_market_strategy}</div>
+                    <div><b>Research Summary:</b> {modalOutput?.research_summary}</div>
+                    <div><b>Website:</b> {modalOutput?.website}</div>
+                  </div>
+                  <DialogClose asChild>
+                    <Button variant="outline">Close</Button>
+                  </DialogClose>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           )}
         </Card>
