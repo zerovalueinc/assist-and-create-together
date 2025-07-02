@@ -90,24 +90,24 @@ serve(async (req) => {
 });
 
 async function generatePersonalizedEmail(contact: any, icpData: any, messagingAngles: string[] = []) {
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+  const openrouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
   
-  if (!openaiApiKey) {
-    console.warn('OpenAI API key not configured, returning template email');
+  if (!openrouterApiKey) {
+    console.warn('OpenRouter API key not configured, returning template email');
     return generateTemplateEmail(contact, icpData);
   }
   
   try {
     const prompt = buildPersonalizationPrompt(contact, icpData, messagingAngles);
     
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${openrouterApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'anthropic/claude-3.5-sonnet',
         messages: [
           {
             role: 'system',
@@ -124,7 +124,7 @@ async function generatePersonalizedEmail(contact: any, icpData: any, messagingAn
     });
 
     if (!response.ok) {
-      throw new Error('OpenAI API request failed');
+      throw new Error('OpenRouter API request failed');
     }
 
     const data = await response.json();

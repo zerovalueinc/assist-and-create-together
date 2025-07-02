@@ -22,7 +22,7 @@ interface PipelineState {
   updatedAt: string;
 }
 
-export function PipelineOrchestrator() {
+export default function PipelineOrchestrator() {
   const [url, setUrl] = useState('');
   const [userInput, setUserInput] = useState('');
   const [batchSize, setBatchSize] = useState(10);
