@@ -1,32 +1,32 @@
 
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig(async ({ command }) => {
-  const plugins = [react()];
-  
-  // Dynamically import lovable-tagger only in development mode
-  if (command === 'serve') {
-    try {
-      const { componentTagger } = await import('lovable-tagger');
-      plugins.push(componentTagger());
-    } catch (error) {
-      console.warn('Could not load lovable-tagger:', error);
+export default defineConfig({
+  server: {
+    host: "::",
+    port: 8080,
+  },
+  plugins: [
+    react(),
+    {
+      name: 'lovable-tagger',
+      apply: 'build',
+      generateBundle() {
+        // Dynamic import to avoid build-time dependency issues
+        import('lovable-tagger').then(({ tagAllFiles }) => {
+          tagAllFiles();
+        }).catch(() => {
+          // Silently fail if lovable-tagger is not available
+        });
+      }
     }
-  }
-
-  return {
-    server: {
-      host: "::",
-      port: 8080,
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
-    plugins,
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
-    },
-  };
+  },
 });
