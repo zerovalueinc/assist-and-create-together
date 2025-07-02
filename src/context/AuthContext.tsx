@@ -110,16 +110,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
         if (session?.user) {
-          // Fetch profile data after auth state change
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+          fetchProfile(session.user.id);
         } else {
           setProfile(null);
         }
-        
         setLoading(false);
       }
     );
@@ -128,16 +123,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
       if (session?.user) {
         fetchProfile(session.user.id);
       }
-      
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [user]);
+  }, []);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string, company?: string) => {
     try {
