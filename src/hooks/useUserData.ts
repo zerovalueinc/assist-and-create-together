@@ -1,4 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 export const useUserData = () => {
   const { user, profile } = useAuth();
@@ -22,3 +24,17 @@ export const useUserData = () => {
       : user?.email?.[0]?.toUpperCase() || 'U'
   };
 };
+
+export function useUser() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) setUser(session?.user || null);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  return user;
+}

@@ -7,11 +7,13 @@ import { supabase } from '@/integrations/supabase/client';
 import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
+import { useUser } from '../hooks/useUserData';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
   const { session } = useAuth();
+  const user = useUser();
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
@@ -26,6 +28,7 @@ export default function YourWork() {
   const lastFetchRef = useRef(0);
 
   useEffect(() => {
+    if (!user) return;
     // Show cached data instantly
     const cachedAnalyze = getCache<any[]>('yourwork_analyze', []);
     const cachedGTM = getCache<any[]>('yourwork_gtm', []);
@@ -37,8 +40,8 @@ export default function YourWork() {
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
       const now = Date.now();
-      if (!session?.user?.id) {
-        console.error('[YourWork] Blocked fetch: invalid user', { session });
+      if (!user.id) {
+        console.error('[YourWork] Blocked fetch: invalid user', { user });
         return;
       }
       if (now - lastFetchRef.current < 1000) {
@@ -46,7 +49,7 @@ export default function YourWork() {
         return;
       }
       lastFetchRef.current = now;
-      console.log('[YourWork] Fetching analyze work for user', { session });
+      console.log('[YourWork] Fetching analyze work for user', { user });
       if (hasFetchedAnalyze.current) return;
       hasFetchedAnalyze.current = true;
       setAnalyzeLoading(true);
@@ -55,7 +58,7 @@ export default function YourWork() {
         const { data, error } = await supabase
           .from('company_analyzer_outputs_unrestricted')
           .select('*')
-          .eq('user_id', session?.user?.id)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(50);
         if (!cancelled) {
@@ -85,8 +88,8 @@ export default function YourWork() {
       setGtmError(null);
       try {
         const [{ data: icps, error: icpError }, { data: playbooks, error: playbookError }] = await Promise.all([
-          supabase.from('icps').select('*').eq('user_id', Number(session?.user?.id)).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('user_id', Number(session?.user?.id)).order('created_at', { ascending: false })
+          supabase.from('icps').select('*').eq('user_id', Number(user.id)).order('created_at', { ascending: false }),
+          supabase.from('saved_reports').select('*').eq('user_id', Number(user.id)).order('created_at', { ascending: false })
         ]);
         if (icpError || playbookError) throw icpError || playbookError;
         const allGTM = [...(icps || []), ...(playbooks || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).map((r: any) => ({
@@ -104,12 +107,12 @@ export default function YourWork() {
         setGtmLoading(false);
       }
     };
-    if (session?.access_token) {
+    if (user.access_token) {
       fetchCompanyAnalyzer();
       fetchGTM();
     }
     return () => { cancelled = true; };
-  }, [session?.access_token]);
+  }, [user]);
 
   return (
     <div className="min-h-[80vh] w-full flex flex-col items-center justify-start bg-slate-50 py-12">

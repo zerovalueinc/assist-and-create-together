@@ -1,3 +1,5 @@
+// This file is now deprecated. Use src/lib/supabase.ts for the supabase client.
+
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
