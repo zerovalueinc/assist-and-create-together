@@ -14,6 +14,7 @@ import { useCompany } from "@/context/CompanyContext";
 import { useAuth } from "@/context/AuthContext";
 import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -73,6 +74,8 @@ const ICPGenerator = () => {
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [recentICPs, setRecentICPs] = useState<any[]>([]);
   const [recentPlaybooks, setRecentPlaybooks] = useState<any[]>([]);
+  const [showICPModal, setShowICPModal] = useState(false);
+  const [modalICP, setModalICP] = useState<any>(null);
 
   // Debug log for recentICPs
   console.log('recentICPs:', recentICPs);
@@ -350,6 +353,8 @@ const ICPGenerator = () => {
                   style={{ flex: '0 0 auto' }}
                   onClick={() => {
                     if (parsed) setICP(parsed as GTMICPSchema);
+                    setModalICP(parsed);
+                    setShowICPModal(true);
                   }}
                 >
                   <img
@@ -364,6 +369,245 @@ const ICPGenerator = () => {
             })}
           </div>
         )}
+        {/* ICP Doc Modal */}
+        <Dialog open={showICPModal} onOpenChange={setShowICPModal}>
+          <DialogContent className="max-w-2xl w-full">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle className="text-green-500 h-5 w-5" /> ICP Document <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Saved!</span>
+              </DialogTitle>
+              <DialogDescription>
+                This ICP was automatically saved for you. Review all details below.
+              </DialogDescription>
+            </DialogHeader>
+            {modalICP && (
+              <div className="space-y-6">
+                {/* Executive Summary */}
+                {modalICP.gtmRecommendations && (
+                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                    <CardHeader className="flex flex-row items-center gap-3">
+                      <BarChart2 className="h-6 w-6 text-blue-500" />
+                      <CardTitle className="text-xl font-bold">Executive Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-base text-gray-700 whitespace-pre-line">
+                        {modalICP.gtmRecommendations}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {/* Main Playbook Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Personas */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <Users className="h-5 w-5 text-indigo-500" />
+                      <CardTitle className="text-lg">Target Personas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {Array.isArray(modalICP.personas) && modalICP.personas.length > 0 ? (
+                        <div className="space-y-2">
+                          {modalICP.personas.map((persona: any, idx: number) => (
+                            <div key={idx} className="mb-2 p-2 rounded bg-muted/40">
+                              <div className="font-semibold text-sm">{persona.title}{persona.role ? ` (${persona.role})` : ''}</div>
+                              {persona.painPoints && Array.isArray(persona.painPoints) && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  <span className="font-medium">Pain Points:</span>
+                                  <ul className="list-disc list-inside ml-4">
+                                    {persona.painPoints.map((pp: string, i: number) => (
+                                      <li key={i}>{pp}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {persona.responsibilities && Array.isArray(persona.responsibilities) && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  <span className="font-medium">Responsibilities:</span>
+                                  <ul className="list-disc list-inside ml-4">
+                                    {persona.responsibilities.map((r: string, i: number) => (
+                                      <li key={i}>{r}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : <div className="text-xs text-gray-400">No personas available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Firmographics */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <Target className="h-5 w-5 text-green-500" />
+                      <CardTitle className="text-lg">Firmographics</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.firmographics && typeof modalICP.firmographics === 'object' ? (
+                        <div className="grid grid-cols-1 gap-2 text-sm">
+                          {Object.entries(modalICP.firmographics).map(([key, value]) => (
+                            <div key={key} className="flex items-center gap-2">
+                              <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
+                              <span>{String(value) || 'N/A'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <div className="text-xs text-gray-400">No firmographics available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Messaging Angles */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <Lightbulb className="h-5 w-5 text-yellow-500" />
+                      <CardTitle className="text-lg">Messaging Angles</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {Array.isArray(modalICP.messagingAngles) && modalICP.messagingAngles.length > 0 ? (
+                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                          {modalICP.messagingAngles.map((m: string, i: number) => (
+                            <li key={i}>{m}</li>
+                          ))}
+                        </ul>
+                      ) : <div className="text-xs text-gray-400">No messaging angles available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* GTM Recommendations */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-pink-500" />
+                      <CardTitle className="text-lg">GTM Recommendations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.gtmRecommendations ? (
+                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.gtmRecommendations}</div>
+                      ) : <div className="text-xs text-gray-400">No recommendations available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Competitive Positioning */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <BarChart2 className="h-5 w-5 text-orange-500" />
+                      <CardTitle className="text-lg">Competitive Positioning</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.competitivePositioning ? (
+                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.competitivePositioning}</div>
+                      ) : <div className="text-xs text-gray-400">No competitive positioning available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Objection Handling */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-red-500" />
+                      <CardTitle className="text-lg">Objection Handling</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {Array.isArray(modalICP.objectionHandling) && modalICP.objectionHandling.length > 0 ? (
+                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                          {modalICP.objectionHandling.map((o: string, i: number) => (
+                            <li key={i}>{o}</li>
+                          ))}
+                        </ul>
+                      ) : <div className="text-xs text-gray-400">No objection handling available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Campaign Ideas */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <ClipboardList className="h-5 w-5 text-cyan-500" />
+                      <CardTitle className="text-lg">Campaign Ideas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {Array.isArray(modalICP.campaignIdeas) && modalICP.campaignIdeas.length > 0 ? (
+                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                          {modalICP.campaignIdeas.map((c: string, i: number) => (
+                            <li key={i}>{c}</li>
+                          ))}
+                        </ul>
+                      ) : <div className="text-xs text-gray-400">No campaign ideas available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Metrics to Track */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-lime-500" />
+                      <CardTitle className="text-lg">Metrics to Track</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {Array.isArray(modalICP.metricsToTrack) && modalICP.metricsToTrack.length > 0 ? (
+                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
+                          {modalICP.metricsToTrack.map((m: string, i: number) => (
+                            <li key={i}>{m}</li>
+                          ))}
+                        </ul>
+                      ) : <div className="text-xs text-gray-400">No metrics available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Film Reviews */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <FileText className="h-5 w-5 text-violet-500" />
+                      <CardTitle className="text-lg">Film Reviews</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.filmReviews ? (
+                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.filmReviews}</div>
+                      ) : <div className="text-xs text-gray-400">No film reviews available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Cross-Functional Alignment */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <Users className="h-5 w-5 text-fuchsia-500" />
+                      <CardTitle className="text-lg">Cross-Functional Alignment</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.crossFunctionalAlignment ? (
+                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.crossFunctionalAlignment}</div>
+                      ) : <div className="text-xs text-gray-400">No cross-functional alignment available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Demand Generation Framework */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-amber-500" />
+                      <CardTitle className="text-lg">Demand Generation Framework</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.demandGenFramework ? (
+                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.demandGenFramework}</div>
+                      ) : <div className="text-xs text-gray-400">No demand generation framework available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Iterative Measurement */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <BarChart2 className="h-5 w-5 text-sky-500" />
+                      <CardTitle className="text-lg">Iterative Measurement</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.iterativeMeasurement ? (
+                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.iterativeMeasurement}</div>
+                      ) : <div className="text-xs text-gray-400">No iterative measurement available.</div>}
+                    </CardContent>
+                  </Card>
+                  {/* Training & Enablement */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center gap-2">
+                      <FileText className="h-5 w-5 text-emerald-500" />
+                      <CardTitle className="text-lg">Training & Enablement</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {modalICP.trainingEnablement ? (
+                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.trainingEnablement}</div>
+                      ) : <div className="text-xs text-gray-400">No training & enablement available.</div>}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
         {/* Company Selector */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Select Target Company</label>
