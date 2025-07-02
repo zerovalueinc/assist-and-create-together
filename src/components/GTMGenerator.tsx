@@ -200,33 +200,20 @@ const GTMGenerator = () => {
                 </label>
                 <Input
                   id="url"
-                  type="url"
-                  placeholder="e.g., salesforce.com, hubspot.com"
+                  type="text"
+                  placeholder="e.g., outbound.ai, notion.so, zapier.com"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  disabled={loading}
                   className="text-base"
+                  autoComplete="off"
+                  aria-label="Company URL"
                 />
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="useExisting"
-                    checked={useExistingAnalysis}
-                    onChange={(e) => setUseExistingAnalysis(e.target.checked)}
-                    className="rounded"
-                  />
-                  <label htmlFor="useExisting" className="text-sm font-medium">
-                    Use existing company analysis
-                  </label>
-                </div>
               </div>
               <Button type="submit" disabled={loading || !url.trim()} className="w-full">
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating GTM Playbook (5-Phase Analysis)...
+                    Generating...
                   </>
                 ) : (
                   <>
