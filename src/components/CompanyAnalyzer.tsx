@@ -132,6 +132,26 @@ const CompanyAnalyzer = () => {
     }
   };
 
+  // Pills selector for reports
+  const renderReportPills = () => (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {reports.map((report) => (
+        <Badge
+          key={report.id}
+          variant={selectedReportId === report.id ? 'default' : 'secondary'}
+          className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedReportId === report.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
+          onClick={() => {
+            setSelectedReportId(report.id);
+            setAnalysis(report);
+          }}
+        >
+          <span className="font-semibold">{report.companyName || 'Untitled'}</span>
+          <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
+        </Badge>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <Card>
@@ -145,6 +165,7 @@ const CompanyAnalyzer = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {reports.length > 0 && renderReportPills()}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="url" className="text-sm font-medium">
@@ -197,23 +218,6 @@ const CompanyAnalyzer = () => {
         <EmptyState message="No company analysis reports found. Run an analysis first." />
       ) : (
         <div className="space-y-6">
-          {/* Pills selector */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {reports.map((report) => (
-              <Badge
-                key={report.id}
-                variant={selectedReportId === report.id ? 'default' : 'secondary'}
-                className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedReportId === report.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
-                onClick={() => {
-                  setSelectedReportId(report.id);
-                  setAnalysis(report);
-                }}
-              >
-                <span className="font-semibold">{report.companyName || 'Untitled'}</span>
-                <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
-              </Badge>
-            ))}
-          </div>
           {/* Details */}
           {analysis && selectedReportId && typeof analysis === 'object' && analysis.companyName ? (
             <div className="space-y-6">
