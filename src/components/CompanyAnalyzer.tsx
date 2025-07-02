@@ -25,20 +25,48 @@ const CompanyAnalyzer = () => {
   // Fetch recent reports
   const fetchReports = async () => {
     if (!user) return;
+    let attempts = 0;
+    let maxAttempts = 2;
+    let lastError = null;
     try {
+      // Try main table first
       const { data: reportsData, error: reportsError } = await supabase
-        .from('saved_reports')
+        .from('company_analyzer_outputs')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (reportsError) {
-        console.error('Error fetching reports:', reportsError);
-      } else {
-        setReports(reportsData || []);
-      }
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (reportsError) throw reportsError;
+      setReports(reportsData || []);
+      return;
     } catch (err) {
-      console.error('Error fetching reports:', err);
+      lastError = err;
+      attempts++;
+      // Try fallback table if main fails
+      try {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('company_analyzer_outputs_unrestricted')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        if (fallbackError) throw fallbackError;
+        setReports(fallbackData || []);
+        return;
+      } catch (fallbackErr) {
+        lastError = fallbackErr;
+        attempts++;
+      }
+    }
+    // If both fail, show a user-friendly error and stop
+    if (attempts >= maxAttempts) {
+      setReports([]);
+      toast({
+        title: "Error fetching reports",
+        description: "Could not load your company analysis reports. Please try again later.",
+        variant: "destructive",
+      });
+      console.error('CompanyAnalyzer: All fetch attempts failed:', lastError);
     }
   };
 
