@@ -65,6 +65,83 @@ export type Database = {
           },
         ]
       }
+      pipeline_results: {
+        Row: {
+          created_at: string
+          id: string
+          pipeline_id: string
+          results_data: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pipeline_id: string
+          results_data: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pipeline_id?: string
+          results_data?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_results_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipeline_states: {
+        Row: {
+          companies_processed: number
+          config: Json | null
+          contacts_found: number
+          created_at: string
+          current_phase: string
+          emails_generated: number
+          error: string | null
+          id: string
+          progress: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          companies_processed?: number
+          config?: Json | null
+          contacts_found?: number
+          created_at?: string
+          current_phase: string
+          emails_generated?: number
+          error?: string | null
+          id?: string
+          progress?: number
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          companies_processed?: number
+          config?: Json | null
+          contacts_found?: number
+          created_at?: string
+          current_phase?: string
+          emails_generated?: number
+          error?: string | null
+          id?: string
+          progress?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company: string | null
