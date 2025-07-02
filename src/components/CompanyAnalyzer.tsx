@@ -269,7 +269,7 @@ const CompanyAnalyzer = () => {
             ))}
           </div>
           {/* Details */}
-          {analysis && selectedReportId && (
+          {analysis && selectedReportId && typeof analysis === 'object' && analysis.companyName ? (
             <div className="space-y-6">
               {/* Company Overview */}
               <Card>
@@ -449,7 +449,9 @@ const CompanyAnalyzer = () => {
                 </CardContent>
               </Card>
             </div>
-          )}
+          ) : selectedReportId ? (
+            <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>
+          ) : null}
         </div>
       )}
     </div>
