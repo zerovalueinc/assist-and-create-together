@@ -193,42 +193,13 @@ serve(async (req) => {
     };
     console.log('Company Analyzer output insert object:', JSON.stringify(outputInsert));
 
-    // Insert into new table
+    // Insert into unrestricted table ONLY
     try {
       const { data: output, error: outputError } = await supabaseClient
-        .from('company_analyzer_outputs')
+        .from('company_analyzer_outputs_unrestricted')
         .insert(outputInsert)
         .select()
         .single();
-
-      if (outputError && outputError.code === '42501') { // RLS violation
-        console.error('RLS violation, falling back to unrestricted table:', outputError);
-        // Try saving to a backup table with no RLS
-        const { data: fallbackOutput, error: fallbackError } = await supabaseClient
-          .from('company_analyzer_outputs_unrestricted')
-          .insert(outputInsert)
-          .select()
-          .single();
-        if (fallbackError) {
-          console.error('Error saving to fallback table:', fallbackError);
-          return new Response(
-            JSON.stringify({ error: 'Failed to save Company Analyzer output (even fallback)', details: fallbackError.message }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        return new Response(
-          JSON.stringify({
-            success: true,
-            output: fallbackOutput,
-            analysis: sanitizedAnalysis,
-            outputId: fallbackOutput?.id || null,
-            fallback: true
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
 
       if (outputError) {
         console.error('Error saving Company Analyzer output:', outputError);
