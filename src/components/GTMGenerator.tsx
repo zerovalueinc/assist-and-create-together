@@ -22,9 +22,12 @@ const GTMGenerator = () => {
   const { user, session } = useAuth();
   const hasFetched = useRef(false);
 
-  // Show cached analyses instantly
+  // Show cached analyses instantly, fallback to companyanalyzer_reports if needed
   useEffect(() => {
-    const cachedAnalyses = getCache<any[]>('yourwork_analyze', []);
+    let cachedAnalyses = getCache<any[]>('yourwork_analyze', []);
+    if (cachedAnalyses.length === 0) {
+      cachedAnalyses = getCache<any[]>('companyanalyzer_reports', []);
+    }
     if (cachedAnalyses.length > 0) setAvailableAnalyses(cachedAnalyses);
   }, []);
 
@@ -241,23 +244,22 @@ const GTMGenerator = () => {
             <div className="font-semibold text-base mb-1">Select Target Company</div>
             {availableAnalyses.length > 0 && renderCompanyPills()}
           </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="url" className="text-sm font-medium">
-                Company URL
-              </label>
-              <Input
-                id="url"
-                type="url"
-                placeholder="e.g., salesforce.com, hubspot.com"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                disabled={loading}
-                className="text-base"
-              />
-            </div>
-
-            {availableAnalyses.length > 0 && (
+          {availableAnalyses.length > 0 && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="url" className="text-sm font-medium">
+                  Company URL
+                </label>
+                <Input
+                  id="url"
+                  type="url"
+                  placeholder="e.g., salesforce.com, hubspot.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  disabled={loading}
+                  className="text-base"
+                />
+              </div>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <input
@@ -272,22 +274,21 @@ const GTMGenerator = () => {
                   </label>
                 </div>
               </div>
-            )}
-
-            <Button type="submit" disabled={loading || !url.trim()} className="w-full">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating GTM Playbook (5-Phase Analysis)...
-                </>
-              ) : (
-                <>
-                  <Target className="mr-2 h-4 w-4" />
-                  Generate GTM Playbook
-                </>
-              )}
-            </Button>
-          </form>
+              <Button type="submit" disabled={loading || !url.trim()} className="w-full">
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating GTM Playbook (5-Phase Analysis)...
+                  </>
+                ) : (
+                  <>
+                    <Target className="mr-2 h-4 w-4" />
+                    Generate GTM Playbook
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
 

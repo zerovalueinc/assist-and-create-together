@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Toaster } from "@/components/ui/toaster";
@@ -11,6 +10,7 @@ import Workspace from '@/pages/Workspace';
 import Account from '@/pages/Account';
 import Analytics from '@/pages/Analytics';
 import { Loader2 } from 'lucide-react';
+import { DataPreloadProvider } from '@/context/DataPreloadProvider';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -98,10 +98,12 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppRoutes />
-        <Toaster />
-      </Router>
+      <DataPreloadProvider>
+        <Router>
+          <AppRoutes />
+          <Toaster />
+        </Router>
+      </DataPreloadProvider>
     </AuthProvider>
   );
 }
