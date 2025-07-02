@@ -5,7 +5,8 @@ import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import EmptyState from './ui/EmptyState';
-import { capitalizeFirstLetter } from '../lib/utils';
+import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
+import { Skeleton } from './ui/skeleton';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -24,6 +25,14 @@ export default function YourWork() {
   const hasFetchedGTM = useRef(false);
 
   useEffect(() => {
+    // Show cached data instantly
+    const cachedAnalyze = getCache<any[]>('yourwork_analyze', []);
+    const cachedGTM = getCache<any[]>('yourwork_gtm', []);
+    if (cachedAnalyze.length > 0) setAnalyzeWork(cachedAnalyze);
+    if (cachedGTM.length > 0) setGtmWork(cachedGTM);
+    setAnalyzeLoading(false);
+    setGtmLoading(false);
+
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
       if (hasFetchedAnalyze.current) return;
@@ -39,12 +48,14 @@ export default function YourWork() {
           .limit(50);
         if (!cancelled) {
           if (error) throw error;
-          setAnalyzeWork((data || []).map((r: any) => ({
+          const normalized = (data || []).map((r: any) => ({
             ...r,
             companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
             companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
             createdAt: r.createdAt || r.created_at || '',
-          })));
+          }));
+          setAnalyzeWork(normalized);
+          setCache('yourwork_analyze', normalized);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -66,7 +77,6 @@ export default function YourWork() {
           supabase.from('saved_reports').select('*').eq('user_id', Number(session?.user?.id)).order('created_at', { ascending: false })
         ]);
         if (icpError || playbookError) throw icpError || playbookError;
-        // Merge and dedupe by id (if needed)
         const allGTM = [...(icps || []), ...(playbooks || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).map((r: any) => ({
           ...r,
           companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
@@ -74,6 +84,7 @@ export default function YourWork() {
           createdAt: r.createdAt || r.created_at || '',
         }));
         setGtmWork(allGTM);
+        setCache('yourwork_gtm', allGTM);
       } catch (err: any) {
         setGtmError(err.message || 'Failed to load GTM Generator reports.');
         console.error('Error fetching GTM Generator reports:', err);
@@ -110,7 +121,11 @@ export default function YourWork() {
           {analyzeExpanded && (
             <CardContent className="px-6 pb-6 pt-2">
               {analyzeLoading ? (
-                <div className="py-8 text-center text-slate-500">Loading Company Analyzer reports...</div>
+                <div className="flex flex-col gap-2 py-8">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
               ) : analyzeError ? (
                 <div className="py-8 text-center text-red-500">{analyzeError}</div>
               ) : analyzeWork.length === 0 ? (
@@ -157,7 +172,11 @@ export default function YourWork() {
           {gtmExpanded && (
             <CardContent className="px-6 pb-6 pt-2">
               {gtmLoading ? (
-                <div className="py-8 text-center text-slate-500">Loading GTM Playbooks...</div>
+                <div className="flex flex-col gap-2 py-8">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
               ) : gtmError ? (
                 <div className="py-8 text-center text-red-500">{gtmError}</div>
               ) : gtmWork.length === 0 ? (

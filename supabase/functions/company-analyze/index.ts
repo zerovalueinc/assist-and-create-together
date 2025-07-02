@@ -139,6 +139,36 @@ serve(async (req) => {
 
     // Normalize company URL
     const normalizedUrl = normalizeUrl(companyUrl);
+
+    // 30-day cache check: look for existing report for this user+url in last 30 days
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - THIRTY_DAYS_MS).toISOString();
+    const { data: recentReport, error: recentError } = await supabaseClient
+      .from('company_analyzer_outputs_unrestricted')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('website', normalizedUrl)
+      .gte('created_at', thirtyDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (recentReport && !recentError) {
+      console.log('Returning cached company analysis (less than 30 days old)');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          output: recentReport,
+          analysis: recentReport, // for compatibility
+          outputId: recentReport.id || null,
+          cached: true
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Use normalizedUrl for analysis and saving
     const analyzer = new LLMCompanyAnalyzer();
     const finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
