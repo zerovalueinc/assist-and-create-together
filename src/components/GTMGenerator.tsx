@@ -33,7 +33,14 @@ const GTMGenerator = () => {
         if (error) {
           console.error('Error fetching analyses:', error);
         } else {
-          setAvailableAnalyses(data || []);
+          // Normalize field names for pills/selector
+          const normalized = (data || []).map((row: any) => ({
+            ...row,
+            companyName: row.companyName || row.company_name || '',
+            companyUrl: row.companyUrl || row.website || row.company_url || '',
+            createdAt: row.createdAt || row.created_at || '',
+          }));
+          setAvailableAnalyses(normalized);
         }
       } catch (err) {
         console.error('Error fetching analyses:', err);
@@ -219,7 +226,7 @@ const GTMGenerator = () => {
                     <option value="">Select existing analysis...</option>
                     {availableAnalyses.map((analysis: any) => (
                       <option key={analysis.id} value={analysis.id}>
-                        {analysis.company_name} - {new Date(analysis.created_at).toLocaleDateString()}
+                        {analysis.companyName} - {analysis.createdAt ? new Date(analysis.createdAt).toLocaleDateString() : ''}
                       </option>
                     ))}
                   </select>
