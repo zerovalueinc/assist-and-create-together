@@ -13,6 +13,7 @@ import { CheckCircle } from 'lucide-react';
 import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
+import { useDataPreload } from '@/context/DataPreloadProvider';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -24,63 +25,15 @@ function normalizeUrl(input: string): string {
 
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
-  const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { setResearch } = useCompany();
   const { user, session, loading: authLoading } = useAuth();
-  const [reports, setReports] = useState<any[]>([]);
-  const [showICPModal, setShowICPModal] = useState(false);
-  const [modalICP, setModalICP] = useState<any>(null);
-  const lastFetchedUserId = useRef<string | null>(null);
-  const hasFetchedReports = useRef(false);
-  const [loadingReports, setLoadingReports] = useState(true);
+  const { data: preloadData, loading: preloadLoading } = useDataPreload();
+
+  // Use preloaded reports
+  const reports = preloadData?.companyAnalyzer || [];
+  const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-
-  // Fetch recent reports
-  const fetchReports = async () => {
-    setLoadingReports(true);
-    if (!user) return;
-    try {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('company_analyzer_outputs_unrestricted')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (fallbackError) throw fallbackError;
-      const normalized = (fallbackData || []).map((r: any) => ({
-        ...r,
-        companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
-        companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-        createdAt: r.createdAt || r.created_at || '',
-      }));
-      setReports(normalized);
-      setCache('companyanalyzer_reports', normalized);
-    } catch (fallbackErr) {
-      // Do NOT clear reports on error, just show toast
-      toast({
-        title: "Error fetching reports",
-        description: "Could not load your company analysis reports. Please try again later.",
-        variant: "destructive",
-      });
-      console.error('CompanyAnalyzer: Fetch failed:', fallbackErr);
-    } finally {
-      setLoadingReports(false);
-    }
-  };
-
-  // Fetch on mount
-  useEffect(() => {
-    // Show cached reports instantly
-    const cachedReports = getCache<any[]>('companyanalyzer_reports', []);
-    if (cachedReports.length > 0) setReports(cachedReports);
-    setLoadingReports(false);
-    if (!user?.id) return;
-    if (hasFetchedReports.current) return;
-    hasFetchedReports.current = true;
-    fetchReports();
-  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +67,6 @@ const CompanyAnalyzer = () => {
       return;
     }
 
-    setLoading(true);
     setAnalysis(null);
 
     try {
@@ -151,14 +103,10 @@ const CompanyAnalyzer = () => {
           isCached: false,
           timestamp: new Date().toISOString()
         });
-        setModalICP(data.analysis);
-        setShowICPModal(true);
         toast({
           title: "Analysis Complete",
           description: `Successfully analyzed ${data.analysis.companyName}`,
         });
-        // Refresh reports after analysis
-        fetchReports();
       } else {
         console.error('Analysis failed - no success flag or analysis data');
         throw new Error(data?.error || 'Analysis failed - no data returned');
@@ -174,8 +122,6 @@ const CompanyAnalyzer = () => {
         description: error.message || "Failed to analyze company. Please check the URL and try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -211,19 +157,19 @@ const CompanyAnalyzer = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={loading}
+                disabled={preloadLoading}
                 className="text-base"
                 autoComplete="off"
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={authLoading || loading || !session?.access_token || !url.trim()} className="w-full">
+            <Button type="submit" disabled={authLoading || preloadLoading || !session?.access_token || !url.trim()} className="w-full">
               {authLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading user session...
                 </>
-              ) : loading ? (
+              ) : preloadLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Analyzing (5-Phase Research)...
@@ -240,7 +186,7 @@ const CompanyAnalyzer = () => {
       </Card>
 
       {/* Results */}
-      {loadingReports ? (
+      {preloadLoading ? (
         <div className="flex flex-col gap-2 py-8">
           {[...Array(3)].map((_, i) => (
             <Skeleton key={i} className="h-16 w-full" />

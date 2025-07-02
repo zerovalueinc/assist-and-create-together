@@ -10,78 +10,21 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
+import { useDataPreload } from '@/context/DataPreloadProvider';
 
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
   const [gtmPlaybook, setGtmPlaybook] = useState(null);
   const [loading, setLoading] = useState(false);
   const [useExistingAnalysis, setUseExistingAnalysis] = useState(false);
-  const [availableAnalyses, setAvailableAnalyses] = useState([]);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState(null);
   const { toast } = useToast();
   const { user, session } = useAuth();
   const hasFetched = useRef(false);
+  const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
-  // Show cached analyses instantly, fallback to companyanalyzer_reports if needed
-  useEffect(() => {
-    let cachedAnalyses = getCache<any[]>('yourwork_analyze', []);
-    if (cachedAnalyses.length === 0) {
-      cachedAnalyses = getCache<any[]>('companyanalyzer_reports', []);
-    }
-    if (cachedAnalyses.length > 0) setAvailableAnalyses(cachedAnalyses);
-  }, []);
-
-  // Fetch available company analyses for reuse
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    let cancelled = false;
-    const fetchAnalyses = async () => {
-      setLoading(true);
-      if (!user) return;
-      try {
-        const { data, error } = await supabase
-          .from('company_analyzer_outputs_unrestricted')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (!cancelled) {
-          if (error) {
-            toast({
-              title: "Error fetching analyses",
-              description: error.message || "Failed to fetch company analyses.",
-              variant: "destructive",
-            });
-            console.error('Error fetching analyses:', error);
-          } else {
-            // Normalize field names for pills/selector
-            const normalized = (data || []).map((row: any) => ({
-              ...row,
-              companyName: capitalizeFirstLetter(row.companyName || row.company_name || ''),
-              companyUrl: row.companyUrl || row.website || row.company_url || '',
-              createdAt: row.createdAt || row.created_at || '',
-            }));
-            setAvailableAnalyses(normalized);
-            setCache('yourwork_analyze', normalized);
-          }
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          toast({
-            title: "Error fetching analyses",
-            description: err.message || "Failed to fetch company analyses.",
-            variant: "destructive",
-          });
-          console.error('Error fetching analyses:', err);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchAnalyses();
-    return () => { cancelled = true; };
-  }, [user]);
+  // Use preloaded analyses for pills
+  const availableAnalyses = preloadData?.companyAnalyzer || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
