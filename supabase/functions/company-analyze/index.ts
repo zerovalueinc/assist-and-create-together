@@ -1,7 +1,7 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { LLMCompanyAnalyzer } from '../../../agents/LLMCompanyAnalyzer.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -137,63 +137,9 @@ serve(async (req) => {
 
     console.log('User authenticated successfully:', user.id);
 
-    // Extract domain from URL for company name
-    const extractedDomain = extractDomain(companyUrl);
-    console.log('Extracted domain:', extractedDomain);
-
-    // Generate comprehensive analysis
-    const finalAnalysis: CompanyAnalysisResult = {
-      companyName: extractedDomain,
-      companyProfile: {
-        industry: 'Technology Services',
-        companySize: '51-200 employees',
-        revenueRange: '$10M-$50M'
-      },
-      decisionMakers: [
-        'Chief Executive Officer',
-        'VP of Sales', 
-        'Head of Marketing', 
-        'Chief Technology Officer',
-        'VP of Business Development',
-        'Revenue Operations Manager'
-      ],
-      painPoints: [
-        'Manual lead qualification processes',
-        'Limited pipeline visibility', 
-        'Scaling sales operations',
-        'Data integration challenges',
-        'Customer acquisition costs',
-        'Time-to-close optimization'
-      ],
-      technologies: [
-        'Salesforce CRM',
-        'HubSpot Marketing',
-        'Google Workspace',
-        'Slack',
-        'Zoom',
-        'Microsoft Teams',
-        'AWS Cloud Services'
-      ],
-      location: 'United States',
-      marketTrends: [
-        'AI-powered sales automation',
-        'Digital transformation acceleration', 
-        'Remote-first operations',
-        'Data-driven decision making',
-        'Customer experience optimization',
-        'Revenue operations alignment'
-      ],
-      competitiveLandscape: [
-        'Enterprise SaaS competitors',
-        'Traditional service providers',
-        'Emerging tech startups',
-        'Industry-specific solutions'
-      ],
-      goToMarketStrategy: 'Multi-channel approach combining product-led growth, targeted outbound sales, strategic partnerships, and content marketing to penetrate enterprise accounts while maintaining efficient customer acquisition costs.',
-      researchSummary: 'Comprehensive 5-phase analysis completed: Phase 1 (Company Intelligence) - Organizational structure and key personnel identified. Phase 2 (Market Research) - Industry trends and positioning analyzed. Phase 3 (Competitive Analysis) - Market landscape and differentiation opportunities mapped. Phase 4 (Technology Assessment) - Current tech stack and integration points evaluated. Phase 5 (Strategic Synthesis) - Actionable go-to-market recommendations developed.',
-      website: companyUrl
-    };
-
+    // Use the modular LLMCompanyAnalyzer agent for dynamic analysis
+    const analyzer = new LLMCompanyAnalyzer();
+    const finalAnalysis = await analyzer.analyzeCompany(companyUrl);
     console.log('Analysis generated for:', finalAnalysis.companyName);
 
     // Try to save to database
