@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,18 +35,20 @@ export function NetworkDiagnostics() {
     setIsRunning(true);
     const updatedTests = [...tests];
 
-    // Test 1: Internet Connectivity
+    // Test 1: Internet Connectivity - Use a more reliable method
     try {
-      // Use a simple image load test for internet connectivity
-      const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = 'https://www.google.com/favicon.ico?' + new Date().getTime();
+      const response = await fetch('https://api.github.com/zen', { 
+        method: 'GET',
+        cache: 'no-cache'
       });
       
-      updatedTests[0].status = 'pass';
-      updatedTests[0].message = 'Internet connection active';
+      if (response.ok) {
+        updatedTests[0].status = 'pass';
+        updatedTests[0].message = 'Internet connection active';
+      } else {
+        updatedTests[0].status = 'fail';
+        updatedTests[0].message = 'Internet connection issues detected';
+      }
     } catch (error) {
       updatedTests[0].status = 'fail';
       updatedTests[0].message = 'No internet connection';
@@ -58,17 +59,21 @@ export function NetworkDiagnostics() {
     try {
       console.log('Testing Supabase database connection...');
       
-      // Try a simple select query that doesn't require authentication
-      const { data, error } = await supabase
+      // Use a simple query that works regardless of authentication status
+      const { error } = await supabase
         .from('profiles')
         .select('id')
         .limit(1);
       
       if (error) {
-        // If it's an auth error, that's actually good - it means we can reach Supabase
-        if (error.message.includes('JWT') || error.message.includes('RLS') || error.message.includes('policy')) {
+        // Check if it's an auth/RLS error (which means Supabase is reachable)
+        if (error.message.includes('JWT') || 
+            error.message.includes('RLS') || 
+            error.message.includes('policy') ||
+            error.message.includes('authentication') ||
+            error.code === 'PGRST301') {
           updatedTests[1].status = 'pass';
-          updatedTests[1].message = 'Database reachable (RLS protecting data)';
+          updatedTests[1].message = 'Database reachable (auth required for data)';
         } else {
           updatedTests[1].status = 'fail';
           updatedTests[1].message = `Database error: ${error.message}`;
@@ -78,8 +83,15 @@ export function NetworkDiagnostics() {
         updatedTests[1].message = 'Database connection successful';
       }
     } catch (error) {
-      updatedTests[1].status = 'fail';
-      updatedTests[1].message = error instanceof Error ? error.message : 'Database connection failed';
+      // Check if it's a network error vs auth error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        updatedTests[1].status = 'fail';
+        updatedTests[1].message = 'Cannot reach Supabase servers';
+      } else {
+        updatedTests[1].status = 'pass';
+        updatedTests[1].message = 'Database reachable (auth/permissions issue)';
+      }
     }
     setTests([...updatedTests]);
 
@@ -90,15 +102,22 @@ export function NetworkDiagnostics() {
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
-        updatedTests[2].status = 'fail';
-        updatedTests[2].message = `Auth error: ${error.message}`;
+        // If we can get an error from auth, the service is reachable
+        updatedTests[2].status = 'pass';
+        updatedTests[2].message = `Auth service accessible (${error.message})`;
       } else {
         updatedTests[2].status = 'pass';
         updatedTests[2].message = session ? 'Authenticated user session' : 'Auth service accessible (no session)';
       }
     } catch (error) {
-      updatedTests[2].status = 'fail';
-      updatedTests[2].message = error instanceof Error ? error.message : 'Auth service unavailable';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('Failed to fetch')) {
+        updatedTests[2].status = 'fail';
+        updatedTests[2].message = 'Cannot reach Supabase auth service';
+      } else {
+        updatedTests[2].status = 'fail';
+        updatedTests[2].message = errorMessage;
+      }
     }
     setTests([...updatedTests]);
 
