@@ -74,6 +74,63 @@ export type Database = {
           },
         ]
       }
+      company_analyzer_outputs_unrestricted: {
+        Row: {
+          company_name: string | null
+          company_size: string | null
+          competitive_landscape: Json | null
+          created_at: string | null
+          decision_makers: Json | null
+          go_to_market_strategy: string | null
+          id: string
+          industry: string | null
+          location: string | null
+          market_trends: Json | null
+          pain_points: Json | null
+          research_summary: string | null
+          revenue_range: string | null
+          technologies: Json | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          company_size?: string | null
+          competitive_landscape?: Json | null
+          created_at?: string | null
+          decision_makers?: Json | null
+          go_to_market_strategy?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          market_trends?: Json | null
+          pain_points?: Json | null
+          research_summary?: string | null
+          revenue_range?: string | null
+          technologies?: Json | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          company_size?: string | null
+          competitive_landscape?: Json | null
+          created_at?: string | null
+          decision_makers?: Json | null
+          go_to_market_strategy?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          market_trends?: Json | null
+          pain_points?: Json | null
+          research_summary?: string | null
+          revenue_range?: string | null
+          technologies?: Json | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       icps: {
         Row: {
           company_size: string | null

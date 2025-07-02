@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ const CompanyAnalyzer = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [showICPModal, setShowICPModal] = useState(false);
   const [modalICP, setModalICP] = useState<any>(null);
+  const lastFetchedUserId = useRef<string | null>(null);
 
   // Fetch recent reports
   const fetchReports = async () => {
@@ -72,8 +73,11 @@ const CompanyAnalyzer = () => {
 
   // Fetch on mount
   useEffect(() => {
+    if (!user?.id) return;
+    if (lastFetchedUserId.current === user.id) return;
+    lastFetchedUserId.current = user.id;
     fetchReports();
-  }, [user]);
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
