@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,16 +72,16 @@ const CompanyAnalyzer = () => {
       console.log('User ID:', user?.id);
       console.log('Session token available:', !!session?.access_token);
       
-      const requestBody = { url: url.trim() };
-      console.log('Request body:', requestBody);
-
-      const { data, error } = await supabase.functions.invoke('company-analyze', {
-        body: requestBody,
+      const response = await fetch('https://hbogcsztrryrepudceww.supabase.co/functions/v1/company-analyze', {
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
         },
+        body: JSON.stringify({ url: url.trim() })
       });
+      const data = await response.json();
+      const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;
 
       console.log('=== Supabase Function Response ===');
       console.log('Data:', data);
