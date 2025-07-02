@@ -84,7 +84,7 @@ export default function Workspace() {
     fetchData();
   }, [user]);
 
-  const handleDeleteReport = async (id: number) => {
+  const handleDeleteReport = async (id: string) => {
     try {
       const { error } = await supabase
         .from('saved_reports')
@@ -101,7 +101,7 @@ export default function Workspace() {
     }
   };
 
-  const handleDeleteICP = async (id: number) => {
+  const handleDeleteICP = async (id: string) => {
     try {
       const { error } = await supabase
         .from('icps')
