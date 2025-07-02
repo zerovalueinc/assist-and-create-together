@@ -67,6 +67,16 @@ const CompanyAnalyzer = () => {
       return;
     }
 
+    // Defensive: error if no access token
+    if (!session.access_token) {
+      toast({
+        title: "Auth Error",
+        description: "No access token found. Please log in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setAnalysis(null);
 
@@ -82,7 +92,7 @@ const CompanyAnalyzer = () => {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ url: url.trim() })
+        body: JSON.stringify({ url: url.trim(), user_id: user?.id })
       });
       const data = await response.json();
       const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;

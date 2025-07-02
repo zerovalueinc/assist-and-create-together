@@ -83,7 +83,14 @@ const ICPGenerator = () => {
   // Fetch analyzed companies (CompanyAnalyzer reports)
   useEffect(() => {
     const fetchCompanies = async () => {
-      if (!session?.access_token) return;
+      if (!session?.access_token) {
+        toast({
+          title: "Auth Error",
+          description: "No access token found. Please log in again.",
+          variant: "destructive",
+        });
+        return;
+      }
       try {
         const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/company-analyze-reports`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
@@ -105,7 +112,14 @@ const ICPGenerator = () => {
   // Fetch recent/generated ICPs
   useEffect(() => {
     const fetchICPs = async () => {
-      if (!session?.access_token) return;
+      if (!session?.access_token) {
+        toast({
+          title: "Auth Error",
+          description: "No access token found. Please log in again.",
+          variant: "destructive",
+        });
+        return;
+      }
       try {
         const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp-reports`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
@@ -123,7 +137,14 @@ const ICPGenerator = () => {
   // Fetch recent playbooks
   useEffect(() => {
     const fetchPlaybooks = async () => {
-      if (!session?.access_token) return;
+      if (!session?.access_token) {
+        toast({
+          title: "Auth Error",
+          description: "No access token found. Please log in again.",
+          variant: "destructive",
+        });
+        return;
+      }
       try {
         const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp-playbooks`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` },

@@ -30,7 +30,8 @@ export default function YourWork() {
           .from('company_analyzer_outputs')
           .select('*')
           .eq('user_id', session?.user?.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(50);
         if (error) throw error;
         setAnalyzeWork(data || []);
       } catch (err) {
