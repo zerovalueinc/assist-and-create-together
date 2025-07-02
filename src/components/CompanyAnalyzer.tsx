@@ -24,6 +24,13 @@ function normalizeUrl(input: string): string {
   return `https://${url}`;
 }
 
+// Helper to coerce a value to an array (supports comma-separated strings)
+function toArray(val: any): string[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+  return [];
+}
+
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
@@ -261,11 +268,15 @@ const CompanyAnalyzer = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {analysis.decisionMakers?.map((role, index) => (
-                      <Badge key={index} variant="secondary" className="text-sm">
-                        {role}
-                      </Badge>
-                    )) || <p className="text-muted-foreground">No decision makers identified</p>}
+                    {toArray(analysis.decisionMakers).length > 0 ? (
+                      toArray(analysis.decisionMakers).map((role, index) => (
+                        <Badge key={index} variant="secondary" className="text-sm">
+                          {role}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground">No decision makers identified</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -283,11 +294,15 @@ const CompanyAnalyzer = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {analysis.painPoints?.map((pain, index) => (
-                      <Badge key={index} variant="destructive" className="text-sm">
-                        {pain}
-                      </Badge>
-                    )) || <p className="text-muted-foreground">No pain points identified</p>}
+                    {toArray(analysis.painPoints).length > 0 ? (
+                      toArray(analysis.painPoints).map((pain, index) => (
+                        <Badge key={index} variant="destructive" className="text-sm">
+                          {pain}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground">No pain points identified</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -305,11 +320,15 @@ const CompanyAnalyzer = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {analysis.technologies?.map((tech, index) => (
-                      <Badge key={index} variant="outline" className="text-sm">
-                        {tech}
-                      </Badge>
-                    )) || <p className="text-muted-foreground">No technologies identified</p>}
+                    {toArray(analysis.technologies).length > 0 ? (
+                      toArray(analysis.technologies).map((tech, index) => (
+                        <Badge key={index} variant="outline" className="text-sm">
+                          {tech}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground">No technologies identified</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -329,21 +348,29 @@ const CompanyAnalyzer = () => {
                   <div>
                     <h4 className="font-medium mb-2">Market Trends</h4>
                     <div className="flex flex-wrap gap-2">
-                      {analysis.marketTrends?.map((trend, index) => (
-                        <Badge key={index} variant="secondary" className="text-sm">
-                          {trend}
-                        </Badge>
-                      )) || <p className="text-muted-foreground">No market trends identified</p>}
+                      {toArray(analysis.marketTrends).length > 0 ? (
+                        toArray(analysis.marketTrends).map((trend, index) => (
+                          <Badge key={index} variant="secondary" className="text-sm">
+                            {trend}
+                          </Badge>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No market trends identified</p>
+                      )}
                     </div>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Competitive Landscape</h4>
                     <div className="flex flex-wrap gap-2">
-                      {analysis.competitiveLandscape?.map((competitor, index) => (
-                        <Badge key={index} variant="outline" className="text-sm">
-                          {competitor}
-                        </Badge>
-                      )) || <p className="text-muted-foreground">No competitors identified</p>}
+                      {toArray(analysis.competitiveLandscape).length > 0 ? (
+                        toArray(analysis.competitiveLandscape).map((competitor, index) => (
+                          <Badge key={index} variant="outline" className="text-sm">
+                            {competitor}
+                          </Badge>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No competitors identified</p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
