@@ -380,10 +380,14 @@ const GTMGenerator = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {availableAnalyses.length === 0 ? (
-                      <EmptyState message="No company analyses found. Run an analysis first." />
+                    {availableAnalyses.length > 0 ? (
+                      <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
+                        {availableAnalyses.map((analysis) => (
+                          <div key={analysis.id} className="pill-selector">{analysis.companyName}</div>
+                        ))}
+                      </div>
                     ) : (
-                      renderICPSection(gtmPlaybook.gtmPlaybook?.idealCustomerProfile)
+                      <EmptyState message="No company analyses found. Run an analysis first." />
                     )}
                   </CardContent>
                 </Card>
