@@ -1,0 +1,55 @@
+// agents/claude.ts
+// Handles prompt construction and calls Claude 3 Opus for syntax field generation
+export async function callClaude3(prompt: string): Promise<string> {
+  // TODO: Implement Claude 3 Opus API call
+  return '{}';
+}
+
+// Estimate the number of identifiable visitors (e.g., using SimilarWeb, or LLM math)
+export async function estimateIdentifiableTraffic(companyDomain: string) {
+  // Example: Use SimilarWeb API, or prompt Claude for an estimate
+  // Prompt: "Estimate the monthly US website traffic for the company with domain: {companyDomain}. Return a number."
+  return '';
+}
+
+// Identify the most important web page types for the company (e.g., pricing, demo, solutions)
+export async function identifyImportantPageTypes(companyDomain: string) {
+  // Example: Scrape navigation, or prompt Claude for likely key page types
+  // Prompt: "Given the company website {companyDomain}, what is the most important page type for high-intent buyers (e.g., pricing, demo, solutions, product)? Return a single page type."
+  return '';
+}
+
+// Find a similar customer (logo or company name) for social proof
+export async function findSimilarCustomer(companyDomain: string) {
+  // Example: Use a static list, CRM, or prompt Claude for a similar company
+  // Prompt: "Suggest a well-known company similar to {companyDomain} that would be a relevant social proof for a B2B SaaS buyer."
+  return '';
+}
+
+// Estimate average ACV (annual contract value) for the company/industry
+export async function estimateAverageACV(companyDomain: string) {
+  // Example: Use industry DB, or prompt Claude for an estimate
+  // Prompt: "Estimate the average annual contract value (ACV) for a company like {companyDomain} in its industry. Return a dollar amount."
+  return '';
+}
+
+// Identify the primary KPI for the lead's job title and company
+export async function identifyPrimaryKpi(jobTitle: string, companyDomain: string) {
+  // Example: Prompt Claude for the most likely KPI
+  // Prompt: "Given the job title '{jobTitle}' at {companyDomain}, what is the primary KPI this person cares about?"
+  return '';
+}
+
+// Identify the main demand generation channel for the company
+export async function identifyDemandGenChannel(companyDomain: string) {
+  // Example: Prompt Claude for the most likely demand gen channel
+  // Prompt: "For a company with domain {companyDomain}, what is the primary demand generation channel (e.g., paid search, content, outbound, events)?"
+  return '';
+}
+
+// Identify the most relevant tool in the company's tech stack
+export async function identifyCurrentStackTool(techStack: any) {
+  // Example: Pick from techStack, or prompt Claude for the most relevant tool for SDRs
+  // Prompt: "Given this tech stack: {JSON.stringify(techStack)}, what is the most relevant tool for SDRs to receive new leads?"
+  return '';
+} 
