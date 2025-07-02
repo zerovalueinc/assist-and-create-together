@@ -150,31 +150,43 @@ serve(async (req) => {
       );
     }
 
-    // Try to save to database
+    // Prepare ICP insert object
+    const icpInsert = {
+      user_id: user.id,
+      persona: finalAnalysis.companyName,
+      job_titles: JSON.stringify(finalAnalysis.decisionMakers || []),
+      company_size: JSON.stringify([finalAnalysis.companyProfile?.companySize || '']),
+      industries: JSON.stringify([finalAnalysis.companyProfile?.industry || '']),
+      location_country: JSON.stringify([finalAnalysis.location || '']),
+      technologies: JSON.stringify(finalAnalysis.technologies || []),
+      pain_points: JSON.stringify(finalAnalysis.painPoints || []),
+      valid_use_case: finalAnalysis.goToMarketStrategy || finalAnalysis.researchSummary || '',
+      funding: '', // Not available from LLM result
+      created_at: new Date().toISOString()
+    };
+
+    // Insert into icps table
     try {
-      const { data: savedReport, error: saveError } = await supabaseClient
-        .from('saved_reports')
-        .insert({
-          user_id: user.id, // UUID string
-          company_name: finalAnalysis.companyName,
-          url: companyUrl,
-          report_data: finalAnalysis, // Save the full analysis as JSONB
-          created_at: new Date().toISOString()
-        })
+      const { data: icp, error: icpError } = await supabaseClient
+        .from('icps')
+        .insert(icpInsert)
         .select()
         .single();
 
-      if (saveError) {
-        console.error('Error saving report:', saveError);
-      } else {
-        console.log('Report saved successfully with ID:', savedReport?.id);
+      if (icpError) {
+        console.error('Error saving ICP:', icpError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to save ICP', details: icpError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       return new Response(
         JSON.stringify({
           success: true,
+          icp,
           analysis: finalAnalysis,
-          reportId: savedReport?.id || null
+          icpId: icp?.id || null
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -183,12 +195,11 @@ serve(async (req) => {
 
     } catch (dbError) {
       console.error('Database operation failed:', dbError);
-      // Still return the analysis even if saving fails
       return new Response(
         JSON.stringify({
-          success: true,
+          success: false,
           analysis: finalAnalysis,
-          reportId: null,
+          icpId: null,
           warning: 'Analysis completed but not saved to database'
         }),
         {
