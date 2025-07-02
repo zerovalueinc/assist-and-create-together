@@ -29,7 +29,7 @@ const CompanyAnalyzer = () => {
       const { data: reportsData, error: reportsError } = await supabase
         .from('saved_reports')
         .select('*')
-        .eq('user_id', parseInt(user.id))
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (reportsError) {
