@@ -222,7 +222,8 @@ serve(async (req) => {
       go_to_market_strategy: sanitizedAnalysis.goToMarketStrategy,
       research_summary: sanitizedAnalysis.researchSummary,
       website: normalizedUrl,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      llm_output: JSON.stringify(sanitizedAnalysis)
     };
     console.log('Company Analyzer output insert object:', JSON.stringify(outputInsert));
 

@@ -48,6 +48,15 @@ const CompanyAnalyzer = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Reload reports when preloadData changes (e.g., on tab switch)
+  useEffect(() => {
+    let newReports = preloadData?.companyAnalyzer || [];
+    if (!newReports.length) {
+      newReports = getCache('yourwork_analyze', []);
+    }
+    setReports(newReports);
+  }, [preloadData]);
+
   const handleDeleteReport = async (id: string) => {
     const prevReports = reports;
     setReports(reports.filter(r => r.id !== id));
@@ -157,23 +166,26 @@ const CompanyAnalyzer = () => {
   // Pills selector for reports
   const renderReportPills = () => (
     <div className="flex flex-wrap gap-2 mb-4">
-      {reports.map((report) => (
-        <Badge
-          key={report.id}
-          variant={selectedReportId === report.id ? 'default' : 'secondary'}
-          className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedReportId === report.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
-          onClick={() => {
-            setSelectedReportId(report.id);
-            setAnalysis(report);
-          }}
-        >
-          <span className="font-semibold">{report.companyName || 'Untitled'}</span>
-          <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
-          <Button size="sm" variant="destructive" className="ml-2" onClick={e => { e.stopPropagation(); handleDeleteReport(report.id); }}>
-            Delete
-          </Button>
-        </Badge>
-      ))}
+      {reports.map((report) => {
+        const llm = report.llm_output ? JSON.parse(report.llm_output) : report;
+        return (
+          <Badge
+            key={report.id}
+            variant={selectedReportId === report.id ? 'default' : 'secondary'}
+            className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedReportId === report.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
+            onClick={() => {
+              setSelectedReportId(report.id);
+              setAnalysis(report);
+            }}
+          >
+            <span className="font-semibold">{llm.companyName || llm.company_name || 'Untitled'}</span>
+            <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
+            <Button size="sm" variant="destructive" className="ml-2" onClick={e => { e.stopPropagation(); handleDeleteReport(report.id); }}>
+              Delete
+            </Button>
+          </Badge>
+        );
+      })}
     </div>
   );
 
@@ -242,208 +254,214 @@ const CompanyAnalyzer = () => {
       ) : (
         <div className="space-y-6">
           {/* Details */}
-          {analysis && selectedReportId && typeof analysis === 'object' && analysis.companyName ? (
-            <div className="space-y-6">
-              {/* Company Overview */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    Company Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Company Name</label>
-                      <p className="font-medium">{analysis.companyName || 'N/A'}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Industry</label>
-                      <p className="font-medium">{analysis.companyProfile?.industry || 'N/A'}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Company Size</label>
-                      <p className="font-medium">{analysis.companyProfile?.companySize || 'N/A'}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Revenue Range</label>
-                      <p className="font-medium">{analysis.companyProfile?.revenueRange || 'N/A'}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Location</label>
-                      <p className="font-medium flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        {analysis.location || 'N/A'}
+          {analysis && selectedReportId && typeof analysis === 'object' ? (
+            (() => {
+              const llm = analysis.llm_output ? JSON.parse(analysis.llm_output) : analysis;
+              if (!llm.companyName && !llm.company_name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
+              return (
+                <div className="space-y-6">
+                  {/* Company Overview */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building className="h-5 w-5" />
+                        Company Overview
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">Company Name</label>
+                          <p className="font-medium">{llm.companyName || llm.company_name || 'N/A'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">Industry</label>
+                          <p className="font-medium">{llm.companyProfile?.industry || llm.industry || 'N/A'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">Company Size</label>
+                          <p className="font-medium">{llm.companyProfile?.companySize || llm.company_size || 'N/A'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">Revenue Range</label>
+                          <p className="font-medium">{llm.companyProfile?.revenueRange || llm.revenue_range || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">Location</label>
+                          <p className="font-medium flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            {llm.location || 'N/A'}
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-muted-foreground">Website</label>
+                          <p className="font-medium">
+                            <a href={llm.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                              {llm.website}
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Decision Makers */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Decision Makers
+                      </CardTitle>
+                      <CardDescription>
+                        Key roles and decision makers identified through Phase 1 research
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {toArray(llm.decisionMakers || llm.decision_makers).length > 0 ? (
+                          toArray(llm.decisionMakers || llm.decision_makers).map((role, index) => (
+                            <Badge key={index} variant="secondary" className="text-sm">
+                              {role}
+                            </Badge>
+                          ))
+                        ) : (
+                          <p className="text-muted-foreground">No decision makers identified</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Pain Points */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        Pain Points
+                      </CardTitle>
+                      <CardDescription>
+                        Challenges identified through Phase 4 technology analysis
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {toArray(llm.painPoints || llm.pain_points).length > 0 ? (
+                          toArray(llm.painPoints || llm.pain_points).map((pain, index) => (
+                            <Badge key={index} variant="destructive" className="text-sm">
+                              {pain}
+                            </Badge>
+                          ))
+                        ) : (
+                          <p className="text-muted-foreground">No pain points identified</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Technologies */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building className="h-5 w-5" />
+                        Technology Stack
+                      </CardTitle>
+                      <CardDescription>
+                        Technologies analyzed in Phase 4 research
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {toArray(llm.technologies).length > 0 ? (
+                          toArray(llm.technologies).map((tech, index) => (
+                            <Badge key={index} variant="outline" className="text-sm">
+                              {tech}
+                            </Badge>
+                          ))
+                        ) : (
+                          <p className="text-muted-foreground">No technologies identified</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Market Intelligence */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Market Intelligence
+                      </CardTitle>
+                      <CardDescription>
+                        Insights from Phase 2 & 3 competitive analysis
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Market Trends</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {toArray(llm.marketTrends || llm.market_trends).length > 0 ? (
+                            toArray(llm.marketTrends || llm.market_trends).map((trend, index) => (
+                              <Badge key={index} variant="secondary" className="text-sm">
+                                {trend}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-muted-foreground">No market trends identified</p>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Competitive Landscape</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {toArray(llm.competitiveLandscape || llm.competitive_landscape).length > 0 ? (
+                            toArray(llm.competitiveLandscape || llm.competitive_landscape).map((competitor, index) => (
+                              <Badge key={index} variant="outline" className="text-sm">
+                                {competitor}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-muted-foreground">No competitors identified</p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Go-to-Market Strategy */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Target className="h-5 w-5" />
+                        Go-to-Market Strategy
+                      </CardTitle>
+                      <CardDescription>
+                        Strategic insights from Phase 5 synthesis
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed">
+                        {llm.goToMarketStrategy || llm.go_to_market_strategy || 'No strategy identified'}
                       </p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Website</label>
-                      <p className="font-medium">
-                        <a href={analysis.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {analysis.website}
-                        </a>
+                    </CardContent>
+                  </Card>
+
+                  {/* Research Summary */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>5-Phase Research Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed">
+                        {llm.research_summary || llm.researchSummary || 'Multi-phase analysis completed with comprehensive company intelligence'}
                       </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Decision Makers */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Decision Makers
-                  </CardTitle>
-                  <CardDescription>
-                    Key roles and decision makers identified through Phase 1 research
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {toArray(analysis.decisionMakers).length > 0 ? (
-                      toArray(analysis.decisionMakers).map((role, index) => (
-                        <Badge key={index} variant="secondary" className="text-sm">
-                          {role}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-muted-foreground">No decision makers identified</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Pain Points */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5" />
-                    Pain Points
-                  </CardTitle>
-                  <CardDescription>
-                    Challenges identified through Phase 4 technology analysis
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {toArray(analysis.painPoints).length > 0 ? (
-                      toArray(analysis.painPoints).map((pain, index) => (
-                        <Badge key={index} variant="destructive" className="text-sm">
-                          {pain}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-muted-foreground">No pain points identified</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Technologies */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    Technology Stack
-                  </CardTitle>
-                  <CardDescription>
-                    Technologies analyzed in Phase 4 research
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {toArray(analysis.technologies).length > 0 ? (
-                      toArray(analysis.technologies).map((tech, index) => (
-                        <Badge key={index} variant="outline" className="text-sm">
-                          {tech}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-muted-foreground">No technologies identified</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Market Intelligence */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Market Intelligence
-                  </CardTitle>
-                  <CardDescription>
-                    Insights from Phase 2 & 3 competitive analysis
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Market Trends</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {toArray(analysis.marketTrends).length > 0 ? (
-                        toArray(analysis.marketTrends).map((trend, index) => (
-                          <Badge key={index} variant="secondary" className="text-sm">
-                            {trend}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground">No market trends identified</p>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Competitive Landscape</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {toArray(analysis.competitiveLandscape).length > 0 ? (
-                        toArray(analysis.competitiveLandscape).map((competitor, index) => (
-                          <Badge key={index} variant="outline" className="text-sm">
-                            {competitor}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground">No competitors identified</p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Go-to-Market Strategy */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Go-to-Market Strategy
-                  </CardTitle>
-                  <CardDescription>
-                    Strategic insights from Phase 5 synthesis
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed">
-                    {analysis.goToMarketStrategy || 'No strategy identified'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Research Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>5-Phase Research Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed">
-                    {analysis.research_summary || analysis.researchSummary || 'Multi-phase analysis completed with comprehensive company intelligence'}
-                  </p>
-                  {/* Optionally show full LLM JSON for debugging */}
-                  {/* <pre className="mt-4 text-xs bg-slate-100 p-2 rounded overflow-x-auto">{JSON.stringify(analysis, null, 2)}</pre> */}
-                </CardContent>
-              </Card>
-            </div>
+                      {/* Optionally show full LLM JSON for debugging */}
+                      {/* <pre className="mt-4 text-xs bg-slate-100 p-2 rounded overflow-x-auto">{JSON.stringify(llm, null, 2)}</pre> */}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()
           ) : selectedReportId ? (
             <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>
           ) : null}
