@@ -106,7 +106,7 @@ const CompanyAnalyzer = () => {
       console.error('Analysis error:', error);
       toast({
         title: "Analysis Failed",
-        description: error.message || "Failed to analyze company",
+        description: error.message || "Failed to analyze company. Please try again.",
         variant: "destructive",
       });
     } finally {
