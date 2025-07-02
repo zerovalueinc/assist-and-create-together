@@ -9,6 +9,7 @@ import EmailCampaigns from "@/components/EmailCampaigns";
 import SalesIntelligence from "@/components/SalesIntelligence";
 import PipelineOrchestrator from "@/components/PipelineOrchestrator";
 import YourWork from "@/components/YourWork";
+import { SystemAudit } from "@/components/SystemAudit";
 
 const Workspace = () => {
   return (
@@ -21,7 +22,7 @@ const Workspace = () => {
       </div>
       
       <Tabs defaultValue="pipeline" className="w-full">
-        <TabsList className="grid w-full grid-cols-8 mb-8">
+        <TabsList className="grid w-full grid-cols-9 mb-8">
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="company">Company</TabsTrigger>
           <TabsTrigger value="icp">ICP</TabsTrigger>
@@ -30,6 +31,7 @@ const Workspace = () => {
           <TabsTrigger value="email">Email</TabsTrigger>
           <TabsTrigger value="intelligence">Intelligence</TabsTrigger>
           <TabsTrigger value="work">Your Work</TabsTrigger>
+          <TabsTrigger value="audit">System Audit</TabsTrigger>
         </TabsList>
         
         <TabsContent value="pipeline">
@@ -62,6 +64,10 @@ const Workspace = () => {
         
         <TabsContent value="work">
           <YourWork />
+        </TabsContent>
+        
+        <TabsContent value="audit">
+          <SystemAudit />
         </TabsContent>
       </Tabs>
     </div>
