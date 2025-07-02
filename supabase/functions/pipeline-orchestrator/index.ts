@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -278,7 +277,7 @@ async function executePipeline(supabase: any, userId: string, pipelineId: string
       progress: 30
     });
 
-    const companies = await callCompanyDiscovery(supabase, icpResult);
+    const companies = await callCompanyDiscovery(supabase, icpResult, state.config.batchSize);
     
     // Phase 3: Contact Discovery
     await updatePipelineState(supabase, pipelineId, {
@@ -286,7 +285,7 @@ async function executePipeline(supabase: any, userId: string, pipelineId: string
       progress: 60
     });
 
-    const contacts = await callContactDiscovery(supabase, companies);
+    const contacts = await callContactDiscovery(supabase, companies, icpResult.personas);
     
     // Phase 4: Email Personalization
     await updatePipelineState(supabase, pipelineId, {
@@ -302,7 +301,7 @@ async function executePipeline(supabase: any, userId: string, pipelineId: string
       progress: 95
     });
 
-    await callCampaignUpload(supabase, emails);
+    const campaignResult = await callCampaignUpload(supabase, emails);
     
     // Complete pipeline
     await updatePipelineState(supabase, pipelineId, {
@@ -318,10 +317,12 @@ async function executePipeline(supabase: any, userId: string, pipelineId: string
       companies,
       contacts,
       emails,
+      campaignResult,
       summary: {
         companiesFound: companies.length,
         contactsFound: contacts.length,
         emailsGenerated: emails.length,
+        campaignUploaded: campaignResult.success,
         completedAt: new Date().toISOString()
       }
     });
@@ -378,52 +379,91 @@ async function savePipelineResults(supabase: any, userId: string, pipelineId: st
 // Placeholder functions for calling other agents (to be implemented)
 async function callICPGenerator(supabase: any, userId: string, config: any) {
   console.log('Calling ICP Generator...');
-  // This will call the existing gtm-generate edge function
-  const { data, error } = await supabase.functions.invoke('gtm-generate', {
-    body: { 
-      url: config.url || 'https://example.com',
-      userInput: config.userInput || 'Generate ICP for B2B SaaS company'
-    }
-  });
   
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.functions.invoke('gtm-generate', {
+      body: { 
+        url: config.url || 'https://example.com',
+        userInput: config.userInput || 'Generate ICP for B2B SaaS company',
+        comprehensive: true
+      }
+    });
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('ICP Generator failed:', error);
+    throw new Error(`ICP generation failed: ${error.message}`);
+  }
 }
 
-async function callCompanyDiscovery(supabase: any, icpData: any) {
+async function callCompanyDiscovery(supabase: any, icpData: any, batchSize: number = 10) {
   console.log('Calling Company Discovery...');
-  // Placeholder - will be implemented with Apollo agent
-  return [
-    { name: 'Sample Company 1', domain: 'example1.com', employees: 150 },
-    { name: 'Sample Company 2', domain: 'example2.com', employees: 200 }
-  ];
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('company-discovery', {
+      body: {
+        icpData,
+        batchSize
+      }
+    });
+    
+    if (error) throw error;
+    return data.companies || [];
+  } catch (error) {
+    console.error('Company Discovery failed:', error);
+    throw new Error(`Company discovery failed: ${error.message}`);
+  }
 }
 
-async function callContactDiscovery(supabase: any, companies: any[]) {
+async function callContactDiscovery(supabase: any, companies: any[], targetPersonas: any[]) {
   console.log('Calling Contact Discovery...');
-  // Placeholder - will be implemented with Apollo agent
-  return companies.map(company => ({
-    companyName: company.name,
-    firstName: 'John',
-    lastName: 'Doe',
-    email: `john.doe@${company.domain}`,
-    title: 'VP Marketing'
-  }));
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('contact-discovery', {
+      body: {
+        companies,
+        targetPersonas
+      }
+    });
+    
+    if (error) throw error;
+    return data.contacts || [];
+  } catch (error) {
+    console.error('Contact Discovery failed:', error);
+    throw new Error(`Contact discovery failed: ${error.message}`);
+  }
 }
 
 async function callEmailPersonalization(supabase: any, contacts: any[], icpData: any) {
   console.log('Calling Email Personalization...');
-  // Placeholder - will be implemented with email agent
-  return contacts.map(contact => ({
-    ...contact,
-    subject: `Quick question about ${contact.companyName}'s growth`,
-    body: `Hi ${contact.firstName}, I noticed ${contact.companyName} is scaling rapidly...`,
-    personalizedHook: `Saw your recent expansion in the market`
-  }));
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('email-personalization', {
+      body: {
+        contacts,
+        icpData,
+        messagingAngles: icpData.messagingAngles || []
+      }
+    });
+    
+    if (error) throw error;
+    return data.emails || [];
+  } catch (error) {
+    console.error('Email Personalization failed:', error);
+    throw new Error(`Email personalization failed: ${error.message}`);
+  }
 }
 
 async function callCampaignUpload(supabase: any, emails: any[]) {
   console.log('Calling Campaign Upload...');
-  // Placeholder - will be implemented with Instantly integration
-  return { success: true, campaignId: 'camp_123', uploadedCount: emails.length };
+  
+  // For now, return success without actual upload
+  // This can be implemented later with Instantly integration
+  return { 
+    success: true, 
+    campaignId: `camp_${Date.now()}`, 
+    uploadedCount: emails.length,
+    message: 'Campaign upload simulation completed'
+  };
 }
