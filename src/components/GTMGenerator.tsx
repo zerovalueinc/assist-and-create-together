@@ -8,7 +8,6 @@ import { Loader2, Target, Users, TrendingUp, MessageSquare, BookOpen, BarChart, 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from '../lib/supabase'; // See README for global pattern
-import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { useUser } from '../hooks/useUserData';
@@ -25,6 +24,9 @@ const GTMGenerator = () => {
   const { user, session } = useUser();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
+
+  // Debug logging
+  console.log("preloadData", preloadData);
 
   // Use preloaded analyses for pills or fallback to cache
   let availableAnalyses = preloadData?.companyAnalyzer || [];
@@ -120,6 +122,7 @@ const GTMGenerator = () => {
           <button
             key={item.id}
             onClick={() => {
+              console.log("Selected company:", item);
               setSelectedCompany(item);
               setSelectedAnalysisId(item.id);
             }}
@@ -144,7 +147,10 @@ const GTMGenerator = () => {
         {icpProfiles.map((icp: any) => (
           <button
             key={icp.id}
-            onClick={() => setSelectedICP(icp)}
+            onClick={() => {
+              console.log("Selected ICP:", icp);
+              setSelectedICP(icp);
+            }}
             className={`rounded-full px-4 py-1 text-sm border ${
               selectedICP?.id === icp.id ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
             }`}
@@ -224,8 +230,17 @@ const GTMGenerator = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className='mb-4'>{renderCompanyPills()}</div>
-          <div className='mb-4'>{renderICPPills()}</div>
+          {availableAnalyses.length === 0 && icpProfiles.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-2">No data available</p>
+              <p className="text-sm text-gray-400">Run a company analysis or generate an ICP first.</p>
+            </div>
+          ) : (
+            <>
+              <div className='mb-4'>{renderCompanyPills()}</div>
+              <div className='mb-4'>{renderICPPills()}</div>
+            </>
+          )}
           {availableAnalyses.length > 0 && (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -387,7 +402,7 @@ const GTMGenerator = () => {
                         ))}
                       </div>
                     ) : (
-                      <EmptyState message="No company analyses found. Run an analysis first." />
+                      <p className="text-gray-500">No company analyses found. Run an analysis first.</p>
                     )}
                   </CardContent>
                 </Card>
