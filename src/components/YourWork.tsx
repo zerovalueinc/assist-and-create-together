@@ -7,12 +7,14 @@ import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useUser } from '../hooks/useUserData';
+import { useCompany } from '../context/CompanyContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
   const { session } = useAuth();
   const { user, isLoading } = useUser();
+  const { workspaceId } = useCompany();
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function YourWork() {
   const [gtmExpanded, setGtmExpanded] = useState(true);
 
   useEffect(() => {
-    if (isLoading || !user?.id) return;
+    if (isLoading || !user?.id || !workspaceId) return;
     // Show cached data instantly
     const cachedAnalyze = getCache<any[]>('yourwork_analyze', []);
     const cachedGTM = getCache<any[]>('yourwork_gtm', []);
@@ -40,20 +42,17 @@ export default function YourWork() {
         const { data, error } = await supabase
           .from('company_analyzer_outputs_unrestricted')
           .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(50);
-        if (!cancelled) {
-          if (error) throw error;
-          const normalized = (data || []).map((r: any) => ({
-            ...r,
-            companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
-            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-            createdAt: r.createdAt || r.created_at || '',
-          }));
-          setAnalyzeWork(normalized);
-          setCache('yourwork_analyze', normalized);
-        }
+          .eq('workspace_id', workspaceId)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        const normalized = (data || []).map((r: any) => ({
+          ...r,
+          companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
+          companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+          createdAt: r.createdAt || r.created_at || '',
+        }));
+        setAnalyzeWork(normalized);
+        setCache('yourwork_analyze', normalized);
       } catch (err: any) {
         if (!cancelled) {
           setAnalyzeError(err.message || 'Failed to load Company Analyzer reports.');
@@ -68,8 +67,8 @@ export default function YourWork() {
       setGtmError(null);
       try {
         const [{ data: icps, error: icpError }, { data: playbooks, error: playbookError }] = await Promise.all([
-          supabase.from('icps').select('*').eq('user_id', Number(user.id)).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('user_id', Number(user.id)).order('created_at', { ascending: false })
+          supabase.from('icps').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
+          supabase.from('saved_reports').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false })
         ]);
         if (icpError || playbookError) throw icpError || playbookError;
         const allGTM = [...(icps || []), ...(playbooks || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).map((r: any) => ({
@@ -90,7 +89,7 @@ export default function YourWork() {
     fetchCompanyAnalyzer();
     fetchGTM();
     return () => { cancelled = true; };
-  }, [isLoading, user?.id]);
+  }, [isLoading, user?.id, workspaceId]);
 
   if (isLoading) {
     return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Loading user session...</span></div>;
@@ -125,22 +124,17 @@ export default function YourWork() {
               ) : analyzeWork.length === 0 ? (
                 <div className="py-8 text-center text-slate-500">No company analysis reports found. Run an analysis first.</div>
               ) : (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {analyzeWork.map((item) => (
-                    <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between bg-white rounded-lg border px-4 py-3 hover:shadow-sm transition">
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-lg text-slate-900">{item.companyName || 'Untitled'}</span>
-                        <span className="text-xs text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}</span>
-                      </div>
-                      <div className="flex gap-2 mt-2 md:mt-0">
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Eye className="h-4 w-4" /> View
-                        </Button>
-                        <Button size="sm" variant="destructive" className="flex items-center gap-1">
-                          <Trash2 className="h-4 w-4" /> Delete
-                        </Button>
-                      </div>
-                    </div>
+                    <Button
+                      key={item.id}
+                      variant="outline"
+                      className="flex items-center gap-2 px-3 py-1 text-sm"
+                      size="sm"
+                    >
+                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+                      {item.companyName || 'Untitled'}
+                    </Button>
                   ))}
                 </div>
               )}
@@ -170,22 +164,17 @@ export default function YourWork() {
               ) : gtmWork.length === 0 ? (
                 <div className="py-8 text-center text-slate-500">No GTM or ICP reports found. Generate a playbook or ICP first.</div>
               ) : (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {gtmWork.map((item) => (
-                    <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between bg-white rounded-lg border px-4 py-3 hover:shadow-sm transition">
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-lg text-slate-900">{item.companyName || 'Untitled GTM Playbook'}</span>
-                        <span className="text-xs text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}</span>
-                      </div>
-                      <div className="flex gap-2 mt-2 md:mt-0">
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Eye className="h-4 w-4" /> View
-                        </Button>
-                        <Button size="sm" variant="destructive" className="flex items-center gap-1">
-                          <Trash2 className="h-4 w-4" /> Delete
-                        </Button>
-                      </div>
-                    </div>
+                    <Button
+                      key={item.id}
+                      variant="outline"
+                      className="flex items-center gap-2 px-3 py-1 text-sm"
+                      size="sm"
+                    >
+                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+                      {item.companyName || 'Untitled GTM Playbook'}
+                    </Button>
                   ))}
                 </div>
               )}

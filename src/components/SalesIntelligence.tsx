@@ -7,19 +7,21 @@ import { SectionLabel } from "./ui/section-label";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { getCache, setCache } from '../lib/utils';
+import { useCompany } from '../context/CompanyContext';
 
 const SalesIntelligence = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { workspaceId } = useCompany();
   const hasFetched = useRef(false);
 
   useEffect(() => {
     // Show cached reports instantly
     const cachedReports = getCache<any[]>('salesintel_reports', []);
     if (cachedReports.length > 0) setReports(cachedReports);
-    if (!user || hasFetched.current) return;
+    if (!user || !workspaceId || hasFetched.current) return;
     hasFetched.current = true;
     setLoading(true);
     setError(null);
@@ -28,7 +30,7 @@ const SalesIntelligence = () => {
         const { data, error } = await supabase
           .from('saved_reports')
           .select('*')
-          .eq('user_id', Number(user.id))
+          .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: false });
         if (error) throw error;
         setReports(data || []);
@@ -41,7 +43,7 @@ const SalesIntelligence = () => {
       }
     };
     fetchReports();
-  }, [user]);
+  }, [user, workspaceId]);
 
   return (
     <Card className="w-full">

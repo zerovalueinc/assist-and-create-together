@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getCache, setCache } from '@/lib/utils';
 import { useAuth } from './AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCompany } from './CompanyContext';
 
 interface DashboardData {
   companyAnalyzer: any[];
@@ -24,6 +25,7 @@ export const useDataPreload = () => useContext(DataPreloadContext);
 
 export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
   const { user, session, loading: authLoading } = useAuth();
+  const { workspaceId } = useCompany();
   const [loading, setLoading] = useState(true);
   const [preloadError, setPreloadError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -36,11 +38,12 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || !user.id || !session) {
+    if (!user || !user.id || !session || !workspaceId) {
       setLoading(false);
-      setPreloadError(null);
+      setPreloadError('You must be logged in and have a workspace to view your GTM data.');
       setDashboardData(null);
       hasFetched.current = false;
+      console.warn('[DataPreloadProvider] No user, session, or workspaceId. user:', user, 'session:', session, 'workspaceId:', workspaceId);
       return;
     }
     if (hasFetched.current && retryCount === 0) return;
@@ -66,10 +69,10 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
       console.log('[DataPreloadProvider] Fetching dashboard data for user', { user });
       try {
         const [companyAnalyzer, icps, playbooks, salesintel] = await Promise.all([
-          supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-          supabase.from('icps').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+          supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }).limit(50),
+          supabase.from('icps').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
+          supabase.from('saved_reports').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
+          supabase.from('saved_reports').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false })
         ]);
         if (cancelled) return;
         const normalize = (arr: any[] = []) => arr.map((r: any) => ({
@@ -103,7 +106,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
     };
     fetchAll();
     return () => { cancelled = true; };
-  }, [user, session, authLoading, retryCount]);
+  }, [user, session, authLoading, retryCount, workspaceId]);
 
   if (authLoading) return <>{children}</>; // Never block public routes
 

@@ -71,7 +71,7 @@ const ICPGenerator = () => {
   const [icp, setICP] = useState<GTMICPSchema | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { research } = useCompany();
+  const { research, workspaceId } = useCompany();
   const { user, session } = useUser();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { data: preloadData } = useDataPreload();
@@ -100,12 +100,12 @@ const ICPGenerator = () => {
     hasFetchedICPs.current = true;
     let cancelled = false;
     const fetchICPs = async () => {
-      if (typeof user.id !== 'string' || !user.id) return;
+      if (!user?.id || !workspaceId) return;
       try {
         const { data, error } = await supabase
           .from('icps')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: false });
         if (!cancelled) {
           if (error) throw error;
@@ -124,11 +124,12 @@ const ICPGenerator = () => {
     };
     fetchICPs();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, workspaceId]);
 
   // Fetch recent playbooks
   const hasFetchedPlaybooks = useRef(false);
   useEffect(() => {
+    if (!user?.id || !workspaceId) return;
     // Show cached playbooks instantly
     const cachedPlaybooks = getCache<any[]>('icp_playbooks', []);
     if (cachedPlaybooks.length > 0) setRecentPlaybooks(cachedPlaybooks);
@@ -141,7 +142,7 @@ const ICPGenerator = () => {
         const { data, error } = await supabase
           .from('saved_reports')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: false });
         if (!cancelled) {
           if (error) throw error;
@@ -160,7 +161,7 @@ const ICPGenerator = () => {
     };
     fetchPlaybooks();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, workspaceId]);
 
   // Auto-load saved playbooks
   useEffect(() => {
@@ -359,6 +360,7 @@ const ICPGenerator = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Saved GTM Playbook Pills */}
+        {/* The following block is removed as per user request:
         {availableCompanies.length > 0 && (
           <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
             {availableCompanies.map((c) => (
@@ -376,6 +378,7 @@ const ICPGenerator = () => {
             ))}
           </div>
         )}
+        */}
         {recentICPs.length > 0 && (
           <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
             {recentICPs.map((icpObj) => {

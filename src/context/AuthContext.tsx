@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { useToast } from '@/hooks/use-toast';
+import { useCompany } from './CompanyContext';
 
 interface Profile {
   id: string;
@@ -42,6 +43,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { setWorkspaceId } = useCompany();
 
   const fetchProfile = async (userId: string) => {
     let cancelled = false;
@@ -112,19 +114,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           fetchProfile(session.user.id);
+          // Fetch workspace_id for this user
+          const { data: workspace, error: wsError } = await supabase
+            .from('workspaces')
+            .select('id')
+            .eq('owner_id', session.user.id)
+            .maybeSingle();
+          if (!wsError && workspace?.id) {
+            setWorkspaceId(workspace.id);
+          } else {
+            setWorkspaceId(null);
+          }
         } else {
           setProfile(null);
+          setWorkspaceId(null);
         }
         setLoading(false);
       }
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        // Fetch workspace_id for this user
+        const { data: workspace, error: wsError } = await supabase
+          .from('workspaces')
+          .select('id')
+          .eq('owner_id', session.user.id)
+          .maybeSingle();
+        if (!wsError && workspace?.id) {
+          setWorkspaceId(workspace.id);
+        } else {
+          setWorkspaceId(null);
+        }
       }
       setLoading(false);
     });

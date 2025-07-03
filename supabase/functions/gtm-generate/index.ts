@@ -11,6 +11,9 @@ interface GTMGenerationRequest {
   websiteUrl: string;
   useExistingAnalysis?: boolean;
   analysisId?: number;
+  workspace_id: string;
+  gtmFormAnswers?: any;
+  selectedCompany?: any;
 }
 
 interface GTMPlaybookResult {
@@ -105,6 +108,9 @@ serve(async (req) => {
     if (!gtmRequest.websiteUrl) {
       throw new Error('Website URL is required');
     }
+    if (!gtmRequest.workspace_id) {
+      throw new Error('workspace_id is required');
+    }
 
     console.log(`Starting GTM playbook generation for: ${gtmRequest.websiteUrl}`);
 
@@ -171,23 +177,32 @@ serve(async (req) => {
     
     // Phase 5: Playbook Generation
     console.log('Phase 5: Playbook Generation');
+    let gtmFormAnswers = gtmRequest.gtmFormAnswers || {};
+    let selectedCompany = gtmRequest.selectedCompany || null;
     const finalPlaybook = await generateGTMPlaybook(
       gtmRequest.websiteUrl,
       companyIntelligence,
       marketResearch,
       icpDevelopment,
-      gtmStrategy
+      gtmStrategy,
+      gtmFormAnswers,
+      selectedCompany
     );
 
     // Save GTM playbook to database
     const { data: savedPlaybook, error: saveError } = await supabaseClient
-      .from('saved_reports')
+      .from('gtm_playbooks')
       .insert({
+        workspace_id: gtmRequest.workspace_id,
         user_id: user.id,
         company_name: finalPlaybook.gtmPlaybook.idealCustomerProfile?.firmographics?.industry?.[0] || extractDomain(gtmRequest.websiteUrl),
-        url: gtmRequest.websiteUrl,
-        report_data: finalPlaybook,
-        created_at: new Date().toISOString()
+        website_url: gtmRequest.websiteUrl,
+        playbook_data: finalPlaybook,
+        confidence: finalPlaybook.confidence,
+        research_summary: finalPlaybook.researchSummary,
+        sources: finalPlaybook.sources,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -399,44 +414,101 @@ async function generateGTMPlaybook(
   companyIntel: any,
   marketResearch: any,
   icp: any,
-  gtmStrategy: any
+  gtmStrategy: any,
+  gtmFormAnswers: any = {},
+  selectedCompany: any = null
 ): Promise<GTMPlaybookResult> {
   const systemMessage = `You are a senior GTM consultant creating comprehensive, actionable GTM playbooks for B2B companies.`;
   
-  const prompt = `Create a comprehensive GTM Playbook for ${companyIntel.companyName || websiteUrl}:
+  const canonicalSchema = `{
+    "gtmPlaybook": {
+      "executiveSummary": "string",
+      "marketAnalysis": {
+        "totalAddressableMarket": "string",
+        "servicableAddressableMarket": "string",
+        "targetMarketSegments": ["string"],
+        "competitiveLandscape": ["string"],
+        "marketTrends": ["string"]
+      },
+      "idealCustomerProfile": {
+        "firmographics": {
+          "companySize": "string",
+          "industry": ["string"],
+          "revenueRange": "string",
+          "geography": ["string"]
+        },
+        "personas": [
+          {
+            "title": "string",
+            "role": "string",
+            "painPoints": ["string"],
+            "responsibilities": ["string"],
+            "buyingInfluence": "string"
+          }
+        ]
+      },
+      "valueProposition": {
+        "primaryValue": "string",
+        "keyDifferentiators": ["string"],
+        "competitiveAdvantages": ["string"]
+      },
+      "goToMarketStrategy": {
+        "channel": "string",
+        "salesMotion": "string",
+        "pricingStrategy": "string",
+        "customerAcquisitionCost": "string",
+        "salesCycleLength": "string"
+      },
+      "messagingFramework": {
+        "primaryMessage": "string",
+        "secondaryMessages": ["string"],
+        "objectionHandling": [
+          { "objection": "string", "response": "string" }
+        ]
+      },
+      "salesEnablement": {
+        "battleCards": ["string"],
+        "talkTracks": ["string"],
+        "demoScripts": ["string"],
+        "caseStudies": ["string"]
+      },
+      "demandGeneration": {
+        "channels": ["string"],
+        "contentStrategy": ["string"],
+        "campaignIdeas": ["string"],
+        "leadMagnets": ["string"]
+      },
+      "metricsAndKPIs": {
+        "leadingIndicators": ["string"],
+        "laggingIndicators": ["string"],
+        "successMetrics": ["string"]
+      }
+    },
+    "researchSummary": "string",
+    "confidence": 85,
+    "sources": ["string"]
+  }`;
 
-All Research Data:
-- Company Intelligence: ${JSON.stringify(companyIntel, null, 2)}
-- Market Research: ${JSON.stringify(marketResearch, null, 2)}
-- ICP Development: ${JSON.stringify(icp, null, 2)}
-- GTM Strategy: ${JSON.stringify(gtmStrategy, null, 2)}
-
-Generate a complete GTM playbook with:
-
-1. EXECUTIVE SUMMARY
-2. MARKET ANALYSIS (TAM/SAM, competitors, trends)
-3. IDEAL CUSTOMER PROFILE (firmographics, personas, pain points)
-4. VALUE PROPOSITION (differentiators, competitive advantages)
-5. GO-TO-MARKET STRATEGY (channels, sales motion, pricing)
-6. MESSAGING FRAMEWORK (primary/secondary messages, objection handling)
-7. SALES ENABLEMENT (battle cards, talk tracks, demo scripts)
-8. DEMAND GENERATION (channels, content, campaigns)
-9. METRICS & KPIs (leading/lagging indicators)
-
-Return as structured JSON optimized for sales and marketing execution.`;
+  const prompt = `You are an enterprise SaaS GTM strategist. Output ONLY valid JSON matching this exact schema (no markdown, no comments, no extra fields):\n${canonicalSchema}\n\nCreate a comprehensive GTM Playbook for ${companyIntel.companyName || websiteUrl}:\n\nAll Research Data:\n- Company Intelligence: ${JSON.stringify(companyIntel, null, 2)}\n- Market Research: ${JSON.stringify(marketResearch, null, 2)}\n- ICP Development: ${JSON.stringify(icp, null, 2)}\n- GTM Strategy: ${JSON.stringify(gtmStrategy, null, 2)}\n- GTM Form Answers: ${JSON.stringify(gtmFormAnswers, null, 2)}\n- Selected Company: ${JSON.stringify(selectedCompany, null, 2)}\n\nGenerate a complete GTM playbook with:\n\n1. EXECUTIVE SUMMARY\n2. MARKET ANALYSIS (TAM/SAM, competitors, trends)\n3. IDEAL CUSTOMER PROFILE (firmographics, personas, pain points)\n4. VALUE PROPOSITION (differentiators, competitive advantages)\n5. GO-TO-MARKET STRATEGY (channels, sales motion, pricing)\n6. MESSAGING FRAMEWORK (primary/secondary messages, objection handling)\n7. SALES ENABLEMENT (battle cards, talk tracks, demo scripts)\n8. DEMAND GENERATION (channels, content, campaigns)\n9. METRICS & KPIs (leading/lagging indicators)\n\nReturn as structured JSON optimized for sales and marketing execution.`;
+  console.log('LLM PROMPT FOR GTM PLAYBOOK GENERATION:', prompt);
 
   const result = await callOpenRouter(prompt, systemMessage);
-  
+  let parsed;
   try {
-    const parsed = JSON.parse(result);
+    parsed = JSON.parse(result);
+    // Basic schema validation: check for top-level keys
+    if (!parsed.gtmPlaybook || !parsed.gtmPlaybook.marketAnalysis || !parsed.gtmPlaybook.idealCustomerProfile) {
+      throw new Error('LLM output does not match required schema');
+    }
     return {
-      gtmPlaybook: parsed.gtmPlaybook || parsed,
-      researchSummary: parsed.researchSummary || 'Comprehensive GTM analysis completed across 5 research phases',
+      gtmPlaybook: parsed.gtmPlaybook,
+      researchSummary: parsed.researchSummary || '',
       confidence: parsed.confidence || 85,
-      sources: parsed.sources || [websiteUrl, 'Market research', 'Competitive analysis']
+      sources: parsed.sources || []
     };
-  } catch {
-    // Fallback GTM playbook
+  } catch (e) {
+    console.error('LLM output invalid or does not match schema:', e, result);
+    // Fallback GTM playbook (as before)
     return {
       gtmPlaybook: {
         executiveSummary: `Comprehensive GTM playbook for ${companyIntel.companyName || extractDomain(websiteUrl)} targeting ${icp.firmographics?.companySize || '50-500'} employee companies in ${icp.firmographics?.industry?.[0] || 'technology'} sector.`,

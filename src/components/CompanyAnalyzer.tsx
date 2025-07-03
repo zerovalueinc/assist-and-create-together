@@ -33,7 +33,7 @@ function toArray(val: any): string[] {
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
-  const { setResearch } = useCompany();
+  const { setResearch, workspaceId } = useCompany();
   const { user, session, isLoading } = useUser();
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
@@ -101,13 +101,22 @@ const CompanyAnalyzer = () => {
       console.log('User ID:', user?.id);
       console.log('Session token available:', !!session?.access_token);
       
-      const response = await fetch('https://hbogcsztrryrepudceww.supabase.co/functions/v1/company-analyze', {
+      if (!workspaceId) {
+        toast({
+          title: "Error",
+          description: "Workspace not found. Please contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const response = await fetch('/api/company-analyze/analyze', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ url: normalizedUrl, user_id: user?.id })
+        body: JSON.stringify({ url: normalizedUrl, workspace_id: workspaceId }),
       });
       const data = await response.json();
       const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;
@@ -168,21 +177,20 @@ const CompanyAnalyzer = () => {
       {reports.map((report) => {
         const llm = report.llm_output ? JSON.parse(report.llm_output) : report;
         return (
-          <Badge
+          <Button
             key={report.id}
-            variant={selectedReportId === report.id ? 'default' : 'secondary'}
-            className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedReportId === report.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
+            variant={selectedReportId === report.id ? 'default' : 'outline'}
             onClick={() => {
               setSelectedReportId(report.id);
               setAnalysis(report);
             }}
+            className="flex items-center gap-2 px-3 py-1 text-sm"
+            size="sm"
           >
-            <span className="font-semibold">{llm.companyName || llm.company_name || 'Untitled'}</span>
-            <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
-            <Button size="sm" variant="destructive" className="ml-2" onClick={e => { e.stopPropagation(); handleDeleteReport(report.id); }}>
-              Delete
-            </Button>
-          </Badge>
+            <img src={`https://www.google.com/s2/favicons?domain=${llm.companyUrl || llm.website || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+            {llm.companyName || llm.company_name || 'Untitled'}
+            {selectedReportId === report.id && <CheckCircle className="h-3 w-3 ml-1" />}
+          </Button>
         );
       })}
     </div>

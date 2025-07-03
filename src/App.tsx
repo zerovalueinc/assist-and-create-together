@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { CompanyProvider } from '@/context/CompanyContext';
 import { Toaster } from "@/components/ui/toaster";
 import Auth from '@/components/Auth';
 import EmailVerification from '@/components/EmailVerification';
@@ -77,14 +78,16 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <DataPreloadProvider>
-        <Router>
-          <AppRoutes />
-          <Toaster />
-        </Router>
-      </DataPreloadProvider>
-    </AuthProvider>
+    <CompanyProvider>
+      <AuthProvider>
+        <DataPreloadProvider>
+          <Router>
+            <AppRoutes />
+            <Toaster />
+          </Router>
+        </DataPreloadProvider>
+      </AuthProvider>
+    </CompanyProvider>
   );
 }
 

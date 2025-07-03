@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { useUser } from '../hooks/useUserData';
+import { useCompany } from '../context/CompanyContext';
 
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
@@ -24,6 +25,7 @@ const GTMGenerator = () => {
   const { user, session } = useUser();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
+  const { workspaceId } = useCompany();
 
   // Debug logging
   console.log("preloadData", preloadData);
@@ -40,6 +42,13 @@ const GTMGenerator = () => {
     let icps = preloadData?.icps || getCache('yourwork_icp', []);
     setIcpProfiles(icps);
   }, [preloadData]);
+
+  // GTM strategy form fields
+  const [productStage, setProductStage] = useState('');
+  const [channel, setChannel] = useState('');
+  const [salesCycle, setSalesCycle] = useState('');
+  const [primaryGoals, setPrimaryGoals] = useState('');
+  const [additionalContext, setAdditionalContext] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -62,17 +71,37 @@ const GTMGenerator = () => {
       return;
     }
 
+    if (!workspaceId) {
+      toast({
+        title: "Error",
+        description: "Workspace not found. Please contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setGtmPlaybook(null);
 
     try {
       console.log('Starting GTM playbook generation for:', url);
       
+      const gtmFormAnswers = {
+        productStage,
+        channel,
+        salesCycle,
+        primaryGoals,
+        additionalContext,
+      };
+
       const requestBody = {
         websiteUrl: url.trim(),
         useExistingAnalysis,
         analysisId: selectedAnalysisId,
-        icpId: selectedICP?.id
+        icpId: selectedICP?.id,
+        workspace_id: workspaceId,
+        gtmFormAnswers,
+        selectedCompany,
       };
 
       const { data, error } = await supabase.functions.invoke('gtm-generate', {
@@ -119,21 +148,22 @@ const GTMGenerator = () => {
     return (
       <div className="flex flex-wrap gap-2 mt-2">
         {availableAnalyses.map((item: any) => (
-          <button
+          <Button
             key={item.id}
+            variant={selectedCompany?.id === item.id ? 'default' : 'outline'}
             onClick={() => {
-              console.log("Selected company:", item);
               setSelectedCompany(item);
               setSelectedAnalysisId(item.id);
               setUrl(item.companyUrl || item.url || '');
               setUseExistingAnalysis(true);
             }}
-            className={`rounded-full px-4 py-1 text-sm border ${
-              selectedCompany?.id === item.id ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
-            }`}
+            className="flex items-center gap-2 px-3 py-1 text-sm"
+            size="sm"
           >
+            <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
             {item.companyName || item.name || 'Unnamed'}
-          </button>
+            {selectedCompany?.id === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
+          </Button>
         ))}
       </div>
     );
@@ -235,6 +265,30 @@ const GTMGenerator = () => {
           <div className="mb-4">
             <div className="font-semibold text-base mb-1">Select Target Company</div>
             {availableAnalyses.length > 0 && renderCompanyPills()}
+          </div>
+
+          {/* GTM Strategy Form Fields */}
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Product Stage</label>
+              <Input value={productStage} onChange={e => setProductStage(e.target.value)} placeholder="e.g. MVP, Growth, Mature" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Primary Channel</label>
+              <Input value={channel} onChange={e => setChannel(e.target.value)} placeholder="e.g. Outbound, Inbound, Partner" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Sales Cycle</label>
+              <Input value={salesCycle} onChange={e => setSalesCycle(e.target.value)} placeholder="e.g. 30 days, 90 days" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Primary Goals</label>
+              <Input value={primaryGoals} onChange={e => setPrimaryGoals(e.target.value)} placeholder="e.g. Pipeline growth, Revenue, Expansion" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Additional Context</label>
+              <Input value={additionalContext} onChange={e => setAdditionalContext(e.target.value)} placeholder="Any extra info for the LLM..." />
+            </div>
           </div>
         </CardContent>
       </Card>
