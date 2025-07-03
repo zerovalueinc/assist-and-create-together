@@ -225,69 +225,17 @@ const GTMGenerator = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
-            GTM Playbook Generator
+            Enterprise GTM Playbook Generator
           </CardTitle>
           <CardDescription>
-            Generate comprehensive go-to-market playbooks using our 5-phase intelligence pipeline
+            Step 2 of 5: Select a company and configure your go-to-market strategy parameters to generate a comprehensive enterprise GTM playbook.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {availableAnalyses.length === 0 && icpProfiles.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-2">No data available</p>
-              <p className="text-sm text-gray-400">Run a company analysis or generate an ICP first.</p>
-            </div>
-          ) : (
-            <>
-              <div className='mb-4'>{renderCompanyPills()}</div>
-              <div className='mb-4'>{renderICPPills()}</div>
-            </>
-          )}
-          {availableAnalyses.length > 0 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="url" className="text-sm font-medium">
-                  Company URL
-                </label>
-                <Input
-                  id="url"
-                  type="url"
-                  placeholder="e.g., salesforce.com, hubspot.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  disabled={loading}
-                  className="text-base"
-                />
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="useExisting"
-                    checked={useExistingAnalysis}
-                    onChange={(e) => setUseExistingAnalysis(e.target.checked)}
-                    className="rounded"
-                  />
-                  <label htmlFor="useExisting" className="text-sm font-medium">
-                    Use existing company analysis
-                  </label>
-                </div>
-              </div>
-              <Button type="submit" disabled={loading || !url.trim()} className="w-full">
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating GTM Playbook (5-Phase Analysis)...
-                  </>
-                ) : (
-                  <>
-                    <Target className="mr-2 h-4 w-4" />
-                    Generate GTM Playbook
-                  </>
-                )}
-              </Button>
-            </form>
-          )}
+          <div className="mb-4">
+            <div className="font-semibold text-base mb-1">Select Target Company</div>
+            {availableAnalyses.length > 0 && renderCompanyPills()}
+          </div>
         </CardContent>
       </Card>
 
