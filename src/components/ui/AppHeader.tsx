@@ -18,6 +18,10 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Extract name and company from user_metadata
+  const fullName = user?.user_metadata?.fullName || `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim() || user?.user_metadata?.name || '';
+  const company = user?.user_metadata?.company || '';
+
   const handleLogout = async () => {
     const { supabase } = await import('@/lib/supabaseClient');
     await supabase.auth.signOut();
@@ -72,7 +76,6 @@ export default function AppHeader() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-4">
                     <Avatar className="h-8 w-8">
-                      {/* Use avatar_url if available, else fallback to initials or generic */}
                       {user.user_metadata?.avatar_url ? (
                         <img src={user.user_metadata.avatar_url} alt="avatar" className="h-8 w-8 rounded-full" />
                       ) : (
@@ -86,7 +89,12 @@ export default function AppHeader() {
                 <DropdownMenuContent className="w-56 bg-white border shadow-lg" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium text-slate-900">{user.email}</p>
+                      <p className="font-medium text-slate-900">{fullName || user.email}</p>
+                      {company && (
+                        <p className="w-[200px] truncate text-sm text-slate-600">
+                          {company}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <DropdownMenuItem onClick={() => navigate('/account')} className="cursor-pointer hover:bg-slate-50">
