@@ -6,7 +6,7 @@ const router = express.Router();
 
 // POST /api/company-analyze (proxy to Supabase Edge Function)
 router.post('/', authenticateToken, async (req, res) => {
-  const SUPABASE_EDGE_URL = process.env.SUPABASE_EDGE_URL || 'https://<your-project>.functions.supabase.co/company-analyze';
+  const SUPABASE_EDGE_URL = process.env.SUPABASE_EDGE_URL || 'https://hbogcsztrryrepudceww.functions.supabase.co/company-analyze';
   const userToken = req.headers['authorization'] || req.user?.access_token;
   try {
     const edgeRes = await fetch(SUPABASE_EDGE_URL, {
