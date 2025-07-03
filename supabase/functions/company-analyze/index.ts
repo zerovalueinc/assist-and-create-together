@@ -206,33 +206,6 @@ serve(async (req) => {
     };
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
-    // Build the main prompt for the LLM
-    const prompt = `
-      You are a senior B2B SaaS market analyst. Given the company website URL: ${normalizedUrl},
-      perform a comprehensive 5-phase research analysis:
-      1. Company Intelligence: Identify company name, industry, size, revenue, and key decision makers.
-      2. Market Research: List current market trends and growth drivers for this company's sector.
-      3. Competitive Analysis: Identify main competitors and describe the competitive landscape.
-      4. Technology Assessment: List core technologies and tools used by the company.
-      5. Strategic Synthesis: Recommend actionable go-to-market strategies and summarize key findings.
-      Format your response as a JSON object with these fields:
-      - companyName
-      - companyProfile (with industry, companySize, revenueRange)
-      - decisionMakers (array)
-      - painPoints (array)
-      - technologies (array)
-      - location
-      - marketTrends (array)
-      - competitiveLandscape (array)
-      - goToMarketStrategy
-      - researchSummary
-      - website
-      Be concise but thorough. Use real data if possible, otherwise make plausible inferences.
-    `;
-    const llmModel = 'anthropic/claude-3.5-sonnet';
-    const llmTemperature = 0.7;
-    const llmTimestamp = new Date().toISOString();
-
     // Prepare insert object for new table
     const outputInsert = {
       user_id: user.id,
@@ -250,11 +223,7 @@ serve(async (req) => {
       research_summary: sanitizedAnalysis.researchSummary,
       website: normalizedUrl,
       created_at: new Date().toISOString(),
-      llm_output: JSON.stringify(sanitizedAnalysis),
-      llm_prompt: prompt,
-      llm_model: llmModel,
-      llm_temperature: llmTemperature,
-      llm_timestamp: llmTimestamp
+      llm_output: JSON.stringify(sanitizedAnalysis)
     };
     console.log('Company Analyzer output insert object:', JSON.stringify(outputInsert));
 
