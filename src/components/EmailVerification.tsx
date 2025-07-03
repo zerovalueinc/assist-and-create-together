@@ -22,7 +22,7 @@ const EmailVerification: React.FC = () => {
       }
 
       try {
-        const response = await fetch('/api/auth/verify-email', {
+        const response = await fetch('/api/app/auth/verify-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

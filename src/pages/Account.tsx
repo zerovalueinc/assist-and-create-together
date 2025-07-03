@@ -46,10 +46,10 @@ const Account = () => {
           fetch('/api/company-analyze/reports', { 
             headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
           }),
-          fetch('/api/icp/reports', { 
+          fetch('/api/app/icp/reports', { 
             headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
           }),
-          fetch('/api/icp/playbooks', { 
+          fetch('/api/app/icp/playbooks', { 
             headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {} 
           }),
         ]);

@@ -30,7 +30,7 @@ const LeadEnrichment = () => {
     setLoading(true);
     try {
       // Connect to your /api/leads endpoint
-      const response = await fetch('http://localhost:3001/api/leads', {
+      const response = await fetch('/api/app/leads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ const LeadEnrichment = () => {
 
   const enrichLead = async (leadId) => {
     try {
-      const response = await fetch('http://localhost:3001/api/enrich', {
+      const response = await fetch('/api/app/enrich', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

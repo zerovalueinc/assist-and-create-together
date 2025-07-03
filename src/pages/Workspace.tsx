@@ -41,7 +41,7 @@ export default function Account() {
     if (!user.id) return;
     setFetchingInvites(true);
     try {
-      const res = await fetch(`/api/invitations`);
+      const res = await fetch(`/api/app/invitations`);
       const json = await res.json();
       if (res.ok) {
         setInvitations(json.invitations || []);
@@ -72,7 +72,7 @@ export default function Account() {
     }
     setInviteLoading(true);
     try {
-      const res = await fetch('/api/invitations', {
+      const res = await fetch('/api/app/invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: inviteEmail })
@@ -96,7 +96,7 @@ export default function Account() {
   const fetchHubspotStatus = useCallback(async () => {
     setHubspotLoading(true);
     try {
-      const res = await fetch('/api/integrations/hubspot/status');
+      const res = await fetch('/api/app/integrations/hubspot/status');
       const json = await res.json();
       if (res.ok) {
         setHubspotStatus(json.status);
@@ -118,7 +118,7 @@ export default function Account() {
   const handleConnectHubspot = async () => {
     setHubspotLoading(true);
     try {
-      const res = await fetch('/api/integrations/hubspot/auth-url');
+      const res = await fetch('/api/app/integrations/hubspot/auth-url');
       const json = await res.json();
       if (res.ok && json.url) {
         window.open(json.url, '_blank', 'width=600,height=700');
@@ -138,7 +138,7 @@ export default function Account() {
   const handleDisconnectHubspot = async () => {
     setHubspotLoading(true);
     try {
-      const res = await fetch('/api/integrations/hubspot/disconnect', { method: 'POST' });
+      const res = await fetch('/api/app/integrations/hubspot/disconnect', { method: 'POST' });
       const json = await res.json();
       if (res.ok) {
         toast({ title: 'Disconnected', description: 'HubSpot integration removed.' });
@@ -157,7 +157,7 @@ export default function Account() {
   const fetchCrmStatuses = useCallback(async () => {
     setCrmStatusLoading(true);
     try {
-      const res = await fetch('/api/integrations/hubspot/status/all');
+      const res = await fetch('/api/app/integrations/hubspot/status/all');
       const json = await res.json();
       if (res.ok) {
         setCrmStatuses(json.statuses || []);
