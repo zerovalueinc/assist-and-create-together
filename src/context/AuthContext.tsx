@@ -11,6 +11,7 @@ interface Profile {
   first_name?: string;
   last_name?: string;
   company?: string;
+  workspace_id?: string;
 }
 
 interface AuthContextType {
@@ -95,6 +96,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (cached) {
       try {
         setProfile(JSON.parse(cached));
+        // Set workspaceId from cached profile
+        const cachedProfile = JSON.parse(cached);
+        if (cachedProfile?.workspace_id) setWorkspaceId(cachedProfile.workspace_id);
       } catch {}
     }
     // Set up auth state listener
@@ -103,15 +107,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          fetchProfile(session.user.id);
-          // Fetch workspace_id for this user
-          const { data: workspace, error: wsError } = await supabase
-            .from('workspaces')
-            .select('id')
-            .eq('owner_id', session.user.id)
-            .maybeSingle();
-          if (!wsError && workspace?.id) {
-            setWorkspaceId(workspace.id);
+          const prof = await fetchProfile(session.user.id);
+          // Set workspaceId from profile
+          if (prof?.workspace_id) {
+            setWorkspaceId(prof.workspace_id);
           } else {
             setWorkspaceId(null);
           }
@@ -129,15 +128,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
-        // Fetch workspace_id for this user
-        const { data: workspace, error: wsError } = await supabase
-          .from('workspaces')
-          .select('id')
-          .eq('owner_id', session.user.id)
-          .maybeSingle();
-        if (!wsError && workspace?.id) {
-          setWorkspaceId(workspace.id);
+        const prof = await fetchProfile(session.user.id);
+        // Set workspaceId from profile
+        if (prof?.workspace_id) {
+          setWorkspaceId(prof.workspace_id);
         } else {
           setWorkspaceId(null);
         }

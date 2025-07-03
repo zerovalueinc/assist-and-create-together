@@ -102,12 +102,7 @@ const CompanyAnalyzer = () => {
       console.log('Session token available:', !!session?.access_token);
       
       if (!workspaceId) {
-        toast({
-          title: "Error",
-          description: "Workspace not found. Please contact support.",
-          variant: "destructive",
-        });
-        return;
+        throw new Error('Workspace not found. This is a system error.');
       }
       
       const response = await fetch('/api/company-analyze/analyze', {

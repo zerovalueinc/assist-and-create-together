@@ -72,12 +72,7 @@ const GTMGenerator = () => {
     }
 
     if (!workspaceId) {
-      toast({
-        title: "Error",
-        description: "Workspace not found. Please contact support.",
-        variant: "destructive",
-      });
-      return;
+      throw new Error('Workspace not found. This is a system error.');
     }
 
     setLoading(true);
