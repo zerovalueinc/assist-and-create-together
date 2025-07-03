@@ -193,16 +193,11 @@ serve(async (req) => {
     const { data: savedPlaybook, error: saveError } = await supabaseClient
       .from('gtm_playbooks')
       .insert({
-        workspace_id: gtmRequest.workspace_id,
         user_id: user.id,
-        company_name: finalPlaybook.gtmPlaybook.idealCustomerProfile?.firmographics?.industry?.[0] || extractDomain(gtmRequest.websiteUrl),
-        website_url: gtmRequest.websiteUrl,
-        playbook_data: finalPlaybook,
-        confidence: finalPlaybook.confidence,
-        research_summary: finalPlaybook.researchSummary,
-        sources: finalPlaybook.sources,
+        companyName: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
+        website: gtmRequest.websiteUrl,
+        playbook: finalPlaybook,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
