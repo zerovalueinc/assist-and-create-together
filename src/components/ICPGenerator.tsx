@@ -397,9 +397,23 @@ const ICPGenerator = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Saved GTM Playbook Pills */}
-        {companies.length === 0 && <div className="text-gray-500 text-sm">No companies analyzed yet. Run an analysis first.</div>}
-        {recentICPs.length === 0 && <div className="text-gray-500 text-sm">No ICPs found. Generate an ICP first.</div>}
-        {recentPlaybooks.length === 0 && <div className="text-gray-500 text-sm">No playbooks found. Generate a playbook first.</div>}
+        {companies.length > 0 && (
+          <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
+            {companies.map((c) => (
+              <Button
+                key={c.id}
+                variant={selectedCompany?.id === c.id ? 'default' : 'outline'}
+                onClick={() => setSelectedCompany(c)}
+                className="flex items-center gap-2 px-3 py-1 text-sm"
+                size="sm"
+              >
+                <img src={`https://www.google.com/s2/favicons?domain=${c.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
+                {c.companyName || c.companyUrl}
+                {selectedCompany?.id === c.id && <CheckCircle className="h-3 w-3 ml-1" />}
+              </Button>
+            ))}
+          </div>
+        )}
         {recentICPs.length > 0 && (
           <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
             {recentICPs.map((icpObj) => {
@@ -430,6 +444,34 @@ const ICPGenerator = () => {
                   />
                   <span className="truncate">{icpObj.companyName || icpObj.companyUrl}</span>
                 </button>
+              );
+            })}
+          </div>
+        )}
+        {recentPlaybooks.length > 0 && (
+          <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
+            {recentPlaybooks.map((pb) => {
+              let parsed;
+              try {
+                parsed = JSON.parse(pb.icpData);
+              } catch {
+                parsed = { summary: pb.icpData };
+              }
+              return (
+                <Button
+                  key={pb.id}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 px-3 py-1 text-sm"
+                  onClick={() => {
+                    setICP(parsed as GTMICPSchema);
+                    setModalICP(parsed);
+                    setShowICPModal(true);
+                  }}
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  {parsed.summary || parsed.gtmRecommendations || 'Open to view details.'}
+                </Button>
               );
             })}
           </div>
