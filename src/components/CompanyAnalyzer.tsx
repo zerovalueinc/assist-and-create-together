@@ -74,7 +74,7 @@ const CompanyAnalyzer = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session, isLoading });
+    console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session });
     if (!session?.access_token) {
       toast({
         title: "Auth Error",
@@ -222,19 +222,14 @@ const CompanyAnalyzer = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading || isAnalyzing}
+                disabled={isAnalyzing}
                 className="text-base"
                 autoComplete="off"
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={isLoading || isAnalyzing || !url.trim()} className="w-full">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading user session...
-                </>
-              ) : isAnalyzing ? (
+            <Button type="submit" disabled={isAnalyzing || !url.trim()} className="w-full">
+              {isAnalyzing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Analyzing...

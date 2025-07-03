@@ -12,7 +12,11 @@ import { supabase } from '../../lib/supabase'; // See README for global pattern
 const ProfileTab = () => {
   const user = useUser();
   const session = useSession();
-  const { email, firstName, lastName, company, initials } = useUserData();
+  const email = user?.email || '';
+  const firstName = user?.user_metadata?.firstName || '';
+  const lastName = user?.user_metadata?.lastName || '';
+  const company = user?.user_metadata?.company || '';
+  const initials = (user?.user_metadata?.fullName || user?.user_metadata?.name || user?.email || 'U')[0]?.toUpperCase();
   const { toast } = useToast();
   
   const [profileData, setProfileData] = useState({
