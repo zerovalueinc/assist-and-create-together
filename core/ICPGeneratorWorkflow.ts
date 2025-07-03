@@ -1,4 +1,3 @@
-import { getCachedResult, saveToCache, runQuery, saveICPResult } from '../server/database/init';
 import { callClaude3 } from '../agents/claude';
 import { BaseWorkflow, WorkflowState } from './BaseWorkflow';
 import { z } from 'zod';
@@ -46,28 +45,45 @@ export class ICPGeneratorWorkflow extends BaseWorkflow {
       const { url, userId, userInput } = params;
       if (!url) throw new Error('URL is required');
 
-      // Fetch company analysis from cache (Company Analyzer output)
-      const companyAnalysisCache = await getCachedResult(url, true, userId);
-      const companyAnalysis = companyAnalysisCache?.comprehensiveData || {};
+      // For now, we'll use a basic company analysis object
+      // In the future, this should fetch from Supabase cache
+      const companyAnalysis = {};
 
       // Advanced GTM SaaS playbook prompt
-      const prompt = `You are an enterprise SaaS GTM strategist. Output a valid JSON object matching this exact schema (no markdown, no comments, no extra fields):\n\n{
-  \"schemaVersion\": \"1.0.0\",
-  \"personas\": [{ \"title\": \"string\", \"role\": \"string\", \"painPoints\": [\"string\"], \"responsibilities\": [\"string\"] }],
-  \"firmographics\": { \"industry\": \"string\", \"companySize\": \"string\", \"revenueRange\": \"string\", \"region\": \"string\" },
-  \"messagingAngles\": [\"string\"],
-  \"gtmRecommendations\": \"string\",
-  \"competitivePositioning\": \"string\",
-  \"objectionHandling\": [\"string\"],
-  \"campaignIdeas\": [\"string\"],
-  \"metricsToTrack\": [\"string\"],
-  \"filmReviews\": \"string\",
-  \"crossFunctionalAlignment\": \"string\",
-  \"demandGenFramework\": \"string\",
-  \"iterativeMeasurement\": \"string\",
-  \"trainingEnablement\": \"string\",
-  \"apolloSearchParams\": {\n    \"employeeCount\": \"string\",\n    \"titles\": [\"string\"],\n    \"industries\": [\"string\"],\n    \"technologies\": [\"string\"],\n    \"locations\": [\"string\"]\n  }
-}\n\nFor each section, provide actionable steps, examples, and director-level recommendations. If any section is missing data, leave it as an empty string or empty array.\n\nCompany Analysis:\n${JSON.stringify(companyAnalysis, null, 2)}\n\nUser GTM Input:\n${userInput}`;
+      const prompt = `You are an enterprise SaaS GTM strategist. Output a valid JSON object matching this exact schema (no markdown, no comments, no extra fields):
+
+{
+  "schemaVersion": "1.0.0",
+  "personas": [{ "title": "string", "role": "string", "painPoints": ["string"], "responsibilities": ["string"] }],
+  "firmographics": { "industry": "string", "companySize": "string", "revenueRange": "string", "region": "string" },
+  "messagingAngles": ["string"],
+  "gtmRecommendations": "string",
+  "competitivePositioning": "string",
+  "objectionHandling": ["string"],
+  "campaignIdeas": ["string"],
+  "metricsToTrack": ["string"],
+  "filmReviews": "string",
+  "crossFunctionalAlignment": "string",
+  "demandGenFramework": "string",
+  "iterativeMeasurement": "string",
+  "trainingEnablement": "string",
+  "apolloSearchParams": {
+    "employeeCount": "string",
+    "titles": ["string"],
+    "industries": ["string"],
+    "technologies": ["string"],
+    "locations": ["string"]
+  }
+}
+
+For each section, provide actionable steps, examples, and director-level recommendations. If any section is missing data, leave it as an empty string or empty array.
+
+Company Analysis:
+${JSON.stringify(companyAnalysis, null, 2)}
+
+User GTM Input:
+${userInput}`;
+      
       const llmResponse = await callClaude3(prompt, 2);
       let result;
       try {
@@ -83,7 +99,9 @@ export class ICPGeneratorWorkflow extends BaseWorkflow {
         // Fallback: wrap as summary if not JSON
         result = { summary: llmResponse };
       }
-      await saveICPResult(userId, url, result);
+      
+      // For now, we'll just return the result without saving to database
+      // In the future, this should save to Supabase
       this.state.status = 'completed';
       this.state.result = result;
       return result;
