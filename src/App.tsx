@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { CompanyProvider } from '@/context/CompanyContext';
 import { Toaster } from "@/components/ui/toaster";
 import Auth from '@/components/Auth';
@@ -10,68 +9,34 @@ import Index from '@/pages/Index';
 import Workspace from '@/pages/Workspace';
 import Account from '@/pages/Account';
 import Analytics from '@/pages/Analytics';
-import { Loader2 } from 'lucide-react';
-import { DataPreloadProvider } from '@/context/DataPreloadProvider';
+import { useSession } from '@supabase/auth-helpers-react';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-  return <>{children}</>;
-};
-
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-  return <>{children}</>;
-};
+function withAuth(Component: React.ComponentType) {
+  return function AuthGuard(props: any) {
+    const session = useSession();
+    if (!session) {
+      window.location.href = '/login';
+      return null;
+    }
+    return <Component {...props} />;
+  };
+}
 
 const AppRoutes = () => {
+  const IndexWithAuth = withAuth(Index);
+  const WorkspaceWithAuth = withAuth(Workspace);
+  const AccountWithAuth = withAuth(Account);
+  const AnalyticsWithAuth = withAuth(Analytics);
   return (
     <Routes>
-      <Route path="/auth" element={
-        <PublicRoute>
-          <Auth />
-        </PublicRoute>
-      } />
-      <Route path="/verify-email" element={
-        <PublicRoute>
-          <EmailVerification />
-        </PublicRoute>
-      } />
-      <Route path="/forgot-password" element={
-        <PublicRoute>
-          <ForgotPassword />
-        </PublicRoute>
-      } />
-      <Route path="/reset-password" element={
-        <PublicRoute>
-          <PasswordReset />
-        </PublicRoute>
-      } />
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Index />
-        </ProtectedRoute>
-      } />
-      <Route path="/workspace" element={
-        <ProtectedRoute>
-          <Workspace />
-        </ProtectedRoute>    
-      } />
-      <Route path="/account" element={
-        <ProtectedRoute>
-          <Account />
-        </ProtectedRoute>
-      } />
-      <Route path="/analytics" element={
-        <ProtectedRoute>
-          <Analytics />
-        </ProtectedRoute>
-      } />
+      <Route path="/login" element={<Auth />} />
+      <Route path="/verify-email" element={<EmailVerification />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<PasswordReset />} />
+      <Route path="/" element={<IndexWithAuth />} />
+      <Route path="/workspace" element={<WorkspaceWithAuth />} />
+      <Route path="/account" element={<AccountWithAuth />} />
+      <Route path="/analytics" element={<AnalyticsWithAuth />} />
     </Routes>
   );
 };
@@ -80,12 +45,8 @@ function App() {
   return (
     <CompanyProvider>
       <Router>
-        <AuthProvider>
-          <DataPreloadProvider>
-            <AppRoutes />
-            <Toaster />
-          </DataPreloadProvider>
-        </AuthProvider>
+        <AppRoutes />
+        <Toaster />
       </Router>
     </CompanyProvider>
   );

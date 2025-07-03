@@ -1,11 +1,10 @@
-import { useAuth } from '@/context/AuthContext';
-import { useUserData } from '@/hooks/useUserData';
+import { useUser } from '@supabase/auth-helpers-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Zap, FolderOpen, BarChart3, User, LogOut, Home, Loader2 } from 'lucide-react';
+import { Zap, FolderOpen, BarChart3, User, LogOut, Home } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', icon: Home, path: '/' },
@@ -15,16 +14,14 @@ const navItems = [
 ];
 
 export default function AppHeader() {
-  const { signOut, user, profile, loading } = useAuth();
-  const { fullName, company, initials } = useUserData();
+  const user = useUser();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Placeholder for future auth timer/auto-logout logic
-  // useEffect(() => { /* implement timer here if needed */ }, []);
-
-  const handleLogout = () => {
-    signOut();
+  const handleLogout = async () => {
+    const { supabase } = await import('@/lib/supabaseClient');
+    await supabase.auth.signOut();
+    navigate('/login');
   };
 
   return (
@@ -70,31 +67,26 @@ export default function AppHeader() {
                 </div>
               );
             })}
-            {/* Profile area: show skeleton if loading, dropdown if authenticated, Sign In if not */}
-            {loading ? (
-              <div className="ml-4 w-8 h-8 flex items-center justify-center">
-                <Loader2 className="animate-spin text-blue-400 h-6 w-6" />
-              </div>
-            ) : user && profile ? (
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-4">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        {initials}
-                      </AvatarFallback>
+                      {/* Use avatar_url if available, else fallback to initials or generic */}
+                      {user.user_metadata?.avatar_url ? (
+                        <img src={user.user_metadata.avatar_url} alt="avatar" className="h-8 w-8 rounded-full" />
+                      ) : (
+                        <AvatarFallback className="bg-blue-100 text-blue-600">
+                          {user.email?.[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-white border shadow-lg" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium text-slate-900">{fullName}</p>
-                      {company && (
-                        <p className="w-[200px] truncate text-sm text-slate-600">
-                          {company}
-                        </p>
-                      )}
+                      <p className="font-medium text-slate-900">{user.email}</p>
                     </div>
                   </div>
                   <DropdownMenuItem onClick={() => navigate('/account')} className="cursor-pointer hover:bg-slate-50">
@@ -108,7 +100,7 @@ export default function AppHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="outline" className="ml-4" onClick={() => navigate('/auth')}>
+              <Button variant="outline" className="ml-4" onClick={() => navigate('/login')}>
                 Sign In
               </Button>
             )}
