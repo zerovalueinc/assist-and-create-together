@@ -74,6 +74,16 @@ const ProfileTab = () => {
         })
         .eq('id', user.id);
       if (error) throw error;
+      // Also update Supabase user_metadata
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          fullName: `${profileData.firstName} ${profileData.lastName}`.trim(),
+          company: profileData.company,
+        }
+      });
+      if (authError) throw authError;
       toast({
         title: "Profile Updated",
         description: "Your profile information has been saved successfully.",
