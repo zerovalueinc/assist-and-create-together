@@ -92,6 +92,7 @@ export type Database = {
           technologies: Json | null
           user_id: string
           website: string | null
+          workspace_id: string | null
         }
         Insert: {
           company_name?: string | null
@@ -110,6 +111,7 @@ export type Database = {
           technologies?: Json | null
           user_id: string
           website?: string | null
+          workspace_id?: string | null
         }
         Update: {
           company_name?: string | null
@@ -128,8 +130,77 @@ export type Database = {
           technologies?: Json | null
           user_id?: string
           website?: string | null
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "company_analyzer_outputs_unrestricted_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_analyzer_outputs_unrestricted_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gtm_playbooks: {
+        Row: {
+          company_name: string
+          confidence: number | null
+          created_at: string
+          id: string
+          playbook_data: Json
+          research_summary: string | null
+          sources: Json | null
+          status: string | null
+          updated_at: string
+          user_id: string | null
+          website_url: string
+          workspace_id: string | null
+        }
+        Insert: {
+          company_name: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          playbook_data: Json
+          research_summary?: string | null
+          sources?: Json | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+          website_url: string
+          workspace_id?: string | null
+        }
+        Update: {
+          company_name?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          playbook_data?: Json
+          research_summary?: string | null
+          sources?: Json | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+          website_url?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gtm_playbooks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       icps: {
         Row: {
@@ -144,8 +215,9 @@ export type Database = {
           pain_points: string | null
           persona: string | null
           technologies: string | null
-          user_id: number
+          user_id: string
           valid_use_case: string | null
+          workspace_id: string | null
         }
         Insert: {
           company_size?: string | null
@@ -159,8 +231,9 @@ export type Database = {
           pain_points?: string | null
           persona?: string | null
           technologies?: string | null
-          user_id: number
+          user_id: string
           valid_use_case?: string | null
+          workspace_id?: string | null
         }
         Update: {
           company_size?: string | null
@@ -174,15 +247,23 @@ export type Database = {
           pain_points?: string | null
           persona?: string | null
           technologies?: string | null
-          user_id?: number
+          user_id?: string
           valid_use_case?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "icps_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "icps_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -271,7 +352,10 @@ export type Database = {
           email: string
           first_name: string | null
           id: string
+          job_title: string | null
           last_name: string | null
+          phone: string | null
+          timezone: string | null
           updated_at: string | null
         }
         Insert: {
@@ -280,7 +364,10 @@ export type Database = {
           email: string
           first_name?: string | null
           id: string
+          job_title?: string | null
           last_name?: string | null
+          phone?: string | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -289,7 +376,10 @@ export type Database = {
           email?: string
           first_name?: string | null
           id?: string
+          job_title?: string | null
           last_name?: string | null
+          phone?: string | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -301,7 +391,8 @@ export type Database = {
           icp_id: number | null
           id: number
           url: string | null
-          user_id: number
+          user_id: string | null
+          workspace_id: string | null
         }
         Insert: {
           company_name?: string | null
@@ -309,7 +400,8 @@ export type Database = {
           icp_id?: number | null
           id?: number
           url?: string | null
-          user_id: number
+          user_id?: string | null
+          workspace_id?: string | null
         }
         Update: {
           company_name?: string | null
@@ -317,7 +409,8 @@ export type Database = {
           icp_id?: number | null
           id?: number
           url?: string | null
-          user_id?: number
+          user_id?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -331,7 +424,14 @@ export type Database = {
             foreignKeyName: "saved_reports_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_reports_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -398,24 +498,36 @@ export type Database = {
       }
       workspaces: {
         Row: {
-          id: string;
-          owner_id: string;
-          name: string;
-          created_at: string;
-        };
+          brand_color: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string | null
+          settings: Json | null
+          updated_at: string
+        }
         Insert: {
-          id?: string;
-          owner_id: string;
-          name: string;
-          created_at?: string;
-        };
+          brand_color?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id?: string | null
+          settings?: Json | null
+          updated_at?: string
+        }
         Update: {
-          id?: string;
-          owner_id?: string;
-          name?: string;
-          created_at?: string;
-        };
-        Relationships: [];
+          brand_color?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+          settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

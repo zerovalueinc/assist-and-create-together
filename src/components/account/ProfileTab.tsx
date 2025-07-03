@@ -29,86 +29,70 @@ const ProfileTab = () => {
 
   useEffect(() => {
     let cancelled = false;
-    let failureCount = 0;
-    const maxFailures = 3;
     const fetchProfileData = async () => {
       try {
         setLoading(true);
-        // Simulate fetch (replace with real fetch if needed)
-        setProfileData({
-          firstName: firstName,
-          lastName: lastName,
-          email: email,
-          company: company,
-          phone: '',
-          jobTitle: '',
-          timezone: 'UTC-8',
-        });
-        setLoading(false);
-        failureCount = 0;
-      } catch (err) {
-        failureCount++;
-        if (failureCount >= maxFailures) {
-          if (!cancelled) {
-            toast({
-              title: "Profile Load Failed",
-              description: "Could not load your profile after multiple attempts. Please refresh or contact support.",
-              variant: 'destructive',
-            });
-          }
-          setLoading(false);
-          return;
+        if (!user) return;
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (!error && data) {
+          setProfileData({
+            firstName: data.first_name || '',
+            lastName: data.last_name || '',
+            email: data.email || '',
+            company: data.company || '',
+            phone: data.phone || '',
+            jobTitle: data.job_title || '',
+            timezone: data.timezone || 'UTC-8',
+          });
         }
+        setLoading(false);
+      } catch (err) {
         setLoading(false);
       }
     };
     fetchProfileData();
     return () => { cancelled = true; };
-  }, [firstName, lastName, email, company]);
+  }, [user]);
 
   const handleProfileSave = async () => {
     if (!user) return;
-    
     setLoading(true);
     try {
-      // Try to update the profiles table if it exists
-      try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            first_name: profileData.firstName,
-            last_name: profileData.lastName,
-            company: profileData.company,
-          })
-          .eq('id', user.id);
-
-        if (error) {
-          throw error;
-        }
-
-        toast({
-          title: "Profile Updated",
-          description: "Your profile information has been saved successfully.",
-        });
-      } catch (profileError) {
-        // If profiles table doesn't exist, try to update user metadata
-        console.log('Profiles table not available, updating user metadata');
-        
-        const { error: updateError } = await supabase.auth.updateUser({
-          data: {
-            first_name: profileData.firstName,
-            last_name: profileData.lastName,
-            company: profileData.company,
-          }
-        });
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        toast({
-          title: "Profile Updated",
-          description: "Your profile information has been saved successfully.",
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profileData.firstName,
+          last_name: profileData.lastName,
+          company: profileData.company,
+          phone: profileData.phone,
+          job_title: profileData.jobTitle,
+          timezone: profileData.timezone,
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved successfully.",
+      });
+      // Re-fetch profile after update
+      const { data: updatedProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (updatedProfile) {
+        setProfileData({
+          firstName: updatedProfile.first_name || '',
+          lastName: updatedProfile.last_name || '',
+          email: updatedProfile.email || '',
+          company: updatedProfile.company || '',
+          phone: updatedProfile.phone || '',
+          jobTitle: updatedProfile.job_title || '',
+          timezone: updatedProfile.timezone || 'UTC-8',
         });
       }
     } catch (error: any) {

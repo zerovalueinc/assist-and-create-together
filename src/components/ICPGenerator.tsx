@@ -126,7 +126,7 @@ const ICPGenerator = () => {
     return () => { cancelled = true; };
   }, [user, workspaceId]);
 
-  // Fetch recent playbooks
+  // Fetch recent/generated GTM Playbooks (ICPs are part of playbooks now)
   const hasFetchedPlaybooks = useRef(false);
   useEffect(() => {
     if (!user?.id || !workspaceId) return;
@@ -140,7 +140,7 @@ const ICPGenerator = () => {
       if (typeof user.id !== 'string' || !user.id) return;
       try {
         const { data, error } = await supabase
-          .from('saved_reports')
+          .from('gtm_playbooks')
           .select('*')
           .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: false });

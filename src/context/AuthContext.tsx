@@ -47,10 +47,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { setWorkspaceId } = useCompany();
   const navigate = useNavigate();
 
-  const fetchProfile = async (userId: string) => {
-    let cancelled = false;
-    let failureCount = 0;
-    const maxFailures = 3;
+  const fetchProfile = async (userId: string, updateCache = true) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -58,57 +55,48 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .eq('id', userId)
         .maybeSingle();
       if (!error && data) {
-        if (!cancelled) setProfile(data);
-        failureCount = 0;
+        setProfile(data);
+        if (updateCache) localStorage.setItem('personaops_profile', JSON.stringify(data));
+        return data;
+      } else if (!data) {
+        // Only insert if truly missing
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, email: user?.email || '' });
+        if (!insertError) {
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+          setProfile(newProfile);
+          if (updateCache && newProfile) localStorage.setItem('personaops_profile', JSON.stringify(newProfile));
+          return newProfile;
+        } else {
+          setProfile(null);
+          if (updateCache) localStorage.removeItem('personaops_profile');
+          return null;
+        }
       } else {
-        failureCount++;
-        if (failureCount >= maxFailures) {
-          if (!cancelled) {
-            toast({
-              title: "Profile Load Failed",
-              description: "Could not load your profile after multiple attempts. Please refresh or contact support.",
-              variant: "destructive",
-            });
-          }
-          return;
-        }
-        // Fallback to basic profile from user data if no profile exists
-        const basicProfile: Profile = {
-          id: userId,
-          email: user?.email || '',
-          first_name: user?.user_metadata?.first_name,
-          last_name: user?.user_metadata?.last_name,
-          company: user?.user_metadata?.company,
-        };
-        if (!cancelled) setProfile(basicProfile);
+        setProfile(null);
+        if (updateCache) localStorage.removeItem('personaops_profile');
+        return null;
       }
-    } catch (error) {
-      failureCount++;
-      if (failureCount >= maxFailures) {
-        if (!cancelled) {
-          toast({
-            title: "Profile Load Failed",
-            description: "Could not load your profile after multiple attempts. Please refresh or contact support.",
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-      // Fallback to basic profile from user metadata
-      if (user) {
-        const basicProfile: Profile = {
-          id: userId,
-          email: user.email || '',
-          first_name: user.user_metadata?.first_name,
-          last_name: user.user_metadata?.last_name,
-          company: user.user_metadata?.company,
-        };
-        if (!cancelled) setProfile(basicProfile);
-      }
+    } catch (err) {
+      setProfile(null);
+      if (updateCache) localStorage.removeItem('personaops_profile');
+      return null;
     }
   };
 
   useEffect(() => {
+    // Load cached profile instantly
+    const cached = localStorage.getItem('personaops_profile');
+    if (cached) {
+      try {
+        setProfile(JSON.parse(cached));
+      } catch {}
+    }
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -129,6 +117,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         } else {
           setProfile(null);
+          localStorage.removeItem('personaops_profile');
           setWorkspaceId(null);
         }
         setLoading(false);

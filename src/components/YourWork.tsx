@@ -66,12 +66,9 @@ export default function YourWork() {
       setGtmLoading(true);
       setGtmError(null);
       try {
-        const [{ data: icps, error: icpError }, { data: playbooks, error: playbookError }] = await Promise.all([
-          supabase.from('icps').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false })
-        ]);
-        if (icpError || playbookError) throw icpError || playbookError;
-        const allGTM = [...(icps || []), ...(playbooks || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).map((r: any) => ({
+        const { data: playbooks, error: playbookError } = await supabase.from('gtm_playbooks').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false });
+        if (playbookError) throw playbookError;
+        const allGTM = (playbooks || []).filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).map((r: any) => ({
           ...r,
           companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
           companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',

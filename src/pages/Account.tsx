@@ -15,13 +15,19 @@ import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/ui/AppHeader';
 
 const Account = () => {
-  const { session, user } = useAuth();
+  const { session, user, profile, loading } = useAuth();
   const { fullName, company, initials } = useUserData();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
-  const [loading, setLoading] = useState(false);
+  const [loadingWork, setLoadingWork] = useState(false);
   const [error, setError] = useState('');
   const [work, setWork] = useState([]);
+
+  if (loading) return null; // or a spinner
+  if (!user || !profile) {
+    window.location.href = '/auth';
+    return null;
+  }
 
   const accountStats = [
     { label: "Companies Analyzed", value: "2,847", icon: Target, change: "+12%" },
@@ -32,7 +38,7 @@ const Account = () => {
 
   useEffect(() => {
     const fetchWork = async () => {
-      setLoading(true);
+      setLoadingWork(true);
       setError('');
       try {
         const [analyzeRes, icpRes, playbookRes] = await Promise.all([
@@ -58,7 +64,7 @@ const Account = () => {
       } catch (e) {
         setError('Could not load your work.');
       } finally {
-        setLoading(false);
+        setLoadingWork(false);
       }
     };
     fetchWork();

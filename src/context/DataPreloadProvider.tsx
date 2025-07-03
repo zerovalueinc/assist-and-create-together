@@ -68,11 +68,9 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
       console.log(`[DataPreloadProvider] Fetch #${globalFetchCount} for user`, { user, stack: new Error().stack });
       console.log('[DataPreloadProvider] Fetching dashboard data for user', { user });
       try {
-        const [companyAnalyzer, icps, playbooks, salesintel] = await Promise.all([
+        const [companyAnalyzer, playbooks] = await Promise.all([
           supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }).limit(50),
-          supabase.from('icps').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }),
-          supabase.from('saved_reports').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false })
+          supabase.from('gtm_playbooks').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false })
         ]);
         if (cancelled) return;
         const normalize = (arr: any[] = []) => arr.map((r: any) => ({
@@ -83,16 +81,14 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
         }));
         const data: DashboardData = {
           companyAnalyzer: normalize(companyAnalyzer.data),
-          icps: icps.data || [],
+          icps: [],
           playbooks: playbooks.data || [],
-          salesintel: salesintel.data || [],
+          salesintel: [],
         };
         setCache('companyanalyzer_reports', data.companyAnalyzer);
         setCache('yourwork_analyze', data.companyAnalyzer);
-        setCache('icp_icps', data.icps);
         setCache('icp_playbooks', data.playbooks);
-        setCache('salesintel_reports', data.salesintel);
-        setCache('yourwork_gtm', [...data.icps, ...data.playbooks]);
+        setCache('yourwork_gtm', data.playbooks);
         setDashboardData(data);
         setLoading(false);
       } catch (err: any) {
