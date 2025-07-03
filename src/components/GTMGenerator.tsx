@@ -200,20 +200,33 @@ const GTMGenerator = () => {
                 </label>
                 <Input
                   id="url"
-                  type="text"
-                  placeholder="e.g., outbound.ai, notion.so, zapier.com"
+                  type="url"
+                  placeholder="e.g., salesforce.com, hubspot.com"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
+                  disabled={loading}
                   className="text-base"
-                  autoComplete="off"
-                  aria-label="Company URL"
                 />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="useExisting"
+                    checked={useExistingAnalysis}
+                    onChange={(e) => setUseExistingAnalysis(e.target.checked)}
+                    className="rounded"
+                  />
+                  <label htmlFor="useExisting" className="text-sm font-medium">
+                    Use existing company analysis
+                  </label>
+                </div>
               </div>
               <Button type="submit" disabled={loading || !url.trim()} className="w-full">
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    Generating GTM Playbook (5-Phase Analysis)...
                   </>
                 ) : (
                   <>
@@ -333,12 +346,14 @@ const GTMGenerator = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {availableAnalyses.length > 0 && (
+                    {availableAnalyses.length > 0 ? (
                       <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
                         {availableAnalyses.map((analysis) => (
                           <div key={analysis.id} className="pill-selector">{analysis.companyName}</div>
                         ))}
                       </div>
+                    ) : (
+                      <EmptyState message="No company analyses found. Run an analysis first." />
                     )}
                   </CardContent>
                 </Card>
