@@ -254,11 +254,27 @@ serve(async (req) => {
         .limit(0);
       console.log('Table exists check result:', { tableInfo, tableError });
       
-      // Also try to get table schema
-      const { data: schemaInfo, error: schemaError } = await supabaseClient
-        .rpc('get_table_schema', { table_name: 'company_analyzer_outputs' })
-        .single();
-      console.log('Table schema info:', { schemaInfo, schemaError });
+      // Try to get a single row to see the actual structure
+      const { data: sampleRow, error: sampleError } = await supabaseClient
+        .from('company_analyzer_outputs')
+        .select('*')
+        .limit(1);
+      console.log('Sample row check:', { sampleRow, sampleError });
+      
+      // Try to describe the table structure by attempting different column names
+      console.log('Testing column access...');
+      const testColumns = ['companyName', 'company_name', 'companyname'];
+      for (const col of testColumns) {
+        try {
+          const { data: colTest, error: colError } = await supabaseClient
+            .from('company_analyzer_outputs')
+            .select(col)
+            .limit(0);
+          console.log(`Column ${col} test:`, { data: colTest, error: colError });
+        } catch (e) {
+          console.log(`Column ${col} failed:`, e.message);
+        }
+      }
     } catch (tableCheckError) {
       console.error('Table check error:', tableCheckError);
     }
