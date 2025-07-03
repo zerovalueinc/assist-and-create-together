@@ -145,7 +145,7 @@ serve(async (req) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - THIRTY_DAYS_MS).toISOString();
     const { data: recentReport, error: recentError } = await supabaseClient
-      .from('company_analyzer_outputs_unrestricted')
+      .from('company_analyzer_outputs')
       .select('*')
       .eq('user_id', user.id)
       .eq('website', normalizedUrl)
@@ -191,7 +191,6 @@ serve(async (req) => {
       };
     }
     const sanitizedAnalysis = {
-      schemaVersion: 1,
       companyName: safeString(finalAnalysis.companyName),
       companyProfile: safeCompanyProfile(finalAnalysis.companyProfile),
       decisionMakers: toArray(finalAnalysis.decisionMakers),
@@ -204,13 +203,12 @@ serve(async (req) => {
       researchSummary: safeString(finalAnalysis.researchSummary),
       website: normalizedUrl,
       user_id: user.id,
-      created_at: new Date().toISOString(),
     };
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
-    // Insert new analysis (no workspace_id)
+    // Insert new analysis
     const { data: insertData, error: insertError } = await supabaseClient
-      .from('company_analyzer_outputs_unrestricted')
+      .from('company_analyzer_outputs')
       .insert([sanitizedAnalysis])
       .select()
       .single();
