@@ -6,7 +6,6 @@ import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "luci
 import { SectionLabel } from "./ui/section-label";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '../lib/supabase'; // See README for global pattern
-import EmptyState from './ui/EmptyState';
 import { getCache, setCache } from '../lib/utils';
 
 const SalesIntelligence = () => {
@@ -115,7 +114,7 @@ const SalesIntelligence = () => {
             {error ? (
               <div className="py-8 text-center text-red-500">{error}</div>
             ) : reports.length === 0 ? (
-              <EmptyState message="No sales intelligence reports found. Run an analysis first." />
+              <div className="py-8 text-center text-gray-500">No sales intelligence reports found. Run an analysis first.</div>
             ) : (
               <div className="space-y-4">
                 {reports.map((report) => (

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '../lib/supabase'; // See README for global pattern
-import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useUser } from '../hooks/useUserData';
@@ -124,7 +123,7 @@ export default function YourWork() {
               {analyzeError ? (
                 <div className="py-8 text-center text-red-500">{analyzeError}</div>
               ) : analyzeWork.length === 0 ? (
-                <EmptyState message="No company analysis reports found. Run an analysis first." />
+                <div className="py-8 text-center text-slate-500">No company analysis reports found. Run an analysis first.</div>
               ) : (
                 <div className="flex flex-col gap-4">
                   {analyzeWork.map((item) => (
@@ -169,7 +168,7 @@ export default function YourWork() {
               {gtmError ? (
                 <div className="py-8 text-center text-red-500">{gtmError}</div>
               ) : gtmWork.length === 0 ? (
-                <EmptyState message="No GTM or ICP reports found. Generate a playbook or ICP first." />
+                <div className="py-8 text-center text-slate-500">No GTM or ICP reports found. Generate a playbook or ICP first.</div>
               ) : (
                 <div className="flex flex-col gap-4">
                   {gtmWork.map((item) => (

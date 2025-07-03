@@ -10,7 +10,6 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
-import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
@@ -250,7 +249,7 @@ const CompanyAnalyzer = () => {
 
       {/* Results */}
       {reports.length === 0 ? (
-        <EmptyState message="No company analysis reports found. Run an analysis first." />
+        <div className="text-center text-muted-foreground py-8">No company analysis reports found. Run an analysis first.</div>
       ) : (
         <div className="space-y-6">
           {/* Details */}

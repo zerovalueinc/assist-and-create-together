@@ -16,7 +16,6 @@ import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { supabase } from '../lib/supabase'; // See README for global pattern
-import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useUser } from '../hooks/useUserData';
 
@@ -398,9 +397,9 @@ const ICPGenerator = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Saved GTM Playbook Pills */}
-        {companies.length === 0 && <EmptyState message="No companies analyzed yet. Run an analysis first." />}
-        {recentICPs.length === 0 && <EmptyState message="No ICPs found. Generate an ICP first." />}
-        {recentPlaybooks.length === 0 && <EmptyState message="No playbooks found. Generate a playbook first." />}
+        {companies.length === 0 && <div className="text-gray-500 text-sm">No companies analyzed yet. Run an analysis first.</div>}
+        {recentICPs.length === 0 && <div className="text-gray-500 text-sm">No ICPs found. Generate an ICP first.</div>}
+        {recentPlaybooks.length === 0 && <div className="text-gray-500 text-sm">No playbooks found. Generate a playbook first.</div>}
         {recentICPs.length > 0 && (
           <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
             {recentICPs.map((icpObj) => {
