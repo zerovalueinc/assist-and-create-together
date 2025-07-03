@@ -7,6 +7,11 @@ export default async function handler(req, res) {
   // TODO: Centralize auth logic here if needed
   // const userId = headers['x-user-id'] || body?.user_id || query?.user_id;
 
+  console.log('=== API Request Debug ===');
+  console.log('Method:', method);
+  console.log('URL:', url);
+  console.log('URL startsWith /api/company-analyze:', url.startsWith('/api/company-analyze'));
+
   try {
     // EMAIL ENDPOINTS
     if (url.startsWith('/api/email')) {
@@ -1658,7 +1663,10 @@ export default async function handler(req, res) {
     }
     // COMPANY-ANALYZE ENDPOINT
     if (url.startsWith('/api/company-analyze')) {
+      console.log('=== Company Analyze Handler Hit ===');
+      console.log('Method:', method);
       if (method !== 'POST') {
+        console.log('Method not allowed, returning 405');
         return res.status(405).json({ error: 'Method Not Allowed' });
       }
       const SUPABASE_EDGE_URL = 'https://hbogcsztrryrepudceww.functions.supabase.co/company-analyze';
