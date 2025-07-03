@@ -192,7 +192,7 @@ serve(async (req) => {
     }
     const sanitizedAnalysis = {
       companyName: safeString(finalAnalysis.companyName),
-      companyProfile: safeCompanyProfile(finalAnalysis.companyProfile),
+      // Remove companyProfile for now - use individual fields
       decisionMakers: toArray(finalAnalysis.decisionMakers),
       painPoints: toArray(finalAnalysis.painPoints),
       technologies: toArray(finalAnalysis.technologies),
