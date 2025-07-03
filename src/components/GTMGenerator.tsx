@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { useCompany } from '../context/CompanyContext';
+import { invokeEdgeFunction } from '../lib/supabase/edgeClient';
 
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
@@ -99,11 +100,9 @@ const GTMGenerator = () => {
         selectedCompany,
       };
 
-      const { data, error } = await supabase.functions.invoke('gtm-generate', {
-        body: requestBody,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      const { data, error } = await invokeEdgeFunction('gtm-generate', requestBody, {
+        workspace_id: workspaceId,
+        access_token: session.access_token,
       });
 
       console.log('GTM generation response:', { data, error });

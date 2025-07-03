@@ -3,9 +3,20 @@
 
 import { supabase } from '../supabaseClient';
 
-export async function invokeEdgeFunction(functionName: string, payload: any) {
+export async function invokeEdgeFunction(
+  functionName: string,
+  payload: any,
+  options?: { workspace_id?: string; access_token?: string }
+) {
+  const body = options?.workspace_id
+    ? { ...payload, workspace_id: options.workspace_id }
+    : payload;
+  const headers = options?.access_token
+    ? { Authorization: `Bearer ${options.access_token}` }
+    : undefined;
   return await supabase.functions.invoke(functionName, {
-    body: payload,
+    body,
+    headers,
   });
 }
 
