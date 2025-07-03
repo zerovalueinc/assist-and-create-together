@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Link, BarChart3, Mail, Plus, UserPlus, Key, Settings as SettingsIcon, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppHeader from '@/components/ui/AppHeader';
+import { useToast } from '@/components/ui/use-toast';
+import { useCompany } from '@/context/CompanyContext';
+import { useUser } from '@supabase/auth-helpers-react';
 
 const MOCK_TEAM = [
   { name: 'Alice Johnson', email: 'alice@acme.com', role: 'Owner', status: 'Active' },
@@ -28,11 +31,137 @@ const MOCK_STATS = [
 export default function Workspace() {
   const [activeTab, setActiveTab] = useState('team');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [fetchingInvites, setFetchingInvites] = useState(false);
+  const { toast } = useToast();
+  const { workspaceId } = useCompany();
+  const user = useUser();
   const [team, setTeam] = useState(MOCK_TEAM);
   const [crms, setCrms] = useState(MOCK_CRMS);
   const [workspaceName, setWorkspaceName] = useState('PersonaOps Workspace');
   const [brandColor, setBrandColor] = useState('#2563eb');
   const [notifications, setNotifications] = useState('All');
+  // HubSpot integration state
+  const [hubspotStatus, setHubspotStatus] = useState<'connected' | 'not_connected' | 'error' | 'pending'>('not_connected');
+  const [hubspotLoading, setHubspotLoading] = useState(false);
+
+  // Fetch invitations for this workspace
+  const fetchInvitations = useCallback(async () => {
+    if (!workspaceId) return;
+    setFetchingInvites(true);
+    try {
+      const res = await fetch(`/api/invitations?workspace_id=${workspaceId}`);
+      const json = await res.json();
+      if (res.ok) {
+        setInvitations(json.invitations || []);
+      } else {
+        toast({ title: 'Error', description: json.error || 'Failed to fetch invitations', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to fetch invitations', variant: 'destructive' });
+    } finally {
+      setFetchingInvites(false);
+    }
+  }, [workspaceId, toast]);
+
+  useEffect(() => { fetchInvitations(); }, [fetchInvitations]);
+
+  // Email validation
+  const isValidEmail = (email: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+
+  // Handle invite
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) {
+      toast({ title: 'Email required', description: 'Please enter an email address.' });
+      return;
+    }
+    if (!isValidEmail(inviteEmail)) {
+      toast({ title: 'Invalid email', description: 'Please enter a valid email address.' });
+      return;
+    }
+    setInviteLoading(true);
+    try {
+      const res = await fetch('/api/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail })
+      });
+      const json = await res.json();
+      if (res.ok) {
+        toast({ title: 'Invitation sent', description: `Invite sent to ${inviteEmail}` });
+        setInviteEmail('');
+        fetchInvitations();
+      } else {
+        toast({ title: 'Error', description: json.error || 'Failed to send invite', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to send invite', variant: 'destructive' });
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  // Fetch HubSpot status
+  const fetchHubspotStatus = useCallback(async () => {
+    setHubspotLoading(true);
+    try {
+      const res = await fetch('/api/integrations/hubspot/status');
+      const json = await res.json();
+      if (res.ok) {
+        setHubspotStatus(json.status);
+      } else {
+        setHubspotStatus('error');
+        toast({ title: 'Error', description: json.error || 'Failed to fetch HubSpot status', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      setHubspotStatus('error');
+      toast({ title: 'Error', description: err.message || 'Failed to fetch HubSpot status', variant: 'destructive' });
+    } finally {
+      setHubspotLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { fetchHubspotStatus(); }, [fetchHubspotStatus]);
+
+  // Connect HubSpot
+  const handleConnectHubspot = async () => {
+    setHubspotLoading(true);
+    try {
+      const res = await fetch('/api/integrations/hubspot/auth-url');
+      const json = await res.json();
+      if (res.ok && json.url) {
+        window.open(json.url, '_blank', 'width=600,height=700');
+        toast({ title: 'Continue in new window', description: 'Complete the HubSpot connection in the new tab.' });
+      } else {
+        toast({ title: 'Error', description: json.error || 'Failed to get HubSpot auth URL', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to get HubSpot auth URL', variant: 'destructive' });
+    } finally {
+      setTimeout(fetchHubspotStatus, 2000); // Give time for callback
+      setHubspotLoading(false);
+    }
+  };
+
+  // Disconnect HubSpot
+  const handleDisconnectHubspot = async () => {
+    setHubspotLoading(true);
+    try {
+      const res = await fetch('/api/integrations/hubspot/disconnect', { method: 'POST' });
+      const json = await res.json();
+      if (res.ok) {
+        toast({ title: 'Disconnected', description: 'HubSpot integration removed.' });
+        fetchHubspotStatus();
+      } else {
+        toast({ title: 'Error', description: json.error || 'Failed to disconnect HubSpot', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to disconnect HubSpot', variant: 'destructive' });
+    } finally {
+      setHubspotLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -129,24 +258,31 @@ export default function Workspace() {
                         placeholder="Invite teammate by email"
                         value={inviteEmail}
                         onChange={e => setInviteEmail(e.target.value)}
+                        disabled={inviteLoading}
                       />
-                      <Button variant="default" className="flex items-center gap-1"><Plus className="h-4 w-4" />Invite</Button>
+                      <Button variant="default" className="flex items-center gap-1" onClick={handleInvite} disabled={inviteLoading}>
+                        <Plus className="h-4 w-4" />{inviteLoading ? 'Inviting...' : 'Invite'}
+                      </Button>
                     </div>
-                    <div className="space-y-3">
-                      {team.map((tm, i) => (
-                        <div key={i} className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
-                          <div>
-                            <span className="font-semibold text-lg text-slate-900">{tm.name}</span>
-                            <span className="block text-xs text-slate-500">{tm.email}</span>
+                    {fetchingInvites ? (
+                      <div className="text-center text-slate-500 py-8">Loading invitations...</div>
+                    ) : invitations.length === 0 ? (
+                      <div className="text-center text-slate-500 py-8">No teammates or invites yet. Start by inviting a teammate!</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {invitations.map((inv, i) => (
+                          <div key={inv.id || i} className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
+                            <div>
+                              <span className="font-semibold text-lg text-slate-900">{inv.email}</span>
+                              <span className="block text-xs text-slate-500">{inv.status}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={inv.status === 'pending' ? 'outline' : 'secondary'}>{inv.status}</Badge>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{tm.role}</Badge>
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">{tm.status}</Badge>
-                            <Button size="sm" variant="destructive">Remove</Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -158,19 +294,45 @@ export default function Workspace() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {crms.map((crm, i) => (
-                        <div key={i} className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
-                          <div className="font-semibold text-lg text-slate-900">{crm.name}</div>
-                          <div className="flex items-center gap-2">
-                            {crm.connected ? (
-                              <Badge variant="secondary" className="bg-green-100 text-green-800">Connected</Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-red-100 text-red-800">Not Connected</Badge>
-                            )}
-                            <Button size="sm" variant="outline">{crm.connected ? 'Manage' : 'Connect'}</Button>
-                          </div>
+                      {/* HubSpot Integration */}
+                      <div className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
+                        <div className="font-semibold text-lg text-slate-900">HubSpot</div>
+                        <div className="flex items-center gap-2">
+                          {hubspotStatus === 'connected' ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">Connected</Badge>
+                          ) : hubspotStatus === 'pending' ? (
+                            <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>
+                          ) : hubspotStatus === 'error' ? (
+                            <Badge variant="outline" className="bg-red-100 text-red-800">Error</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-red-100 text-red-800">Not Connected</Badge>
+                          )}
+                          {hubspotStatus === 'connected' ? (
+                            <Button size="sm" variant="outline" onClick={handleDisconnectHubspot} disabled={hubspotLoading}>
+                              {hubspotLoading ? 'Disconnecting...' : 'Disconnect'}
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="outline" onClick={handleConnectHubspot} disabled={hubspotLoading}>
+                              {hubspotLoading ? 'Connecting...' : 'Connect'}
+                            </Button>
+                          )}
                         </div>
-                      ))}
+                      </div>
+                      {/* Salesforce and Pipedrive remain mock for now */}
+                      <div className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
+                        <div className="font-semibold text-lg text-slate-900">Salesforce</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-red-100 text-red-800">Not Connected</Badge>
+                          <Button size="sm" variant="outline">Connect</Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
+                        <div className="font-semibold text-lg text-slate-900">Pipedrive</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-red-100 text-red-800">Not Connected</Badge>
+                          <Button size="sm" variant="outline">Connect</Button>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

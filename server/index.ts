@@ -11,6 +11,8 @@ import salesIntelligenceRoutes from './routes/salesIntelligence';
 import companyAnalyzeRoutes from './routes/companyAnalyze';
 import authRoutes from './routes/auth';
 import workflowRoutes from './routes/workflow';
+import invitationsRoutes from './routes/invitations';
+import integrationsRoutes from './routes/integrations';
 
 // Load environment variables
 dotenv.config();
@@ -463,6 +465,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/sales-intelligence', salesIntelligenceRoutes);
 app.use('/api/company-analyze', companyAnalyzeRoutes);
 app.use('/api/workflow', workflowRoutes);
+app.use('/api/invitations', invitationsRoutes);
+app.use('/api/integrations', integrationsRoutes);
 
 // Enhanced error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -502,7 +506,9 @@ app.use('*', (req, res) => {
       '/api/upload',
       '/api/sales-intelligence',
       '/api/company-analyze',
-      '/api/workflow'
+      '/api/workflow',
+      '/api/invitations',
+      '/api/integrations'
     ]
   });
 });
@@ -563,6 +569,8 @@ async function startServer() {
       console.log(`   - /api/sales-intelligence - Sales intelligence reports`);
       console.log(`   - /api/company-analyze - Company analysis`);
       console.log(`   - /api/workflow - Workflow management`);
+      console.log(`   - /api/invitations - Invitations`);
+      console.log(`   - /api/integrations - Integrations`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
