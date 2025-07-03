@@ -125,6 +125,8 @@ const GTMGenerator = () => {
               console.log("Selected company:", item);
               setSelectedCompany(item);
               setSelectedAnalysisId(item.id);
+              setUrl(item.companyUrl || item.url || '');
+              setUseExistingAnalysis(true);
             }}
             className={`rounded-full px-4 py-1 text-sm border ${
               selectedCompany?.id === item.id ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
@@ -395,14 +397,10 @@ const GTMGenerator = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {availableAnalyses.length > 0 ? (
-                      <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
-                        {availableAnalyses.map((analysis) => (
-                          <div key={analysis.id} className="pill-selector">{analysis.companyName}</div>
-                        ))}
-                      </div>
+                    {selectedICP ? (
+                      renderICPSection(selectedICP)
                     ) : (
-                      <p className="text-gray-500">No company analyses found. Run an analysis first.</p>
+                      <p className="text-gray-500">Select an ICP from the pills above to view details.</p>
                     )}
                   </CardContent>
                 </Card>
