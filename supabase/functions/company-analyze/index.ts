@@ -241,11 +241,14 @@ serve(async (req) => {
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
     console.error('Error details:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error.constructor.name);
     
     return new Response(
       JSON.stringify({
         error: 'Company analysis failed',
         details: error.message,
+        stack: error.stack,
         timestamp: new Date().toISOString()
       }),
       {
