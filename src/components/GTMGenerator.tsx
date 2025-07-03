@@ -19,6 +19,8 @@ const GTMGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [useExistingAnalysis, setUseExistingAnalysis] = useState(false);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [selectedICP, setSelectedICP] = useState(null);
   const { toast } = useToast();
   const { user, session } = useUser();
   const hasFetched = useRef(false);
@@ -29,6 +31,13 @@ const GTMGenerator = () => {
   if (!availableAnalyses.length) {
     availableAnalyses = getCache('yourwork_analyze', []);
   }
+
+  const [icpProfiles, setIcpProfiles] = useState([]);
+  
+  useEffect(() => {
+    let icps = preloadData?.icps || getCache('yourwork_icp', []);
+    setIcpProfiles(icps);
+  }, [preloadData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -60,7 +69,8 @@ const GTMGenerator = () => {
       const requestBody = {
         websiteUrl: url.trim(),
         useExistingAnalysis,
-        analysisId: selectedAnalysisId
+        analysisId: selectedAnalysisId,
+        icpId: selectedICP?.id
       };
 
       const { data, error } = await supabase.functions.invoke('gtm-generate', {
@@ -99,26 +109,52 @@ const GTMGenerator = () => {
     }
   };
 
-  // Pills selector for company analyses
-  const renderCompanyPills = () => (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {availableAnalyses.map((analysis) => (
-        <Badge
-          key={analysis.id}
-          variant={selectedAnalysisId === analysis.id ? 'default' : 'secondary'}
-          className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedAnalysisId === analysis.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
-          onClick={() => {
-            setSelectedAnalysisId(analysis.id);
-            setUrl(analysis.companyUrl);
-            setUseExistingAnalysis(true);
-          }}
-        >
-          <span className="font-semibold">{analysis.companyName || 'Untitled'}</span>
-          <span className="ml-2 text-xs text-muted-foreground">{analysis.createdAt ? new Date(analysis.createdAt).toLocaleDateString() : ''}</span>
-        </Badge>
-      ))}
-    </div>
-  );
+  const renderCompanyPills = () => {
+    if (!availableAnalyses.length) {
+      return <p className="text-gray-500 mt-2">No companies analyzed yet. Use Company Analyzer first.</p>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2 mt-2">
+        {availableAnalyses.map((item: any) => (
+          <button
+            key={item.id}
+            onClick={() => {
+              setSelectedCompany(item);
+              setSelectedAnalysisId(item.id);
+            }}
+            className={`rounded-full px-4 py-1 text-sm border ${
+              selectedCompany?.id === item.id ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            {item.companyName || item.name || 'Unnamed'}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const renderICPPills = () => {
+    if (!icpProfiles.length) {
+      return <p className="text-gray-500 mt-2">No ICPs found. Generate an ICP first.</p>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2 mt-2">
+        {icpProfiles.map((icp: any) => (
+          <button
+            key={icp.id}
+            onClick={() => setSelectedICP(icp)}
+            className={`rounded-full px-4 py-1 text-sm border ${
+              selectedICP?.id === icp.id ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            {icp.title || icp.name || 'Untitled ICP'}
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   const renderICPSection = (icp: any) => (
     <div className="space-y-4">
@@ -188,10 +224,8 @@ const GTMGenerator = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-2">
-            <div className="font-semibold text-base mb-1">Select Target Company</div>
-            {availableAnalyses.length > 0 && renderCompanyPills()}
-          </div>
+          <div className='mb-4'>{renderCompanyPills()}</div>
+          <div className='mb-4'>{renderICPPills()}</div>
           {availableAnalyses.length > 0 && (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
