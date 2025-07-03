@@ -13,6 +13,7 @@ import authRoutes from './routes/auth';
 import workflowRoutes from './routes/workflow';
 import invitationsRoutes from './routes/invitations';
 import integrationsRoutes from './routes/integrations';
+import teamRoutes from './routes/team';
 
 // Load environment variables
 dotenv.config();
@@ -467,6 +468,7 @@ app.use('/api/company-analyze', companyAnalyzeRoutes);
 app.use('/api/workflow', workflowRoutes);
 app.use('/api/invitations', invitationsRoutes);
 app.use('/api/integrations', integrationsRoutes);
+app.use('/api/team', teamRoutes);
 
 // Enhanced error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -508,7 +510,8 @@ app.use('*', (req, res) => {
       '/api/company-analyze',
       '/api/workflow',
       '/api/invitations',
-      '/api/integrations'
+      '/api/integrations',
+      '/api/team'
     ]
   });
 });
@@ -571,6 +574,7 @@ async function startServer() {
       console.log(`   - /api/workflow - Workflow management`);
       console.log(`   - /api/invitations - Invitations`);
       console.log(`   - /api/integrations - Integrations`);
+      console.log(`   - /api/team - Team management`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

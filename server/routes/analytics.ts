@@ -16,48 +16,56 @@ async function getWorkspaceId(userId: string) {
   return ws.id;
 }
 
-// 1. Lead volume over time
+// 1. Lead volume over time (count of contacts by week)
 router.get('/lead-volume', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const workspaceId = await getWorkspaceId(userId);
   if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Example: count leads per week
-  const { data, error } = await supabase.rpc('lead_volume_by_week', { workspace_id: workspaceId });
+  const { data, error } = await supabase.rpc('lead_volume_by_week_warehouse', { workspace_id: workspaceId });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ data });
 });
 
-// 2. Success rate (connected → deal stage %)
+// 2. Success rate (deals won / total deals)
 router.get('/success-rate', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const workspaceId = await getWorkspaceId(userId);
   if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Example: calculate success rate from leads table
-  const { data, error } = await supabase.rpc('lead_success_rate', { workspace_id: workspaceId });
+  // Count deals by stage
+  const { data, error } = await supabase
+    .from('crm_deals')
+    .select('data')
+    .eq('workspace_id', workspaceId);
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ data });
+  const deals = (data || []).map((d: any) => d.data);
+  const total = deals.length;
+  const won = deals.filter((d: any) => (d.properties?.dealstage || '').toLowerCase().includes('won')).length;
+  res.json({ total, won, successRate: total ? won / total : 0 });
 });
 
-// 3. Playbook → Outcome mapping
+// 3. Playbook → Outcome mapping (stub, to be implemented as needed)
 router.get('/playbook-outcomes', authenticateToken, async (req, res) => {
-  const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Example: join playbooks and outcomes
-  const { data, error } = await supabase.rpc('playbook_outcomes', { workspace_id: workspaceId });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ data });
+  // TODO: Implement mapping from playbooks to outcomes using warehouse data
+  res.json({ data: [] });
 });
 
-// 4. CRM-synced lead status funnel
+// 4. CRM-synced lead status funnel (deals by stage)
 router.get('/lead-funnel', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const workspaceId = await getWorkspaceId(userId);
   if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Example: count leads by status
-  const { data, error } = await supabase.rpc('lead_funnel_by_status', { workspace_id: workspaceId });
+  const { data, error } = await supabase
+    .from('crm_deals')
+    .select('data')
+    .eq('workspace_id', workspaceId);
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ data });
+  const deals = (data || []).map((d: any) => d.data);
+  const funnel = deals.reduce((acc: any, d: any) => {
+    const stage = d.properties?.dealstage || 'Unknown';
+    acc[stage] = (acc[stage] || 0) + 1;
+    return acc;
+  }, {});
+  res.json({ funnel });
 });
 
 export default router; 

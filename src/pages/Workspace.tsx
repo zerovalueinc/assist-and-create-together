@@ -45,6 +45,10 @@ export default function Workspace() {
   // HubSpot integration state
   const [hubspotStatus, setHubspotStatus] = useState<'connected' | 'not_connected' | 'error' | 'pending'>('not_connected');
   const [hubspotLoading, setHubspotLoading] = useState(false);
+  // Teammate CRM status state
+  const [teamList, setTeamList] = useState<any[]>([]);
+  const [crmStatuses, setCrmStatuses] = useState<any[]>([]);
+  const [crmStatusLoading, setCrmStatusLoading] = useState(false);
 
   // Fetch invitations for this workspace
   const fetchInvitations = useCallback(async () => {
@@ -162,6 +166,31 @@ export default function Workspace() {
       setHubspotLoading(false);
     }
   };
+
+  // Fetch all teammates and their CRM status
+  const fetchTeamAndCrmStatuses = useCallback(async () => {
+    setCrmStatusLoading(true);
+    try {
+      const [teamRes, crmRes] = await Promise.all([
+        fetch('/api/team'),
+        fetch('/api/integrations/hubspot/status/all')
+      ]);
+      const teamJson = await teamRes.json();
+      const crmJson = await crmRes.json();
+      if (teamRes.ok && crmRes.ok) {
+        setTeamList(teamJson.team || []);
+        setCrmStatuses(crmJson.statuses || []);
+      } else {
+        toast({ title: 'Error', description: teamJson.error || crmJson.error || 'Failed to fetch team/CRM status', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to fetch team/CRM status', variant: 'destructive' });
+    } finally {
+      setCrmStatusLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { fetchTeamAndCrmStatuses(); }, [fetchTeamAndCrmStatuses]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -294,29 +323,45 @@ export default function Workspace() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {/* HubSpot Integration */}
-                      <div className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
-                        <div className="font-semibold text-lg text-slate-900">HubSpot</div>
-                        <div className="flex items-center gap-2">
-                          {hubspotStatus === 'connected' ? (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">Connected</Badge>
-                          ) : hubspotStatus === 'pending' ? (
-                            <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>
-                          ) : hubspotStatus === 'error' ? (
-                            <Badge variant="outline" className="bg-red-100 text-red-800">Error</Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-red-100 text-red-800">Not Connected</Badge>
-                          )}
-                          {hubspotStatus === 'connected' ? (
-                            <Button size="sm" variant="outline" onClick={handleDisconnectHubspot} disabled={hubspotLoading}>
-                              {hubspotLoading ? 'Disconnecting...' : 'Disconnect'}
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="outline" onClick={handleConnectHubspot} disabled={hubspotLoading}>
-                              {hubspotLoading ? 'Connecting...' : 'Connect'}
-                            </Button>
-                          )}
-                        </div>
+                      {/* HubSpot Integration for all teammates */}
+                      <div className="mb-4">
+                        <div className="font-semibold text-base text-slate-900 mb-2">Team HubSpot Connections</div>
+                        {crmStatusLoading ? (
+                          <div className="text-center text-slate-500 py-4">Loading team CRM statuses...</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {crmStatuses.map((tm: any) => (
+                              <div key={tm.user_id} className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
+                                <div>
+                                  <span className="font-semibold text-lg text-slate-900">{tm.name}</span>
+                                  <span className="block text-xs text-slate-500">{tm.email}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {tm.status === 'connected' ? (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-800">Connected</Badge>
+                                  ) : tm.status === 'pending' ? (
+                                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>
+                                  ) : tm.status === 'error' ? (
+                                    <Badge variant="outline" className="bg-red-100 text-red-800">Error</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="bg-red-100 text-red-800">Not Connected</Badge>
+                                  )}
+                                  {user?.id === tm.user_id ? (
+                                    tm.status === 'connected' ? (
+                                      <Button size="sm" variant="outline" onClick={handleDisconnectHubspot} disabled={hubspotLoading}>
+                                        {hubspotLoading ? 'Disconnecting...' : 'Disconnect'}
+                                      </Button>
+                                    ) : (
+                                      <Button size="sm" variant="outline" onClick={handleConnectHubspot} disabled={hubspotLoading}>
+                                        {hubspotLoading ? 'Connecting...' : 'Connect'}
+                                      </Button>
+                                    )
+                                  ) : null}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       {/* Salesforce and Pipedrive remain mock for now */}
                       <div className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
