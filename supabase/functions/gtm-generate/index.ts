@@ -185,21 +185,84 @@ serve(async (req) => {
       selectedCompany
     );
 
-    // Save GTM playbook to database
-    const { data: savedPlaybook, error: saveError } = await supabaseClient
+    // Save GTM playbook to database (both tables for compatibility)
+    let savedPlaybook = null;
+    let savedICP = null;
+    
+    // Save to gtm_playbooks table
+    const { data: playbookData, error: playbookError } = await supabaseClient
       .from('gtm_playbooks')
       .insert({
         user_id: user.id,
-        companyName: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
-        website: gtmRequest.websiteUrl,
-        playbook: finalPlaybook,
+        company_name: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
+        website_url: gtmRequest.websiteUrl,
+        playbook_data: finalPlaybook,
         created_at: new Date().toISOString(),
       })
       .select()
       .single();
+    
+    if (!playbookError) {
+      savedPlaybook = playbookData;
+    }
+    
+    // Also save to icps table with the correct GTMICPSchema structure
+    const icpData = {
+      schemaVersion: "1.0",
+      personas: finalPlaybook.gtmPlaybook.idealCustomerProfile.personas.map((p: any) => ({
+        title: p.title,
+        role: p.role,
+        painPoints: p.painPoints || [],
+        responsibilities: p.responsibilities || []
+      })),
+      firmographics: {
+        industry: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry.join(', '),
+        companySize: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.companySize,
+        revenueRange: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.revenueRange,
+        region: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography.join(', ')
+      },
+      messagingAngles: finalPlaybook.gtmPlaybook.messagingFramework.secondaryMessages || [],
+      gtmRecommendations: finalPlaybook.gtmPlaybook.executiveSummary,
+      competitivePositioning: finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages.join(', '),
+      objectionHandling: finalPlaybook.gtmPlaybook.messagingFramework.objectionHandling.map((o: any) => o.objection),
+      campaignIdeas: finalPlaybook.gtmPlaybook.demandGeneration.campaignIdeas || [],
+      metricsToTrack: finalPlaybook.gtmPlaybook.metricsAndKPIs.leadingIndicators || [],
+      filmReviews: finalPlaybook.researchSummary || '',
+      crossFunctionalAlignment: finalPlaybook.gtmPlaybook.goToMarketStrategy.channel,
+      demandGenFramework: finalPlaybook.gtmPlaybook.demandGeneration.channels.join(', '),
+      iterativeMeasurement: finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators.join(', '),
+      trainingEnablement: finalPlaybook.gtmPlaybook.salesEnablement.talkTracks.join(', '),
+      apolloSearchParams: {
+        employeeCount: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.companySize,
+        titles: finalPlaybook.gtmPlaybook.idealCustomerProfile.personas.map((p: any) => p.title),
+        industries: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry,
+        technologies: [], // Would need to be populated from company analysis
+        locations: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography
+      }
+    };
+    
+    const { data: icpDataResult, error: icpError } = await supabaseClient
+      .from('icps')
+      .insert({
+        user_id: user.id,
+        companyUrl: gtmRequest.websiteUrl,
+        companyName: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
+        icpData: JSON.stringify(icpData),
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    
+    if (!icpError) {
+      savedICP = icpDataResult;
+    }
 
-    if (saveError) {
-      console.error('Error saving GTM playbook:', saveError);
+    if (playbookError) {
+      console.error('Error saving GTM playbook:', playbookError);
+    }
+    
+    if (icpError) {
+      console.error('Error saving ICP data:', icpError);
     }
 
     console.log('GTM playbook generation completed successfully');

@@ -207,15 +207,69 @@ serve(async (req) => {
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
     // Insert new analysis
+    console.log('Attempting to insert into company_analyzer_outputs table...');
+    console.log('Table schema expected fields: id, user_id, companyName, companyProfile, decisionMakers, painPoints, technologies, location, marketTrends, competitiveLandscape, goToMarketStrategy, researchSummary, website, created_at');
+    
+    // First try a minimal insert to test the table
+    const minimalTest = {
+      user_id: user.id,
+      companyName: 'Test Company',
+      website: 'https://test.com'
+    };
+    
+    console.log('Testing minimal insert with:', minimalTest);
+    const { data: testData, error: testError } = await supabaseClient
+      .from('company_analyzer_outputs')
+      .insert([minimalTest])
+      .select()
+      .single();
+    
+    if (testError) {
+      console.error('Minimal insert test failed:', testError);
+    } else {
+      console.log('Minimal insert test succeeded:', testData);
+    }
+    
+    // Now try the full insert
     const { data: insertData, error: insertError } = await supabaseClient
       .from('company_analyzer_outputs')
       .insert([sanitizedAnalysis])
       .select()
       .single();
+    
     if (insertError) {
-      console.error('Insert error:', insertError);
+      console.error('Insert error details:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        fullError: insertError
+      });
+      
+          // Try to get table info to debug schema issues
+    try {
+      const { data: tableInfo, error: tableError } = await supabaseClient
+        .from('company_analyzer_outputs')
+        .select('*')
+        .limit(0);
+      console.log('Table exists check result:', { tableInfo, tableError });
+      
+      // Also try to get table schema
+      const { data: schemaInfo, error: schemaError } = await supabaseClient
+        .rpc('get_table_schema', { table_name: 'company_analyzer_outputs' })
+        .single();
+      console.log('Table schema info:', { schemaInfo, schemaError });
+    } catch (tableCheckError) {
+      console.error('Table check error:', tableCheckError);
+    }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to save analysis', details: insertError.message }),
+        JSON.stringify({ 
+          error: 'Failed to save analysis', 
+          details: insertError.message,
+          code: insertError.code,
+          hint: insertError.hint
+        }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
