@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useUser } from '../hooks/useUserData';
+import { useDataPreload } from '@/context/DataPreloadProvider';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
@@ -73,7 +74,7 @@ const ICPGenerator = () => {
   const { research } = useCompany();
   const { user, session } = useUser();
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<any[]>([]);
+  const { data: preloadData } = useDataPreload();
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [recentICPs, setRecentICPs] = useState<any[]>([]);
   const [recentPlaybooks, setRecentPlaybooks] = useState<any[]>([]);
@@ -83,50 +84,11 @@ const ICPGenerator = () => {
   // Debug log for recentICPs
   console.log('recentICPs:', recentICPs);
 
-  // Fetch analyzed companies (CompanyAnalyzer reports)
-  const hasFetchedCompanies = useRef(false);
-  useEffect(() => {
-    // Show cached companies instantly
-    const cachedCompanies = getCache<any[]>('icp_companies', []);
-    if (cachedCompanies.length > 0) setCompanies(cachedCompanies);
-    if (hasFetchedCompanies.current) return;
-    hasFetchedCompanies.current = true;
-    let cancelled = false;
-    const fetchCompanies = async () => {
-      setLoading(true);
-      if (typeof user.id !== 'string' || !user.id) return;
-      try {
-        const { data, error } = await supabase
-          .from('company_analyzer_outputs_unrestricted')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        if (!cancelled) {
-          if (error) throw error;
-          const normalized = (data || []).map((r: any) => ({
-            ...r,
-            companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
-            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-            createdAt: r.createdAt || r.created_at || '',
-          }));
-          setCompanies(normalized);
-          setCache('icp_companies', normalized);
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          toast({
-            title: "Error fetching companies",
-            description: err.message || "Failed to fetch company analyses.",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchCompanies();
-    return () => { cancelled = true; };
-  }, [user]);
+  // Use preloaded company analyses for pills or fallback to cache
+  let availableCompanies = preloadData?.companyAnalyzer || [];
+  if (!availableCompanies.length) {
+    availableCompanies = getCache('yourwork_analyze', []);
+  }
 
   // Fetch recent/generated ICPs
   const hasFetchedICPs = useRef(false);
@@ -397,9 +359,9 @@ const ICPGenerator = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Saved GTM Playbook Pills */}
-        {companies.length > 0 && (
+        {availableCompanies.length > 0 && (
           <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
-            {companies.map((c) => (
+            {availableCompanies.map((c) => (
               <Button
                 key={c.id}
                 variant={selectedCompany?.id === c.id ? 'default' : 'outline'}
@@ -719,20 +681,23 @@ const ICPGenerator = () => {
         <div className="space-y-2">
           <label className="text-sm font-medium">Select Target Company</label>
           <div className="flex flex-wrap gap-2">
-            {companies.length === 0 && <span className="text-gray-500 text-sm">No companies analyzed yet. Use Company Analyzer first.</span>}
-            {companies.map((c) => (
-              <Button
-                key={c.id}
-                variant={selectedCompany?.id === c.id ? 'default' : 'outline'}
-                onClick={() => setSelectedCompany(c)}
-                className="flex items-center gap-2 px-3 py-1 text-sm"
-                size="sm"
-              >
-                <img src={`https://www.google.com/s2/favicons?domain=${c.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
-                {c.companyName || c.companyUrl}
-                {selectedCompany?.id === c.id && <CheckCircle className="h-3 w-3 ml-1" />}
-              </Button>
-            ))}
+            {availableCompanies.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {availableCompanies.map((company) => (
+                  <Button
+                    key={company.id}
+                    variant={selectedCompany?.id === company.id ? 'default' : 'outline'}
+                    onClick={() => setSelectedCompany(company)}
+                    className="flex items-center gap-2 px-3 py-1 text-sm"
+                    size="sm"
+                  >
+                    <img src={`https://www.google.com/s2/favicons?domain=${company.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
+                    {company.companyName || company.companyUrl}
+                    {selectedCompany?.id === company.id && <CheckCircle className="h-3 w-3 ml-1" />}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
