@@ -100,8 +100,7 @@ const CompanyAnalyzer = () => {
       console.log('URL:', normalizedUrl);
       console.log('User ID:', user?.id);
       console.log('Session token available:', !!session?.access_token);
-      
-      const response = await fetch('/api/company-analyze/analyze', {
+      const response = await fetch('/api/company-analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -109,6 +108,14 @@ const CompanyAnalyzer = () => {
         },
         body: JSON.stringify({ url: normalizedUrl }),
       });
+      if (!response.ok) {
+        let errorMsg = `LLM failed: ${response.status}`;
+        try {
+          const errJson = await response.json();
+          errorMsg = errJson.error || errorMsg;
+        } catch {}
+        throw new Error(errorMsg);
+      }
       const data = await response.json();
       const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;
 

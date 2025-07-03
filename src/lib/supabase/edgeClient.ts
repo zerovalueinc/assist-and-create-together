@@ -20,6 +20,30 @@ export async function invokeEdgeFunction(
   });
 }
 
+// Direct HTTP proxy to Supabase Edge Function (for backend proxy routes)
+export async function proxyToEdgeFunction({
+  edgeUrl,
+  payload,
+  accessToken
+}: {
+  edgeUrl: string;
+  payload: any;
+  accessToken?: string;
+}) {
+  const res = await fetch(edgeUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: accessToken } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  return { status: res.status, data };
+}
+
 // Add more specialized wrappers as needed, e.g.:
 // export async function invokePipelineOrchestrator(payload: any) {
 //   return invokeEdgeFunction('pipeline-orchestrator', payload);
