@@ -79,14 +79,14 @@ const AppRoutes = () => {
 function App() {
   return (
     <CompanyProvider>
-      <AuthProvider>
-        <DataPreloadProvider>
-          <Router>
+      <Router>
+        <AuthProvider>
+          <DataPreloadProvider>
             <AppRoutes />
             <Toaster />
-          </Router>
-        </DataPreloadProvider>
-      </AuthProvider>
+          </DataPreloadProvider>
+        </AuthProvider>
+      </Router>
     </CompanyProvider>
   );
 }

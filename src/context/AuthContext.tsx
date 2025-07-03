@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { useToast } from '@/hooks/use-toast';
 import { useCompany } from './CompanyContext';
+import { useNavigate } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { setWorkspaceId } = useCompany();
+  const navigate = useNavigate();
 
   const fetchProfile = async (userId: string) => {
     let cancelled = false;
@@ -256,8 +258,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(null);
       setUser(null);
       setProfile(null);
-      // Force reload to clear all cached state/UI
-      window.location.reload();
+      setWorkspaceId(null);
+      navigate('/auth', { replace: true });
     } catch (error: any) {
       if (error?.name === 'AuthSessionMissingError') {
         toast({
@@ -267,13 +269,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setSession(null);
         setUser(null);
         setProfile(null);
-        window.location.reload();
+        setWorkspaceId(null);
+        navigate('/auth', { replace: true });
       } else {
         toast({
           title: "Sign Out Failed",
           description: error.message,
           variant: "destructive",
         });
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setWorkspaceId(null);
+        navigate('/auth', { replace: true });
       }
     }
   };
