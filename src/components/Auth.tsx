@@ -32,7 +32,14 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
     setLoading(false);
     if (!error) {
-      navigate('/');
+      // Redirect to previous page if redirectTo param is present
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirectTo');
+      if (redirectTo) {
+        window.location.href = redirectTo;
+      } else {
+        navigate('/');
+      }
     }
   };
 
