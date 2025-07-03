@@ -12,27 +12,12 @@ const HUBSPOT_CLIENT_SECRET = process.env.HUBSPOT_CLIENT_SECRET!;
 const HUBSPOT_REDIRECT_URI = process.env.HUBSPOT_REDIRECT_URI!;
 const HUBSPOT_SCOPES = 'contacts'; // Add more scopes as needed
 
-// Helper: get workspace_id for current user
-async function getWorkspaceId(userId: string) {
-  const { data: ws, error } = await supabase
-    .from('workspaces')
-    .select('id')
-    .eq('owner_id', userId)
-    .maybeSingle();
-  if (error || !ws?.id) return null;
-  return ws.id;
-}
-
-// 1. Get HubSpot integration status for current user in workspace
+// 1. Get HubSpot integration status for current user
 router.get('/hubspot/status', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Find integration for this user in this workspace
   const { data: integration, error } = await supabase
     .from('integrations')
     .select('*')
-    .eq('workspace_id', workspaceId)
     .eq('user_id', userId)
     .eq('provider', 'hubspot')
     .maybeSingle();
@@ -42,11 +27,9 @@ router.get('/hubspot/status', authenticateToken, async (req, res) => {
 
 // 2. Get HubSpot OAuth URL
 router.get('/hubspot/auth-url', authenticateToken, async (req, res) => {
-  // Pass workspace_id and user_id as state for callback
+  // Pass user_id as state for callback
   const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  const state = `${workspaceId}:${userId}`;
+  const state = `${userId}`;
   const url = `https://app.hubspot.com/oauth/authorize?client_id=${HUBSPOT_CLIENT_ID}&scope=${encodeURIComponent(HUBSPOT_SCOPES)}&redirect_uri=${encodeURIComponent(HUBSPOT_REDIRECT_URI)}&state=${encodeURIComponent(state)}`;
   res.json({ url });
 });
@@ -56,9 +39,9 @@ router.get('/hubspot/callback', async (req, res) => {
   const { code, state } = req.query;
   if (!code || !state) return res.status(400).json({ error: 'Missing code or state' });
   try {
-    // Parse state for workspace_id and user_id
-    const [workspace_id, user_id] = String(state).split(':');
-    if (!workspace_id || !user_id) return res.status(400).json({ error: 'Invalid state' });
+    // Parse state for user_id
+    const user_id = String(state);
+    if (!user_id) return res.status(400).json({ error: 'Invalid state' });
     // Exchange code for tokens
     const tokenRes = await axios.post('https://api.hubapi.com/oauth/v1/token', null, {
       params: {
@@ -71,12 +54,11 @@ router.get('/hubspot/callback', async (req, res) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
     const { access_token, refresh_token, expires_in } = tokenRes.data;
-    // Upsert integration for this user in this workspace
+    // Upsert integration for this user
     const { error } = await supabase
       .from('integrations')
       .upsert([
         {
-          workspace_id,
           user_id,
           provider: 'hubspot',
           access_token,
@@ -84,11 +66,11 @@ router.get('/hubspot/callback', async (req, res) => {
           status: 'connected',
           updated_at: new Date().toISOString()
         }
-      ], { onConflict: 'workspace_id,user_id,provider' });
+      ], { onConflict: 'user_id,provider' });
     if (error) return res.status(500).json({ error: error.message });
     // Trigger ingestion job
     try {
-      await ingestHubspotData({ workspace_id, user_id, access_token });
+      await ingestHubspotData({ user_id, access_token });
     } catch (ingestErr) {
       console.error('HubSpot ingestion error:', ingestErr);
       // Do not block user, just log
@@ -99,51 +81,47 @@ router.get('/hubspot/callback', async (req, res) => {
   }
 });
 
-// 4. Disconnect HubSpot for current user in workspace
+// 4. Disconnect HubSpot for current user
 router.post('/hubspot/disconnect', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Delete integration for this user in this workspace
   const { error } = await supabase
     .from('integrations')
     .delete()
-    .eq('workspace_id', workspaceId)
     .eq('user_id', userId)
     .eq('provider', 'hubspot');
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
-// GET /hubspot/status/all - get CRM status for all teammates in workspace
+// GET /hubspot/status/all - get CRM status for just the current user
 router.get('/hubspot/status/all', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Get all teammates
-  const { data: teammates, error: teamError } = await supabase
+  // Get current user profile
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, first_name, last_name, email')
-    .eq('workspace_id', workspaceId);
-  if (teamError) return res.status(500).json({ error: teamError.message });
-  // Get all integrations for workspace
-  const { data: integrations, error: intError } = await supabase
+    .eq('id', userId)
+    .maybeSingle();
+  if (profileError) return res.status(500).json({ error: profileError.message });
+  // Get integration for user
+  const { data: integration, error: intError } = await supabase
     .from('integrations')
     .select('*')
-    .eq('workspace_id', workspaceId)
-    .eq('provider', 'hubspot');
+    .eq('user_id', userId)
+    .eq('provider', 'hubspot')
+    .maybeSingle();
   if (intError) return res.status(500).json({ error: intError.message });
-  // Map status for each teammate
-  const statusList = (teammates || []).map(tm => {
-    const integration = (integrations || []).find(intg => intg.user_id === tm.id);
-    return {
-      user_id: tm.id,
-      name: `${tm.first_name || ''} ${tm.last_name || ''}`.trim() || tm.email,
-      email: tm.email,
-      status: integration?.status || 'not_connected',
-      integration
-    };
-  });
+  // Map status for the user
+  if (!profile) {
+    return res.status(404).json({ error: 'Profile not found' });
+  }
+  const statusList = [{
+    user_id: profile.id,
+    name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email,
+    email: profile.email,
+    status: integration?.status || 'not_connected',
+    integration
+  }];
   res.json({ statuses: statusList });
 });
 

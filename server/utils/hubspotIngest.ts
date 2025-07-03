@@ -3,14 +3,14 @@ import axios from 'axios';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-export async function ingestHubspotData({ workspace_id, user_id, access_token }: { workspace_id: string, user_id: string, access_token: string }) {
+export async function ingestHubspotData({ user_id, access_token }: { user_id: string, access_token: string }) {
   // Helper to upsert many rows
   async function upsertMany(table: string, rows: any[]) {
     if (!rows.length) return;
     // Upsert in batches of 100
     for (let i = 0; i < rows.length; i += 100) {
       const batch = rows.slice(i, i + 100);
-      const { error } = await supabase.from(table).upsert(batch, { onConflict: 'provider,crm_id,workspace_id' });
+      const { error } = await supabase.from(table).upsert(batch, { onConflict: 'provider,crm_id,user_id' });
       if (error) throw error;
     }
   }
@@ -27,7 +27,7 @@ export async function ingestHubspotData({ workspace_id, user_id, access_token }:
     } while (after);
   } catch (err) { console.error('HubSpot contacts fetch error:', err); }
   await upsertMany('crm_contacts', contacts.map(c => ({
-    workspace_id, user_id, provider: 'hubspot', crm_id: c.id, data: c, synced_at: new Date().toISOString()
+    user_id, provider: 'hubspot', crm_id: c.id, data: c, synced_at: new Date().toISOString()
   })));
 
   // 2. Fetch deals
@@ -42,7 +42,7 @@ export async function ingestHubspotData({ workspace_id, user_id, access_token }:
     } while (after);
   } catch (err) { console.error('HubSpot deals fetch error:', err); }
   await upsertMany('crm_deals', deals.map(d => ({
-    workspace_id, user_id, provider: 'hubspot', crm_id: d.id, data: d, synced_at: new Date().toISOString()
+    user_id, provider: 'hubspot', crm_id: d.id, data: d, synced_at: new Date().toISOString()
   })));
 
   // 3. Fetch activities (engagements)
@@ -57,7 +57,7 @@ export async function ingestHubspotData({ workspace_id, user_id, access_token }:
     } while (after);
   } catch (err) { console.error('HubSpot activities fetch error:', err); }
   await upsertMany('crm_activities', activities.map(a => ({
-    workspace_id, user_id, provider: 'hubspot', crm_id: a.id, data: a, synced_at: new Date().toISOString()
+    user_id, provider: 'hubspot', crm_id: a.id, data: a, synced_at: new Date().toISOString()
   })));
 
   return { contacts: contacts.length, deals: deals.length, activities: activities.length };

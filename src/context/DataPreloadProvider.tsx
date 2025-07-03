@@ -26,7 +26,6 @@ export const useDataPreload = () => useContext(DataPreloadContext);
 export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
   const user = useUser();
   const session = useSession();
-  const { workspaceId } = useCompany();
   const [loading, setLoading] = useState(true);
   const [preloadError, setPreloadError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -38,12 +37,12 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
   const retry = () => setRetryCount((c) => c + 1);
 
   useEffect(() => {
-    if (!user || !session || !workspaceId) {
+    if (!user || !session) {
       setLoading(false);
-      setPreloadError('You must be logged in and have a workspace to view your GTM data.');
+      setPreloadError('You must be logged in to view your GTM data.');
       setDashboardData(null);
       hasFetched.current = false;
-      console.warn('[DataPreloadProvider] No user, session, or workspaceId. user:', user, 'session:', session, 'workspaceId:', workspaceId);
+      console.warn('[DataPreloadProvider] No user or session. user:', user, 'session:', session);
       return;
     }
     if (hasFetched.current && retryCount === 0) return;
@@ -69,8 +68,8 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
       console.log('[DataPreloadProvider] Fetching dashboard data for user', { user });
       try {
         const [companyAnalyzer, playbooks] = await Promise.all([
-          supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false }).limit(50),
-          supabase.from('gtm_playbooks').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false })
+          supabase.from('company_analyzer_outputs_unrestricted').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+          supabase.from('gtm_playbooks').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         ]);
         if (cancelled) return;
         const normalize = (arr: any[] = []) => arr.map((r: any) => ({
@@ -102,7 +101,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
     };
     fetchAll();
     return () => { cancelled = true; };
-  }, [user, session, retryCount, workspaceId]);
+  }, [user, session, retryCount]);
 
   return (
     <DataPreloadContext.Provider value={{ loading, preloadError, data: dashboardData, retry }}>

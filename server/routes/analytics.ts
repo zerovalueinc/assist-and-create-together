@@ -5,23 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-// Helper: get workspace_id for current user
-async function getWorkspaceId(userId: string) {
-  const { data: ws, error } = await supabase
-    .from('workspaces')
-    .select('id')
-    .eq('owner_id', userId)
-    .maybeSingle();
-  if (error || !ws?.id) return null;
-  return ws.id;
-}
-
 // 1. Lead volume over time (count of contacts by week)
 router.get('/lead-volume', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  const { data, error } = await supabase.rpc('lead_volume_by_week_warehouse', { workspace_id: workspaceId });
+  const { data, error } = await supabase.rpc('lead_volume_by_week_warehouse', { user_id: userId });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ data });
 });
@@ -29,13 +16,10 @@ router.get('/lead-volume', authenticateToken, async (req, res) => {
 // 2. Success rate (deals won / total deals)
 router.get('/success-rate', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
-  // Count deals by stage
   const { data, error } = await supabase
     .from('crm_deals')
     .select('data')
-    .eq('workspace_id', workspaceId);
+    .eq('user_id', userId);
   if (error) return res.status(500).json({ error: error.message });
   const deals = (data || []).map((d: any) => d.data);
   const total = deals.length;
@@ -52,12 +36,10 @@ router.get('/playbook-outcomes', authenticateToken, async (req, res) => {
 // 4. CRM-synced lead status funnel (deals by stage)
 router.get('/lead-funnel', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const workspaceId = await getWorkspaceId(userId);
-  if (!workspaceId) return res.status(400).json({ error: 'Workspace not found' });
   const { data, error } = await supabase
     .from('crm_deals')
     .select('data')
-    .eq('workspace_id', workspaceId);
+    .eq('user_id', userId);
   if (error) return res.status(500).json({ error: error.message });
   const deals = (data || []).map((d: any) => d.data);
   const funnel = deals.reduce((acc: any, d: any) => {

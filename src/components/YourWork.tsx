@@ -13,7 +13,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
 export default function YourWork() {
   const user = useUser();
   const session = useSession();
-  const { workspaceId } = useCompany();
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
@@ -24,7 +23,7 @@ export default function YourWork() {
   const [gtmExpanded, setGtmExpanded] = useState(true);
 
   useEffect(() => {
-    if (!user?.id || !workspaceId) return;
+    if (!user?.id) return;
     // Show cached data instantly
     const cachedAnalyze = getCache<any[]>('yourwork_analyze', []);
     const cachedGTM = getCache<any[]>('yourwork_gtm', []);
@@ -35,13 +34,12 @@ export default function YourWork() {
 
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
-      // Do not set loading to true here; just show a subtle badge if needed
       setAnalyzeError(null);
       try {
         const { data, error } = await supabase
           .from('company_analyzer_outputs_unrestricted')
           .select('*')
-          .eq('workspace_id', workspaceId)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         if (error) throw error;
         const normalized = (data || []).map((r: any) => ({
@@ -59,28 +57,34 @@ export default function YourWork() {
         }
       }
     };
-    const fetchGTM = async () => {
+    fetchCompanyAnalyzer();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const fetchGTMPlaybooks = async () => {
       setGtmError(null);
       try {
-        const { data: playbooks, error: playbookError } = await supabase.from('gtm_playbooks').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false });
-        if (playbookError) throw playbookError;
-        const allGTM = (playbooks || []).filter((v, i, a) => a.findIndex(t => t.id === v.id) === i).map((r: any) => ({
-          ...r,
-          companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
-          companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-          createdAt: r.createdAt || r.created_at || '',
-        }));
-        setGtmWork(allGTM);
-        setCache('yourwork_gtm', allGTM);
+        const { data, error } = await supabase
+          .from('gtm_playbooks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setGtmWork(data || []);
+        setCache('yourwork_gtm', data || []);
       } catch (err: any) {
-        setGtmError(err.message || 'Failed to load GTM Generator reports.');
-        console.error('Error fetching GTM Generator reports:', err);
+        if (!cancelled) {
+          setGtmError(err.message || 'Failed to load GTM playbooks.');
+          console.error('Error fetching GTM playbooks:', err);
+        }
       }
     };
-    fetchCompanyAnalyzer();
-    fetchGTM();
+    fetchGTMPlaybooks();
     return () => { cancelled = true; };
-  }, [user?.id, workspaceId]);
+  }, [user?.id]);
 
   if (!user) {
     return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Please log in to view your work.</span></div>;

@@ -7,13 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppHeader from '@/components/ui/AppHeader';
 import { useToast } from '@/components/ui/use-toast';
-import { useCompany } from '@/context/CompanyContext';
 import { useUser } from '@supabase/auth-helpers-react';
-
-const MOCK_TEAM = [
-  { name: 'Alice Johnson', email: 'alice@acme.com', role: 'Owner', status: 'Active' },
-  { name: 'Bob Smith', email: 'bob@acme.com', role: 'Member', status: 'Active' },
-];
 
 const MOCK_CRMS = [
   { name: 'HubSpot', connected: true },
@@ -23,39 +17,31 @@ const MOCK_CRMS = [
 
 const MOCK_STATS = [
   { label: "Leads Sent to CRM", value: "1,234", icon: Mail, change: "+15%" },
-  { label: "Team Members", value: "8", icon: Users, change: "+2" },
   { label: "Connected CRMs", value: "1", icon: Link, change: "" },
   { label: "Enriched Leads", value: "3,210", icon: BarChart3, change: "+8%" },
 ];
 
-export default function Workspace() {
-  const [activeTab, setActiveTab] = useState('team');
+export default function Account() {
+  const [activeTab, setActiveTab] = useState('crm');
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitations, setInvitations] = useState<any[]>([]);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [fetchingInvites, setFetchingInvites] = useState(false);
   const { toast } = useToast();
-  const { workspaceId } = useCompany();
   const user = useUser();
-  const [team, setTeam] = useState(MOCK_TEAM);
   const [crms, setCrms] = useState(MOCK_CRMS);
-  const [workspaceName, setWorkspaceName] = useState('PersonaOps Workspace');
-  const [brandColor, setBrandColor] = useState('#2563eb');
-  const [notifications, setNotifications] = useState('All');
   // HubSpot integration state
   const [hubspotStatus, setHubspotStatus] = useState<'connected' | 'not_connected' | 'error' | 'pending'>('not_connected');
   const [hubspotLoading, setHubspotLoading] = useState(false);
-  // Teammate CRM status state
-  const [teamList, setTeamList] = useState<any[]>([]);
   const [crmStatuses, setCrmStatuses] = useState<any[]>([]);
   const [crmStatusLoading, setCrmStatusLoading] = useState(false);
 
-  // Fetch invitations for this workspace
+  // Fetch invitations for this user
   const fetchInvitations = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!user.id) return;
     setFetchingInvites(true);
     try {
-      const res = await fetch(`/api/invitations?workspace_id=${workspaceId}`);
+      const res = await fetch(`/api/invitations`);
       const json = await res.json();
       if (res.ok) {
         setInvitations(json.invitations || []);
@@ -67,14 +53,14 @@ export default function Workspace() {
     } finally {
       setFetchingInvites(false);
     }
-  }, [workspaceId, toast]);
+  }, [user.id, toast]);
 
   useEffect(() => { fetchInvitations(); }, [fetchInvitations]);
 
   // Email validation
   const isValidEmail = (email: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
 
-  // Handle invite
+  // Handle invite (user-centric, not workspace/team)
   const handleInvite = async () => {
     if (!inviteEmail.trim()) {
       toast({ title: 'Email required', description: 'Please enter an email address.' });
@@ -167,38 +153,33 @@ export default function Workspace() {
     }
   };
 
-  // Fetch all teammates and their CRM status
-  const fetchTeamAndCrmStatuses = useCallback(async () => {
+  // Fetch CRM status for just the current user
+  const fetchCrmStatuses = useCallback(async () => {
     setCrmStatusLoading(true);
     try {
-      const [teamRes, crmRes] = await Promise.all([
-        fetch('/api/team'),
-        fetch('/api/integrations/hubspot/status/all')
-      ]);
-      const teamJson = await teamRes.json();
-      const crmJson = await crmRes.json();
-      if (teamRes.ok && crmRes.ok) {
-        setTeamList(teamJson.team || []);
-        setCrmStatuses(crmJson.statuses || []);
+      const res = await fetch('/api/integrations/hubspot/status/all');
+      const json = await res.json();
+      if (res.ok) {
+        setCrmStatuses(json.statuses || []);
       } else {
-        toast({ title: 'Error', description: teamJson.error || crmJson.error || 'Failed to fetch team/CRM status', variant: 'destructive' });
+        toast({ title: 'Error', description: json.error || 'Failed to fetch CRM status', variant: 'destructive' });
       }
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to fetch team/CRM status', variant: 'destructive' });
+      toast({ title: 'Error', description: err.message || 'Failed to fetch CRM status', variant: 'destructive' });
     } finally {
       setCrmStatusLoading(false);
     }
   }, [toast]);
 
-  useEffect(() => { fetchTeamAndCrmStatuses(); }, [fetchTeamAndCrmStatuses]);
+  useEffect(() => { fetchCrmStatuses(); }, [fetchCrmStatuses]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <AppHeader />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="shadow-lg border border-slate-200 mb-8">
           <CardHeader>
-            <CardTitle className="text-xl font-bold flex items-center gap-2">Workspace Reports <Badge variant="secondary">Central</Badge></CardTitle>
+            <CardTitle className="text-xl font-bold flex items-center gap-2">Account Reports <Badge variant="secondary">Central</Badge></CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2 mb-2">
@@ -225,23 +206,8 @@ export default function Workspace() {
         </Card>
         <Card className="shadow-lg border border-slate-200">
           <CardContent className="pt-6">
-            {/* Workspace Name and Stats */}
-            <div className="flex items-center space-x-4 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">{workspaceName}</h2>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    Workspace
-                  </Badge>
-                  <Badge variant="outline">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Connected
-                  </Badge>
-                </div>
-              </div>
-            </div>
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {MOCK_STATS.map((stat, index) => (
                 <div key={index} className="bg-slate-50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
@@ -257,11 +223,7 @@ export default function Workspace() {
             </div>
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-8">
-                <TabsTrigger value="team" className="flex items-center space-x-2">
-                  <UserPlus className="h-4 w-4" />
-                  <span>Team</span>
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="crm" className="flex items-center space-x-2">
                   <Link className="h-4 w-4" />
                   <span>CRM Integrations</span>
@@ -272,49 +234,9 @@ export default function Workspace() {
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center space-x-2">
                   <SettingsIcon className="h-4 w-4" />
-                  <span>Settings</span>
+                  <span>Account Settings</span>
                 </TabsTrigger>
               </TabsList>
-              {/* Team Tab */}
-              <TabsContent value="team">
-                <Card className="shadow-lg border-2 border-slate-100 max-w-2xl mx-auto">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">Team Members <Badge variant="secondary">Enterprise</Badge></CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-6 flex gap-2">
-                      <Input
-                        placeholder="Invite teammate by email"
-                        value={inviteEmail}
-                        onChange={e => setInviteEmail(e.target.value)}
-                        disabled={inviteLoading}
-                      />
-                      <Button variant="default" className="flex items-center gap-1" onClick={handleInvite} disabled={inviteLoading}>
-                        <Plus className="h-4 w-4" />{inviteLoading ? 'Inviting...' : 'Invite'}
-                      </Button>
-                    </div>
-                    {fetchingInvites ? (
-                      <div className="text-center text-slate-500 py-8">Loading invitations...</div>
-                    ) : invitations.length === 0 ? (
-                      <div className="text-center text-slate-500 py-8">No teammates or invites yet. Start by inviting a teammate!</div>
-                    ) : (
-                      <div className="space-y-3">
-                        {invitations.map((inv, i) => (
-                          <div key={inv.id || i} className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
-                            <div>
-                              <span className="font-semibold text-lg text-slate-900">{inv.email}</span>
-                              <span className="block text-xs text-slate-500">{inv.status}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={inv.status === 'pending' ? 'outline' : 'secondary'}>{inv.status}</Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
               {/* CRM Integrations Tab */}
               <TabsContent value="crm">
                 <Card className="shadow-lg border-2 border-slate-100 max-w-2xl mx-auto">
@@ -323,11 +245,11 @@ export default function Workspace() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {/* HubSpot Integration for all teammates */}
+                      {/* HubSpot Integration for current user */}
                       <div className="mb-4">
-                        <div className="font-semibold text-base text-slate-900 mb-2">Team HubSpot Connections</div>
+                        <div className="font-semibold text-base text-slate-900 mb-2">HubSpot Connection</div>
                         {crmStatusLoading ? (
-                          <div className="text-center text-slate-500 py-4">Loading team CRM statuses...</div>
+                          <div className="text-center text-slate-500 py-4">Loading CRM status...</div>
                         ) : (
                           <div className="space-y-2">
                             {crmStatuses.map((tm: any) => (
@@ -400,28 +322,47 @@ export default function Workspace() {
               <TabsContent value="settings">
                 <Card className="shadow-lg border-2 border-slate-100 max-w-2xl mx-auto">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">Workspace Settings</CardTitle>
+                    <CardTitle className="flex items-center gap-2">Account Settings</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex flex-col gap-2">
-                        <label className="font-semibold text-slate-700">Workspace Name</label>
-                        <Input value={workspaceName} onChange={e => setWorkspaceName(e.target.value)} />
+                        <label className="font-semibold text-slate-700">Email</label>
+                        <Input value={user?.email || ''} disabled />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="font-semibold text-slate-700">Brand Color</label>
-                        <Input type="color" className="w-16 h-10 p-0 border-none" value={brandColor} onChange={e => setBrandColor(e.target.value)} />
+                        <label className="font-semibold text-slate-700">Invite Others</label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Invite by email"
+                            value={inviteEmail}
+                            onChange={e => setInviteEmail(e.target.value)}
+                            disabled={inviteLoading}
+                          />
+                          <Button variant="default" className="flex items-center gap-1" onClick={handleInvite} disabled={inviteLoading}>
+                            <Plus className="h-4 w-4" />{inviteLoading ? 'Inviting...' : 'Invite'}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <label className="font-semibold text-slate-700">Notifications</label>
-                        <select className="border rounded p-2" value={notifications} onChange={e => setNotifications(e.target.value)}>
-                          <option>All</option>
-                          <option>Email Only</option>
-                          <option>In-App Only</option>
-                          <option>None</option>
-                        </select>
-                      </div>
-                      <Button variant="default" className="mt-4">Save Settings</Button>
+                      {fetchingInvites ? (
+                        <div className="text-center text-slate-500 py-8">Loading invitations...</div>
+                      ) : invitations.length === 0 ? (
+                        <div className="text-center text-slate-500 py-8">No invites yet. Start by inviting someone!</div>
+                      ) : (
+                        <div className="space-y-3">
+                          {invitations.map((inv, i) => (
+                            <div key={inv.id || i} className="flex items-center justify-between bg-white rounded-lg border px-4 py-3">
+                              <div>
+                                <span className="font-semibold text-lg text-slate-900">{inv.email}</span>
+                                <span className="block text-xs text-slate-500">{inv.status}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={inv.status === 'pending' ? 'outline' : 'secondary'}>{inv.status}</Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
