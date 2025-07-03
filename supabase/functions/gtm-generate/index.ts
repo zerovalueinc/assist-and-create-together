@@ -11,7 +11,6 @@ interface GTMGenerationRequest {
   websiteUrl: string;
   useExistingAnalysis?: boolean;
   analysisId?: number;
-  workspace_id: string;
   gtmFormAnswers?: any;
   selectedCompany?: any;
 }
@@ -107,9 +106,6 @@ serve(async (req) => {
     
     if (!gtmRequest.websiteUrl) {
       throw new Error('Website URL is required');
-    }
-    if (!gtmRequest.workspace_id) {
-      throw new Error('workspace_id is required');
     }
 
     console.log(`Starting GTM playbook generation for: ${gtmRequest.websiteUrl}`);
