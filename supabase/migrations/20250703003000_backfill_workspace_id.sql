@@ -1,7 +1,5 @@
 -- Backfill workspace_id for all existing records based on user_id -> workspace.owner_id
-update company_analyzer_outputs_unrestricted set workspace_id = w.id
-from workspaces w
-where company_analyzer_outputs_unrestricted.user_id = w.owner_id and company_analyzer_outputs_unrestricted.workspace_id is null;
+-- Note: company_analyzer_outputs table is created in a later migration with workspace_id already included
 
 update saved_reports set workspace_id = w.id
 from workspaces w
