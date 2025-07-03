@@ -134,3 +134,89 @@ export const testEdgeFunctions = async (results: AuditResult[]) => {
     }
   }
 };
+
+// NOTE: The following E2E/API tests are for diagnostics and health checks only.
+// They use mock/test data (e.g., https://example.com) and do NOT simulate the full user journey.
+// These tests are safe for CI/staging and do not persist meaningful production data.
+// TODO: If needed, add cleanup logic to remove test data after running these tests.
+
+// E2E test for Company Analyze and GTM Playbook flows
+export const testIntelAndGTMFlows = async (results: AuditResult[]) => {
+  // Test Company Analyze
+  try {
+    const analyzeRes = await fetch('/api/company-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: 'https://example.com' })
+    });
+    const analyzeData = await analyzeRes.json();
+    if (analyzeRes.ok && (analyzeData.success || analyzeData.companyName || analyzeData.company_name)) {
+      results.push({
+        component: 'Company Analyze (Intel)',
+        status: 'pass',
+        message: 'Company Analyze API operational',
+        details: ['Received valid response', JSON.stringify(analyzeData).slice(0, 200)]
+      });
+    } else {
+      results.push({
+        component: 'Company Analyze (Intel)',
+        status: 'fail',
+        message: 'Company Analyze API error',
+        details: [analyzeData.error || 'No valid response']
+      });
+    }
+  } catch (err: any) {
+    results.push({
+      component: 'Company Analyze (Intel)',
+      status: 'fail',
+      message: 'Company Analyze API error',
+      details: [err.message || 'Unknown error']
+    });
+  }
+
+  // Test GTM Playbook
+  try {
+    const gtmRes = await fetch('/api/gtm-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        websiteUrl: 'https://example.com',
+        workspace_id: 'test-workspace',
+        gtmFormAnswers: { productStage: 'MVP', channel: 'Outbound', salesCycle: '30 days', primaryGoals: 'Growth', additionalContext: 'Test' },
+        selectedCompany: { companyName: 'Example', workspace_id: 'test-workspace' }
+      })
+    });
+    const gtmData = await gtmRes.json();
+    if (gtmRes.ok && (gtmData.success || gtmData.gtmPlaybook)) {
+      results.push({
+        component: 'GTM Playbook',
+        status: 'pass',
+        message: 'GTM Playbook API operational',
+        details: ['Received valid response', JSON.stringify(gtmData).slice(0, 200)]
+      });
+    } else {
+      results.push({
+        component: 'GTM Playbook',
+        status: 'fail',
+        message: 'GTM Playbook API error',
+        details: [gtmData.error || 'No valid response']
+      });
+    }
+  } catch (err: any) {
+    results.push({
+      component: 'GTM Playbook',
+      status: 'fail',
+      message: 'GTM Playbook API error',
+      details: [err.message || 'Unknown error']
+    });
+  }
+};
+
+// Run all edge function and E2E tests
+// NOTE: This is for diagnostics/testing only, not for production or permanent data.
+export const runAllEdgeTests = async () => {
+  const results: AuditResult[] = [];
+  await testEdgeFunctions(results);
+  await testIntelAndGTMFlows(results);
+  return results;
+};

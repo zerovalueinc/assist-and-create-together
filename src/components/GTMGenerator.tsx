@@ -13,6 +13,9 @@ import { useDataPreload } from '@/context/DataPreloadProvider';
 import { useCompany } from '../context/CompanyContext';
 import { invokeEdgeFunction } from '../lib/supabase/edgeClient';
 
+// Set this to true to use the backend proxy for GTM Playbook
+const USE_GTM_PROXY = true;
+
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
   const [gtmPlaybook, setGtmPlaybook] = useState(null);
@@ -26,7 +29,8 @@ const GTMGenerator = () => {
   const session = useSession();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
-  const { workspaceId } = useCompany();
+  // Use workspaceId from selectedCompany if available
+  const workspaceId = selectedCompany?.workspace_id || '';
 
   // Debug logging
   console.log("preloadData", preloadData);
@@ -100,10 +104,29 @@ const GTMGenerator = () => {
         selectedCompany,
       };
 
-      const { data, error } = await invokeEdgeFunction('gtm-generate', requestBody, {
-        workspace_id: workspaceId,
-        access_token: session.access_token,
-      });
+      let data, error;
+      if (USE_GTM_PROXY) {
+        // Use backend proxy
+        const response = await fetch('/api/gtm-generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify(requestBody),
+        });
+        const result = await response.json();
+        data = result;
+        if (!response.ok) error = { message: result.error || 'GTM generation failed' };
+      } else {
+        // Use direct edge function call
+        const result = await invokeEdgeFunction('gtm-generate', requestBody, {
+          workspace_id: workspaceId,
+          access_token: session.access_token,
+        });
+        data = result.data;
+        error = result.error;
+      }
 
       console.log('GTM generation response:', { data, error });
 
