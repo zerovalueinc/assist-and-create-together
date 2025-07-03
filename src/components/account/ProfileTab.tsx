@@ -13,12 +13,13 @@ const ProfileTab = () => {
   const user = useUser();
   const session = useSession();
   const email = user?.email || '';
-  const firstName = user?.user_metadata?.firstName || '';
-  const lastName = user?.user_metadata?.lastName || '';
+  const firstName = user?.user_metadata?.firstName || user?.user_metadata?.first_name || '';
+  const lastName = user?.user_metadata?.lastName || user?.user_metadata?.last_name || '';
   const company = user?.user_metadata?.company || '';
   const initials = (user?.user_metadata?.fullName || user?.user_metadata?.name || user?.email || 'U')[0]?.toUpperCase();
   const { toast } = useToast();
   
+  // Always show user info instantly
   const [profileData, setProfileData] = useState({
     firstName: firstName,
     lastName: lastName,
@@ -28,34 +29,29 @@ const ProfileTab = () => {
     jobTitle: '',
     timezone: 'UTC-8',
   });
+  const [saving, setSaving] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-
+  // Fetch canonical profile in background, merge if present
   useEffect(() => {
     let cancelled = false;
     const fetchProfileData = async () => {
-      try {
-        setLoading(true);
-        if (!user) return;
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (!error && data) {
-          setProfileData({
-            firstName: data.first_name || '',
-            lastName: data.last_name || '',
-            email: data.email || '',
-            company: data.company || '',
-            phone: data.phone || '',
-            jobTitle: data.job_title || '',
-            timezone: data.timezone || 'UTC-8',
-          });
-        }
-        setLoading(false);
-      } catch (err) {
-        setLoading(false);
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!cancelled && !error && data) {
+        setProfileData(prev => ({
+          ...prev,
+          firstName: data.first_name || prev.firstName,
+          lastName: data.last_name || prev.lastName,
+          email: data.email || prev.email,
+          company: data.company || prev.company,
+          phone: data.phone || prev.phone,
+          jobTitle: data.job_title || prev.jobTitle,
+          timezone: data.timezone || prev.timezone,
+        }));
       }
     };
     fetchProfileData();
@@ -64,7 +60,7 @@ const ProfileTab = () => {
 
   const handleProfileSave = async () => {
     if (!user) return;
-    setLoading(true);
+    setSaving(true);
     try {
       const { error } = await supabase
         .from('profiles')
@@ -89,15 +85,16 @@ const ProfileTab = () => {
         .eq('id', user.id)
         .maybeSingle();
       if (updatedProfile) {
-        setProfileData({
-          firstName: updatedProfile.first_name || '',
-          lastName: updatedProfile.last_name || '',
-          email: updatedProfile.email || '',
-          company: updatedProfile.company || '',
-          phone: updatedProfile.phone || '',
-          jobTitle: updatedProfile.job_title || '',
-          timezone: updatedProfile.timezone || 'UTC-8',
-        });
+        setProfileData(prev => ({
+          ...prev,
+          firstName: updatedProfile.first_name || prev.firstName,
+          lastName: updatedProfile.last_name || prev.lastName,
+          email: updatedProfile.email || prev.email,
+          company: updatedProfile.company || prev.company,
+          phone: updatedProfile.phone || prev.phone,
+          jobTitle: updatedProfile.job_title || prev.jobTitle,
+          timezone: updatedProfile.timezone || prev.timezone,
+        }));
       }
     } catch (error: any) {
       console.error('Profile update error:', error);
@@ -107,7 +104,7 @@ const ProfileTab = () => {
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -181,8 +178,8 @@ const ProfileTab = () => {
               />
             </div>
 
-            <Button onClick={handleProfileSave} className="w-full md:w-auto" disabled={loading} aria-busy={loading} aria-label="Save profile changes">
-              {loading ? 'Saving...' : (<><Check className="h-4 w-4 mr-2" />Save Changes</>)}
+            <Button onClick={handleProfileSave} className="w-full md:w-auto" disabled={saving} aria-busy={saving} aria-label="Save profile changes">
+              {saving ? 'Saving...' : (<><Check className="h-4 w-4 mr-2" />Save Changes</>)}
             </Button>
           </CardContent>
         </Card>
@@ -199,17 +196,14 @@ const ProfileTab = () => {
           <CardContent>
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="h-24 w-24">
-                <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl font-semibold">
+                <AvatarFallback className="bg-blue-100 text-blue-600 text-3xl font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <Button variant="outline" className="w-full">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Photo
+              <Button variant="outline" className="w-full flex items-center gap-2" disabled>
+                <Upload className="h-4 w-4" />
+                Upload Photo (coming soon)
               </Button>
-              <p className="text-xs text-slate-500 text-center">
-                JPG, PNG or GIF. Max size 5MB.
-              </p>
             </div>
           </CardContent>
         </Card>

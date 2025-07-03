@@ -35,7 +35,7 @@ export default function YourWork() {
 
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {
-      setAnalyzeLoading(true);
+      // Do not set loading to true here; just show a subtle badge if needed
       setAnalyzeError(null);
       try {
         const { data, error } = await supabase
@@ -57,12 +57,9 @@ export default function YourWork() {
           setAnalyzeError(err.message || 'Failed to load Company Analyzer reports.');
           console.error('Error fetching company analyzer reports:', err);
         }
-      } finally {
-        if (!cancelled) setAnalyzeLoading(false);
       }
     };
     const fetchGTM = async () => {
-      setGtmLoading(true);
       setGtmError(null);
       try {
         const { data: playbooks, error: playbookError } = await supabase.from('gtm_playbooks').select('*').eq('workspace_id', workspaceId).order('created_at', { ascending: false });
@@ -78,8 +75,6 @@ export default function YourWork() {
       } catch (err: any) {
         setGtmError(err.message || 'Failed to load GTM Generator reports.');
         console.error('Error fetching GTM Generator reports:', err);
-      } finally {
-        setGtmLoading(false);
       }
     };
     fetchCompanyAnalyzer();
