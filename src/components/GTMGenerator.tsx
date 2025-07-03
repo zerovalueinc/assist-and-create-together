@@ -6,11 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Target, Users, TrendingUp, MessageSquare, BookOpen, BarChart, Lightbulb, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { useUser } from '../hooks/useUserData';
 import { useCompany } from '../context/CompanyContext';
 
 const GTMGenerator = () => {
@@ -22,7 +21,8 @@ const GTMGenerator = () => {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedICP, setSelectedICP] = useState(null);
   const { toast } = useToast();
-  const { user, session } = useUser();
+  const user = useUser();
+  const session = useSession();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
   const { workspaceId } = useCompany();

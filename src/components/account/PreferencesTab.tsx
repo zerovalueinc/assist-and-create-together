@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,16 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Download } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from "@/hooks/use-toast";
 
 const PreferencesTab = () => {
-  const { session } = useAuth();
   const { toast } = useToast();
   const [profileData, setProfileData] = useState({
     timezone: 'UTC-8',
   });
   const [loading, setLoading] = useState(false);
+
+  const user = useUser();
+  const session = useSession();
 
   const handleSave = async () => {
     setLoading(true);

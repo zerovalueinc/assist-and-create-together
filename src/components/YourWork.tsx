@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
-import { useUser } from '../hooks/useUserData';
 import { useCompany } from '../context/CompanyContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
-  const { session } = useAuth();
-  const { user, isLoading } = useUser();
+  const user = useUser();
+  const session = useSession();
   const { workspaceId } = useCompany();
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
@@ -25,7 +24,7 @@ export default function YourWork() {
   const [gtmExpanded, setGtmExpanded] = useState(true);
 
   useEffect(() => {
-    if (isLoading || !user?.id || !workspaceId) return;
+    if (!user?.id || !workspaceId) return;
     // Show cached data instantly
     const cachedAnalyze = getCache<any[]>('yourwork_analyze', []);
     const cachedGTM = getCache<any[]>('yourwork_gtm', []);
@@ -86,11 +85,8 @@ export default function YourWork() {
     fetchCompanyAnalyzer();
     fetchGTM();
     return () => { cancelled = true; };
-  }, [isLoading, user?.id, workspaceId]);
+  }, [user?.id, workspaceId]);
 
-  if (isLoading) {
-    return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Loading user session...</span></div>;
-  }
   if (!user) {
     return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Please log in to view your work.</span></div>;
   }

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Mail, Lock, User, Building } from "lucide-react";
-import { useAuth } from '@/context/AuthContext';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 
 const Auth = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const supabase = useSupabaseClient();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -29,11 +28,9 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) return;
-
     setLoading(true);
-    const { error } = await signIn(loginEmail, loginPassword);
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
     setLoading(false);
-    
     if (!error) {
       navigate('/');
     }
@@ -42,17 +39,9 @@ const Auth = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!registerEmail || !registerPassword) return;
-
     setLoading(true);
-    const { error } = await signUp(
-      registerEmail, 
-      registerPassword, 
-      registerFirstName, 
-      registerLastName, 
-      registerCompany
-    );
+    const { error } = await supabase.auth.signUp({ email: registerEmail, password: registerPassword, options: { data: { first_name: registerFirstName, last_name: registerLastName, company: registerCompany } } });
     setLoading(false);
-    
     if (!error) {
       setActiveTab("login");
     }

@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/context/AuthContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from "@/hooks/use-toast";
 
 const NotificationsTab = () => {
@@ -15,7 +14,8 @@ const NotificationsTab = () => {
     weeklyReports: true,
     securityAlerts: true,
   });
-  const { session } = useAuth();
+  const user = useUser();
+  const session = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 

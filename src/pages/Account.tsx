@@ -9,13 +9,13 @@ import PreferencesTab from "@/components/account/PreferencesTab";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useAuth } from '@/context/AuthContext';
-import { useUserData } from '@/hooks/useUserData';
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/ui/AppHeader';
 
 const Account = () => {
-  const { session, user, profile, loading } = useAuth();
+  const user = useUser();
+  const session = useSession();
   const { fullName, company, initials } = useUserData();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
@@ -24,7 +24,7 @@ const Account = () => {
   const [work, setWork] = useState([]);
 
   if (loading) return null; // or a spinner
-  if (!user || !profile) {
+  if (!user || !session) {
     window.location.href = '/auth';
     return null;
   }

@@ -6,14 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Building, Users, TrendingUp, Target, AlertTriangle, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
-import { useAuth } from "@/context/AuthContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { useUser } from '../hooks/useUserData';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -34,7 +33,8 @@ const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
   const { setResearch, workspaceId } = useCompany();
-  const { user, session, isLoading } = useUser();
+  const user = useUser();
+  const session = useSession();
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
 
   // Use preloaded reports or fallback to cache

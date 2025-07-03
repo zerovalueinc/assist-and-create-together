@@ -10,13 +10,14 @@ import ICPGenerator from "@/components/ICPGenerator";
 import LeadEnrichment from "@/components/LeadEnrichment";
 import SalesIntelligence from "@/components/SalesIntelligence";
 import EmailCampaigns from "@/components/EmailCampaigns";
-import { useAuth } from "@/context/AuthContext";
 import AppHeader from '@/components/ui/AppHeader';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const { user } = useAuth();
+  const user = useUser();
+  const session = useSession();
 
   // Enhanced enterprise KPIs
   const kpiMetrics = [

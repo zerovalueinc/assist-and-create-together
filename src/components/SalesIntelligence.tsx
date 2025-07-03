@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "lucide-react";
 import { SectionLabel } from "./ui/section-label";
-import { useAuth } from '@/context/AuthContext';
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { getCache, setCache } from '../lib/utils';
 import { useCompany } from '../context/CompanyContext';
@@ -13,7 +13,8 @@ const SalesIntelligence = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const user = useUser();
+  const session = useSession();
   const { workspaceId } = useCompany();
   const hasFetched = useRef(false);
 

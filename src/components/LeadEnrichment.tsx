@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Upload, Download, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { SectionLabel } from "./ui/section-label";
 import { getCache, setCache } from '../lib/utils';
 
@@ -14,7 +14,8 @@ const LeadEnrichment = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { session } = useAuth();
+  const user = useUser();
+  const session = useSession();
 
   const searchLeads = async () => {
     if (!searchQuery) {

@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, Upload } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { useUserData } from "@/hooks/useUserData";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '../../lib/supabase'; // See README for global pattern
 
 const ProfileTab = () => {
-  const { user, profile } = useAuth();
+  const user = useUser();
+  const session = useSession();
   const { email, firstName, lastName, company, initials } = useUserData();
   const { toast } = useToast();
   

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getCache, setCache } from '@/lib/utils';
-import { useAuth } from './AuthContext';
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCompany } from './CompanyContext';
 
@@ -24,7 +24,8 @@ const DataPreloadContext = createContext<DataPreloadContextType>({ loading: true
 export const useDataPreload = () => useContext(DataPreloadContext);
 
 export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
-  const { user, session, loading: authLoading } = useAuth();
+  const user = useUser();
+  const session = useSession();
   const { workspaceId } = useCompany();
   const [loading, setLoading] = useState(true);
   const [preloadError, setPreloadError] = useState<string | null>(null);
@@ -37,8 +38,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
   const retry = () => setRetryCount((c) => c + 1);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user || !user.id || !session || !workspaceId) {
+    if (!user || !session || !workspaceId) {
       setLoading(false);
       setPreloadError('You must be logged in and have a workspace to view your GTM data.');
       setDashboardData(null);
@@ -102,9 +102,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
     };
     fetchAll();
     return () => { cancelled = true; };
-  }, [user, session, authLoading, retryCount, workspaceId]);
-
-  if (authLoading) return <>{children}</>; // Never block public routes
+  }, [user, session, retryCount, workspaceId]);
 
   return (
     <DataPreloadContext.Provider value={{ loading, preloadError, data: dashboardData, retry }}>

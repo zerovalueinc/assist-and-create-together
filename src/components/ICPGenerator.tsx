@@ -11,13 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Target, Users, Building2, MapPin, DollarSign, ArrowUpRight, Lightbulb, BarChart2, ClipboardList, TrendingUp, FileText, CheckCircle, AlertTriangle, Rocket, Globe, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
-import { useAuth } from "@/context/AuthContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
-import { useUser } from '../hooks/useUserData';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
@@ -72,7 +71,8 @@ const ICPGenerator = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { research, workspaceId } = useCompany();
-  const { user, session } = useUser();
+  const user = useUser();
+  const session = useSession();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { data: preloadData } = useDataPreload();
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
