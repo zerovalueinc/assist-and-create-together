@@ -202,73 +202,41 @@ serve(async (req) => {
       competitiveLandscape: toArray(finalAnalysis.competitiveLandscape),
       goToMarketStrategy: safeString(finalAnalysis.goToMarketStrategy),
       researchSummary: safeString(finalAnalysis.researchSummary),
-      website: safeString(finalAnalysis.website),
+      website: normalizedUrl,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
     };
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
-    // Prepare insert object for new table
-    const outputInsert = {
-      user_id: user.id,
-      company_name: sanitizedAnalysis.companyName,
-      industry: sanitizedAnalysis.companyProfile.industry,
-      company_size: sanitizedAnalysis.companyProfile.companySize,
-      revenue_range: sanitizedAnalysis.companyProfile.revenueRange,
-      decision_makers: JSON.stringify(sanitizedAnalysis.decisionMakers),
-      pain_points: JSON.stringify(sanitizedAnalysis.painPoints),
-      technologies: JSON.stringify(sanitizedAnalysis.technologies),
-      location: sanitizedAnalysis.location,
-      market_trends: JSON.stringify(sanitizedAnalysis.marketTrends),
-      competitive_landscape: JSON.stringify(sanitizedAnalysis.competitiveLandscape),
-      go_to_market_strategy: sanitizedAnalysis.goToMarketStrategy,
-      research_summary: sanitizedAnalysis.researchSummary,
-      website: normalizedUrl,
-      created_at: new Date().toISOString(),
-      llm_output: JSON.stringify(sanitizedAnalysis)
-    };
-    console.log('Company Analyzer output insert object:', JSON.stringify(outputInsert));
-
-    // Insert into unrestricted table ONLY
-    try {
-      const { data: output, error: outputError } = await supabaseClient
-        .from('company_analyzer_outputs_unrestricted')
-        .insert(outputInsert)
-        .select()
-        .single();
-
-      if (outputError) {
-        console.error('Error saving Company Analyzer output:', outputError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to save Company Analyzer output', details: outputError.message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
+    // Insert new analysis (no workspace_id)
+    const { data: insertData, error: insertError } = await supabaseClient
+      .from('company_analyzer_outputs_unrestricted')
+      .insert([sanitizedAnalysis])
+      .select()
+      .single();
+    if (insertError) {
+      console.error('Insert error:', insertError);
       return new Response(
-        JSON.stringify({
-          success: true,
-          output,
-          analysis: sanitizedAnalysis,
-          outputId: output?.id || null
-        }),
+        JSON.stringify({ error: 'Failed to save analysis', details: insertError.message }),
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-
-    } catch (dbError) {
-      console.error('Database operation failed:', dbError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          analysis: sanitizedAnalysis,
-          outputId: null,
-          warning: 'Analysis completed but not saved to database'
-        }),
-        {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        output: insertData,
+        analysis: insertData,
+        outputId: insertData.id || null,
+        cached: false
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
 
   } catch (error) {
     console.error('=== CRITICAL ERROR ===');

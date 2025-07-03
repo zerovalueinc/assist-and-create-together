@@ -32,7 +32,7 @@ function toArray(val: any): string[] {
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
-  const { setResearch, workspaceId } = useCompany();
+  const { setResearch } = useCompany();
   const user = useUser();
   const session = useSession();
   const { data: preloadData, loading: preloadLoading } = useDataPreload();
@@ -101,17 +101,13 @@ const CompanyAnalyzer = () => {
       console.log('User ID:', user?.id);
       console.log('Session token available:', !!session?.access_token);
       
-      if (!workspaceId) {
-        throw new Error('Workspace not found. This is a system error.');
-      }
-      
       const response = await fetch('/api/company-analyze/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ url: normalizedUrl, workspace_id: workspaceId }),
+        body: JSON.stringify({ url: normalizedUrl }),
       });
       const data = await response.json();
       const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;
