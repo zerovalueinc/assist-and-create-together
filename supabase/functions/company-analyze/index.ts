@@ -203,12 +203,48 @@ serve(async (req) => {
         return cleaned.split('.')[0] || url;
       }
     }
+
+    // Map LLM output to top-level columns
+    let companyProfile = null;
+    let decisionMakers = [];
+    let painPoints = [];
+    let technologies = [];
+    let location = null;
+    let marketTrends = [];
+    let competitiveLandscape = [];
+    let goToMarketStrategy = null;
+    let researchSummary = null;
+
+    if (finalAnalysis.icp_analysis) {
+      // Example: companyProfile could be built from target_company_characteristics
+      companyProfile = finalAnalysis.icp_analysis.target_company_characteristics || null;
+      // decisionMakers: flatten all titles from buyer_personas
+      if (Array.isArray(finalAnalysis.icp_analysis.buyer_personas)) {
+        decisionMakers = finalAnalysis.icp_analysis.buyer_personas.flatMap(bp => [
+          ...(bp.primary_decision_maker?.titles || []),
+          ...(bp.secondary_influencer?.titles || []),
+        ]);
+      }
+      painPoints = finalAnalysis.icp_analysis.pain_points || [];
+      technologies = finalAnalysis.icp_analysis.tech_stack_alignment?.current_tools || [];
+      // location, marketTrends, competitiveLandscape, goToMarketStrategy, researchSummary: not present in icp_analysis, leave null/empty
+    }
+
     const insertPayload = {
       user_id: user.id,
       website: normalizedUrl,
       llm_output: finalAnalysis, // Save the raw, structured output
       created_at: new Date().toISOString(),
-      companyname: extractDomain(normalizedUrl), // Always use extracted domain
+      companyname: extractDomain(normalizedUrl),
+      companyProfile,
+      decisionMakers,
+      painPoints,
+      technologies,
+      location,
+      marketTrends,
+      competitiveLandscape,
+      goToMarketStrategy,
+      researchSummary,
     };
     console.log('[Edge Function] RAW INSERT PAYLOAD:', JSON.stringify(insertPayload));
     const { data: savedReport, error: saveError } = await supabaseClient
