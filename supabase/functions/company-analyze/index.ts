@@ -204,7 +204,7 @@ serve(async (req) => {
       }
     }
 
-    // Map LLM output to top-level columns
+    // Map LLM output to top-level columns (snake_case only)
     let company_profile = null;
     let decision_makers = [];
     let pain_points = [];
@@ -214,11 +214,10 @@ serve(async (req) => {
     let competitive_landscape = [];
     let go_to_market_strategy = null;
     let research_summary = null;
+    let company_name = extractDomain(normalizedUrl);
 
     if (finalAnalysis.icp_analysis) {
-      // Example: company_profile could be built from target_company_characteristics
       company_profile = finalAnalysis.icp_analysis.target_company_characteristics || null;
-      // decision_makers: flatten all titles from buyer_personas
       if (Array.isArray(finalAnalysis.icp_analysis.buyer_personas)) {
         decision_makers = finalAnalysis.icp_analysis.buyer_personas.flatMap(bp => [
           ...(bp.primary_decision_maker?.titles || []),
@@ -230,12 +229,13 @@ serve(async (req) => {
       // location, market_trends, competitive_landscape, go_to_market_strategy, research_summary: not present in icp_analysis, leave null/empty
     }
 
+    // Only include snake_case keys that match the table schema
     const insertPayload = {
       user_id: user.id,
       website: normalizedUrl,
       llm_output: finalAnalysis, // Save the raw, structured output
       created_at: new Date().toISOString(),
-      company_name: extractDomain(normalizedUrl),
+      company_name,
       company_profile,
       decision_makers,
       pain_points,
