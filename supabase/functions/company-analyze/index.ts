@@ -221,13 +221,13 @@ serve(async (req) => {
     let research_summary = finalAnalysis.icp_analysis?.research_summary || '';
     let company_name = extractDomain(normalizedUrl) || 'unknown';
     let website = normalizedUrl || 'unknown';
-    // Build insert payload with actual, live schema keys (camelCase)
+    // Build insert payload with all-lowercase column names to match Supabase
     const insertPayload = {
       user_id: user.id,
-      website, // as in your DB
+      website,
       llm_output: finalAnalysis,
       created_at: new Date().toISOString(),
-      companyname: company_name, // camelCase
+      companyname: company_name,
       companyprofile: company_profile,
       decisionmakers: decision_makers,
       painpoints: pain_points,
