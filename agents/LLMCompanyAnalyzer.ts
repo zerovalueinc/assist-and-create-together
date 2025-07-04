@@ -116,29 +116,23 @@ Respond with a single valid JSON object:
 
     const data = await response.json();
     const content = data.choices[0].message.content || '';
+    console.log('LLM RAW OUTPUT:', content); // Log the raw LLM output for debugging
     let result: any;
     try {
       result = JSON.parse(content);
     } catch (e) {
       // Fallback to minimal object if not valid JSON
-      result = {
-        ibp: {},
-        icp: {},
-        goToMarketInsights: '',
-        marketTrends: [],
-        competitiveLandscape: [],
-        decisionMakers: [],
-        researchSummary: content,
-      };
+      result = {};
     }
-    // Ensure all fields exist for frontend mapping
-    result.ibp = result.ibp || {};
-    result.icp = result.icp || {};
-    result.goToMarketInsights = result.goToMarketInsights || '';
+    // --- Robust post-processing to ensure all fields exist and are correct type ---
+    result.ibp = typeof result.ibp === 'object' && result.ibp !== null ? result.ibp : {};
+    result.icp = typeof result.icp === 'object' && result.icp !== null ? result.icp : {};
+    result.goToMarketInsights = typeof result.goToMarketInsights === 'string' ? result.goToMarketInsights : '';
     result.marketTrends = Array.isArray(result.marketTrends) ? result.marketTrends : [];
     result.competitiveLandscape = Array.isArray(result.competitiveLandscape) ? result.competitiveLandscape : [];
     result.decisionMakers = Array.isArray(result.decisionMakers) ? result.decisionMakers : [];
-    result.researchSummary = result.researchSummary || '';
+    result.researchSummary = typeof result.researchSummary === 'string' ? result.researchSummary : '';
+    // --- End post-processing ---
     return result;
   }
 } 
