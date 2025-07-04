@@ -297,76 +297,76 @@ const CompanyAnalyzer = () => {
 
                   {/* Decision Makers */}
                   {analysis.decision_makers && analysis.decision_makers.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Users className="h-5 w-5" />
-                          Decision Makers
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Decision Makers
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
                           {analysis.decision_makers.map((maker: string, index: number) => (
                             <Badge key={index} variant="secondary">
                               {maker}
                             </Badge>
                           ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                   )}
 
                   {/* Pain Points */}
                   {analysis.pain_points && analysis.pain_points.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <AlertTriangle className="h-5 w-5" />
-                          Pain Points
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        Pain Points
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
                           {analysis.pain_points.map((point: string, index: number) => (
                             <Badge key={index} variant="destructive">
                               {point}
                             </Badge>
                           ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                   )}
 
                   {/* Technologies */}
                   {analysis.technologies && analysis.technologies.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
                           <Cpu className="h-5 w-5" />
                           Technologies
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
                           {analysis.technologies.map((tech: string, index: number) => (
                             <Badge key={index} variant="outline">
                               {tech}
                             </Badge>
                           ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                   )}
 
                   {/* Market Trends */}
                   {analysis.market_trends && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5" />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
                           Market Trends
-                        </CardTitle>
-                      </CardHeader>
+                      </CardTitle>
+                    </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground">{analysis.market_trends}</p>
                       </CardContent>
@@ -384,23 +384,23 @@ const CompanyAnalyzer = () => {
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground">{analysis.competitive_landscape}</p>
-                      </CardContent>
-                    </Card>
+                    </CardContent>
+                  </Card>
                   )}
 
                   {/* Go-to-Market Strategy */}
                   {analysis.go_to_market_strategy && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
                           <Rocket className="h-5 w-5" />
-                          Go-to-Market Strategy
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                        Go-to-Market Strategy
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
                         <p className="text-sm text-muted-foreground">{analysis.go_to_market_strategy}</p>
-                      </CardContent>
-                    </Card>
+                    </CardContent>
+                  </Card>
                   )}
 
                   {/* Research Summary */}
@@ -420,14 +420,14 @@ const CompanyAnalyzer = () => {
 
                   {/* ICP Profile */}
                   {analysis.icp_profile && (
-                    <Card>
-                      <CardHeader>
+                  <Card>
+                    <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Target className="h-5 w-5" />
                           ICP Profile
                         </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                    </CardHeader>
+                    <CardContent>
                         <div className="space-y-6">
                           {/* Personas */}
                           {analysis.icp_profile.personas && analysis.icp_profile.personas.length > 0 && (
@@ -624,8 +624,8 @@ const CompanyAnalyzer = () => {
                             </div>
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
+                    </CardContent>
+                  </Card>
                   )}
                 </div>
               );

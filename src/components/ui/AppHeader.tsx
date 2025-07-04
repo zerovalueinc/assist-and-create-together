@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Zap, FolderOpen, BarChart3, User, LogOut, Home } from 'lucide-react';
+import { useUserData } from '@/hooks/useUserData';
 
 const navItems = [
   { label: 'Dashboard', icon: Home, path: '/' },
@@ -15,12 +16,9 @@ const navItems = [
 
 export default function AppHeader() {
   const user = useUser();
+  const { fullName, company, initials } = useUserData();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Extract name and company from user_metadata
-  const fullName = user?.user_metadata?.fullName || `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim() || user?.user_metadata?.name || '';
-  const company = user?.user_metadata?.company || '';
 
   const handleLogout = async () => {
     const { supabase } = await import('@/lib/supabaseClient');

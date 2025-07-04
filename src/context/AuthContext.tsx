@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const fetchProfile = async (userId: string, updateCache = true) => {
+  const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -49,7 +49,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .maybeSingle();
       if (!error && data) {
         setProfile(data);
-        if (updateCache) localStorage.setItem('personaops_profile', JSON.stringify(data));
         return data;
       } else if (!data) {
         // Only insert if truly missing
@@ -63,33 +62,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             .eq('id', userId)
             .maybeSingle();
           setProfile(newProfile);
-          if (updateCache && newProfile) localStorage.setItem('personaops_profile', JSON.stringify(newProfile));
           return newProfile;
         } else {
           setProfile(null);
-          if (updateCache) localStorage.removeItem('personaops_profile');
           return null;
         }
       } else {
         setProfile(null);
-        if (updateCache) localStorage.removeItem('personaops_profile');
         return null;
       }
     } catch (err) {
       setProfile(null);
-      if (updateCache) localStorage.removeItem('personaops_profile');
       return null;
     }
   };
 
   useEffect(() => {
-    // Load cached profile instantly
-    const cached = localStorage.getItem('personaops_profile');
-    if (cached) {
-      try {
-        setProfile(JSON.parse(cached));
-      } catch {}
-    }
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -99,7 +87,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           await fetchProfile(session.user.id);
         } else {
           setProfile(null);
-          localStorage.removeItem('personaops_profile');
         }
         setLoading(false);
       }

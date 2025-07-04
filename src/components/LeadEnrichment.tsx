@@ -8,13 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { SectionLabel } from "./ui/section-label";
 import { getCache, setCache } from '../lib/utils';
+import { useUserData } from '../hooks/useUserData';
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const user = useUser();
+  const { email } = useUserData();
   const session = useSession();
 
   const searchLeads = async () => {

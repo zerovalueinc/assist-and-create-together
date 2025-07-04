@@ -8,15 +8,12 @@ import { Check, Upload } from "lucide-react";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '../../lib/supabase'; // See README for global pattern
+import { useUserData } from '@/hooks/useUserData';
 
 const ProfileTab = () => {
   const user = useUser();
   const session = useSession();
-  const email = user?.email || '';
-  const firstName = user?.user_metadata?.firstName || user?.user_metadata?.first_name || '';
-  const lastName = user?.user_metadata?.lastName || user?.user_metadata?.last_name || '';
-  const company = user?.user_metadata?.company || '';
-  const initials = (user?.user_metadata?.fullName || user?.user_metadata?.name || user?.email || 'U')[0]?.toUpperCase();
+  const { email, firstName, lastName, company, initials } = useUserData();
   const { toast } = useToast();
   
   // Always show user info instantly

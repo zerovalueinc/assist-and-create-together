@@ -12,13 +12,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/ui/AppHeader';
+import { useUserData } from '@/hooks/useUserData';
 
 const Account = () => {
   const user = useUser();
   const session = useSession();
-  const fullName = user?.user_metadata?.fullName || user?.user_metadata?.name || user?.email || '';
-  const company = user?.user_metadata?.company || '';
-  const initials = (user?.user_metadata?.fullName || user?.user_metadata?.name || user?.email || 'U')[0]?.toUpperCase();
+  const { fullName, company, initials } = useUserData();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   const [loadingWork, setLoadingWork] = useState(false);
