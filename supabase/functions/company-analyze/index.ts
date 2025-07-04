@@ -181,110 +181,15 @@ serve(async (req) => {
     let finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
     console.log('Analysis generated for:', finalAnalysis.companyName);
 
-    // --- Normalization step for new fields ---
-    // Ensure companyProfile
-    finalAnalysis.companyProfile = {
-      description: finalAnalysis.companyProfile?.description || '',
-      industry: finalAnalysis.companyProfile?.industry || '',
-      segment: finalAnalysis.companyProfile?.segment || '',
-      companySize: finalAnalysis.companyProfile?.companySize || '',
-      revenueRange: finalAnalysis.companyProfile?.revenueRange || '',
-      location: finalAnalysis.companyProfile?.location || '',
-      businessModel: finalAnalysis.companyProfile?.businessModel || '',
-      foundingYear: finalAnalysis.companyProfile?.foundingYear || ''
-    };
-    // Ensure funding
-    finalAnalysis.funding = {
-      totalRaised: finalAnalysis.funding?.totalRaised || '',
-      investors: Array.isArray(finalAnalysis.funding?.investors) ? finalAnalysis.funding.investors : [],
-      lastRound: finalAnalysis.funding?.lastRound || '',
-      lastRoundDate: finalAnalysis.funding?.lastRoundDate || ''
-    };
-    // Ensure decisionMakers
-    finalAnalysis.decisionMakers = Array.isArray(finalAnalysis.decisionMakers)
-      ? finalAnalysis.decisionMakers.map(dm => ({
-          name: dm?.name || '',
-          title: dm?.title || '',
-          linkedin: dm?.linkedin || ''
-        }))
-      : [];
-    // Ensure competitiveLandscape
-    finalAnalysis.competitiveLandscape = Array.isArray(finalAnalysis.competitiveLandscape)
-      ? finalAnalysis.competitiveLandscape.map(cl => ({
-          name: cl?.name || '',
-          description: cl?.description || ''
-        }))
-      : [];
-    // --- End normalization ---
-
-    // Generate ICP profile using the best model and the company analysis as context
-    let icpProfile = null;
-    try {
-      const icpRaw = await generateICPWithBestModel(finalAnalysis);
-      icpProfile = typeof icpRaw === 'string' ? JSON.parse(icpRaw) : icpRaw;
-    } catch (e) {
-      console.error('ICP generation failed:', e);
-      icpProfile = null;
-    }
-
-    // Sanitize and validate before insert
-    function safeString(val: any): string {
-      return typeof val === 'string' ? val : '';
-    }
-    function toArray(val: any): string[] {
-      if (Array.isArray(val)) return val;
-      if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
-      return [];
-    }
-    function safeCompanyProfile(profile: any) {
-      return {
-        industry: safeString(profile?.industry),
-        companySize: safeString(profile?.companySize),
-        revenueRange: safeString(profile?.revenueRange),
-      };
-    }
-    let sanitizedAnalysis: any = {
-      companyname: safeString(finalAnalysis.companyName),
-      company_name: safeString(finalAnalysis.companyName),
-      companyName: safeString(finalAnalysis.companyName),
-      companyprofile: finalAnalysis.companyProfile ? JSON.stringify(finalAnalysis.companyProfile) : null,
-      decisionmakers: toArray(finalAnalysis.decisionMakers),
-      painpoints: toArray(finalAnalysis.painPoints),
-      technologies: toArray(finalAnalysis.technologies),
-      location: safeString(finalAnalysis.location),
-      markettrends: toArray(finalAnalysis.marketTrends),
-      competitivelandscape: toArray(finalAnalysis.competitiveLandscape),
-      gotomarketstrategy: safeString(finalAnalysis.goToMarketStrategy),
-      researchsummary: safeString(finalAnalysis.researchSummary),
-      website: normalizedUrl,
-      user_id: user.id,
-      icp_profile: icpProfile ? JSON.stringify(icpProfile) : null
-    };
-    sanitizedAnalysis.llm_output = JSON.stringify(finalAnalysis);
-    console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
-
-    // Before saving the report, log the user.id
-    console.debug('[Edge Function] About to save report for user.id:', user.id);
-
-    // Save the raw LLM output as JSONB, no extra logic
+    // REMOVE ALL SANITIZATION/NORMALIZATION. Insert only the raw LLM output.
     const insertPayload = {
       user_id: user.id,
       website: normalizedUrl,
-      llm_output: finalAnalysis, // Save the raw LLM output as JSONB (not stringified)
+      llm_output: finalAnalysis, // Direct, untouched LLM output
       created_at: new Date().toISOString(),
-      // Add all required columns to avoid schema errors
-      companyName: finalAnalysis.companyName || '',
-      companyProfile: finalAnalysis.companyProfile || {},
-      decisionMakers: finalAnalysis.decisionMakers || [],
-      painPoints: finalAnalysis.painPoints || [],
-      technologies: finalAnalysis.technologies || [],
-      location: finalAnalysis.location || '',
-      marketTrends: finalAnalysis.marketTrends || [],
-      competitiveLandscape: finalAnalysis.competitiveLandscape || [],
-      goToMarketStrategy: finalAnalysis.goToMarketStrategy || '',
-      researchSummary: finalAnalysis.researchSummary || ''
+      companyName: finalAnalysis.companyName || '', // Only if required by schema
     };
-    console.log('[Edge Function] Insert payload:', JSON.stringify(insertPayload));
+    console.log('[Edge Function] RAW INSERT PAYLOAD:', JSON.stringify(insertPayload));
     const { data: savedReport, error: saveError } = await supabaseClient
       .from('company_analyzer_outputs')
       .insert(insertPayload)
