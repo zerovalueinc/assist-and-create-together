@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { runIntelLLMResearch } from '../../../agents/IntelLLMAgent.ts';
+import { runFullCompanyResearch } from '../../../agents/CompanyResearchAgent.ts';
 
 declare const Deno: any;
 
@@ -45,7 +45,7 @@ serve(async (req) => {
     // Call the LLM agent
     let llm_output;
     try {
-      llm_output = await runIntelLLMResearch(companyUrl);
+      llm_output = await runFullCompanyResearch(companyUrl);
     } catch (e) {
       return new Response(JSON.stringify({ error: 'LLM research failed', details: e.message }), { status: 500, headers: corsHeaders });
     }
