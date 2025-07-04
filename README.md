@@ -196,3 +196,22 @@ git checkout save-state-working-pills-llm
 ```
 
 Or reference the tag in GitHub for deployment, debugging, or rollback.
+
+## 🚩 Save State: INTEL TAB INSTANT UPDATE FIX
+
+**Tag:** `save-state-intel-fix`
+
+This tag marks the state where the Intel tab (CompanyAnalyzer) instantly updates pills and report details after analysis, even if the backend returns an array or object. No logout/login required.
+
+- **Backend/Frontend:**
+  - Commit: `70642c3`
+  - Message: `Fix: handle data.output as array or object after analysis, use first element if array, add warnings/logs`
+  - ✅ After running a new analysis, the new report appears immediately in the UI. Pills and report details are always correct.
+
+**How to restore this state:**
+
+```
+git checkout save-state-intel-fix
+```
+
+Or reference the tag in GitHub for deployment, debugging, or rollback.
