@@ -221,11 +221,11 @@ serve(async (req) => {
     let research_summary = finalAnalysis.icp_analysis?.research_summary || '';
     let company_name = extractDomain(normalizedUrl) || 'unknown';
     let website = normalizedUrl || 'unknown';
-    // Only include snake_case keys that match the table schema, with strict defaults
+    // Only assign explicit, snake_case keys for the insert payload
     const insertPayload = {
       user_id: user.id,
       website,
-      llm_output: finalAnalysis, // Save the raw, structured output
+      llm_output: finalAnalysis, // Save the raw, structured output ONLY here
       created_at: new Date().toISOString(),
       company_name,
       company_profile,
