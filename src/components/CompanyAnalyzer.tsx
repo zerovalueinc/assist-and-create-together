@@ -175,28 +175,40 @@ const CompanyAnalyzer = () => {
       }
 
       if (data?.success && data?.output) {
-        console.log('Analysis successful:', data.output);
-        console.log('[DEBUG] Attempting to fetch fresh report by ID:', data.output.id, data.output);
-        if (data.output.id) {
+        // Handle case where data.output is an array
+        let reportObj = data.output;
+        if (Array.isArray(data.output)) {
+          if (data.output.length > 0) {
+            reportObj = data.output[0];
+          } else {
+            console.warn('[WARN] data.output is an empty array.');
+            toast({ title: 'Analysis Error', description: 'No report returned from analysis.', variant: 'destructive' });
+            setIsAnalyzing(false);
+            return;
+          }
+        }
+        console.log('Analysis successful:', reportObj);
+        console.log('[DEBUG] Attempting to fetch fresh report by ID:', reportObj.id, reportObj);
+        if (reportObj.id) {
           try {
-            const freshReport = await getCompanyAnalysisById(data.output.id);
+            const freshReport = await getCompanyAnalysisById(reportObj.id);
             setAnalysis(freshReport);
             setReports(prev => [freshReport, ...prev.filter(r => r.id !== freshReport.id)]);
             setSelectedReportId(freshReport.id || null);
           } catch (fetchErr) {
             console.warn('[WARN] Failed to fetch fresh report by ID, falling back to immediate output:', fetchErr);
-            setAnalysis(data.output);
-            setReports(prev => [data.output, ...prev]);
-            setSelectedReportId(data.output.id || null);
+            setAnalysis(reportObj);
+            setReports(prev => [reportObj, ...prev]);
+            setSelectedReportId(reportObj.id || null);
           }
         } else {
-          console.warn('[WARN] No ID found on data.output, using immediate output:', data.output);
-          setAnalysis(data.output);
-          setReports(prev => [data.output, ...prev]);
+          console.warn('[WARN] No ID found on reportObj, using immediate output:', reportObj);
+          setAnalysis(reportObj);
+          setReports(prev => [reportObj, ...prev]);
           setSelectedReportId(null);
         }
         setResearch({
-          companyAnalysis: data.output,
+          companyAnalysis: reportObj,
           isCached: false,
           timestamp: new Date().toISOString()
         });
@@ -204,7 +216,7 @@ const CompanyAnalyzer = () => {
         refreshData();
         toast({
           title: "Analysis Complete",
-          description: `Successfully analyzed ${data.output.company_name || data.output.companyName}`,
+          description: `Successfully analyzed ${reportObj.company_name || reportObj.companyName}`,
         });
       } else {
         console.error('Analysis failed - no success flag or analysis data');
