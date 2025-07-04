@@ -2,6 +2,9 @@
 // High-quality analysis and intelligence processing using the best LLM models
 // Processes raw web crawling data into actionable intelligence reports
 
+// @ts-ignore: Deno runtime provides Deno.env in edge functions
+declare const Deno: any;
+
 export type AnalysisTask = {
   type: 'icp_generation' | 'ibp_analysis' | 'sales_intelligence' | 'market_analysis' | 'competitive_intelligence' | 'competitor_research' | 'tech_stack_research' | 'decision_maker_research' | 'pain_point_research' | 'market_trends_research' | 'company_profile_research' | 'gtm_strategy_research',
   data: any,
@@ -241,7 +244,7 @@ Focus on actionable insights for competitive advantage.`;
 
 // Call the best model for analysis (Claude 3.5 Sonnet)
 async function callBestModel(userPrompt: string, systemPrompt: string): Promise<any> {
-  const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+  const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
   if (!openRouterApiKey) {
     throw new Error('OPENROUTER_API_KEY not found');
   }
@@ -359,7 +362,7 @@ export async function quickAnalyze(task: AnalysisTask): Promise<AnalysisResult> 
   try {
     console.log(`⚡ Quick analysis with Haiku for: ${task.type}`);
     
-    const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     if (!openRouterApiKey) {
       throw new Error('OPENROUTER_API_KEY not found');
     }

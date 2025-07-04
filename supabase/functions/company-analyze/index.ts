@@ -4,6 +4,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { LLMCompanyAnalyzer } from '../../../agents/LLMCompanyAnalyzer.ts';
 import { analyzeWithBestModel, type AnalysisTask } from '../../../agents/analysisAgent.ts';
 
+// @ts-ignore: Deno runtime provides Deno.env in edge functions
+declare const Deno: any;
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -183,6 +186,9 @@ serve(async (req) => {
     };
     const analysisResult = await analyzeWithBestModel(task);
     const finalAnalysis = analysisResult.data;
+    if (!finalAnalysis) {
+      throw new Error('LLM analysis failed: No data returned from agent');
+    }
 
     const insertPayload = {
       user_id: user.id,
