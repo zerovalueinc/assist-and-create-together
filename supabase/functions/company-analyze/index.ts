@@ -267,16 +267,30 @@ serve(async (req) => {
     console.debug('[Edge Function] About to save report for user.id:', user.id);
 
     // Save the raw LLM output as JSONB, no extra logic
+    const insertPayload = {
+      user_id: user.id,
+      website: normalizedUrl,
+      llm_output: finalAnalysis, // Save the raw LLM output as JSONB (not stringified)
+      created_at: new Date().toISOString(),
+      // Add all required columns to avoid schema errors
+      companyName: finalAnalysis.companyName || '',
+      companyProfile: finalAnalysis.companyProfile || {},
+      decisionMakers: finalAnalysis.decisionMakers || [],
+      painPoints: finalAnalysis.painPoints || [],
+      technologies: finalAnalysis.technologies || [],
+      location: finalAnalysis.location || '',
+      marketTrends: finalAnalysis.marketTrends || [],
+      competitiveLandscape: finalAnalysis.competitiveLandscape || [],
+      goToMarketStrategy: finalAnalysis.goToMarketStrategy || '',
+      researchSummary: finalAnalysis.researchSummary || ''
+    };
+    console.log('[Edge Function] Insert payload:', JSON.stringify(insertPayload));
     const { data: savedReport, error: saveError } = await supabaseClient
       .from('company_analyzer_outputs')
-      .insert({
-        user_id: user.id,
-        website: normalizedUrl,
-        llm_output: finalAnalysis, // Save the raw LLM output as JSONB
-        created_at: new Date().toISOString()
-      })
+      .insert(insertPayload)
       .select()
       .single();
+    console.log('[Edge Function] Supabase insert response:', { savedReport, saveError });
 
     if (saveError) {
       console.error('Insert error details:', {
