@@ -76,59 +76,94 @@ Return a JSON object with: notable_clients, social_media (linkedin, twitter, fac
 export async function runFullCompanyResearchPipeline(url: string, user_id: string, supabaseClient?: any): Promise<any> {
   const supabase = supabaseClient || getSupabaseClient();
   
+  console.log('[Pipeline] Starting pipeline with user_id:', user_id, 'url:', url);
+  console.log('[Pipeline] Supabase client type:', typeof supabase);
+  
   // Step 1: Company Overview
   console.log('[Pipeline] Agent 1: Company Overview starting...');
   const overview = await agentCompanyOverview(url);
-  const { error: step1Error } = await supabase.from('company_research_steps').insert({
+  console.log('[Pipeline] Agent 1 completed, attempting to save...');
+  
+  const step1Payload = {
     user_id,
     company_url: url,
     step_name: 'company_overview',
     step_output: overview
-  });
+  };
+  console.log('[Pipeline] Step 1 payload:', JSON.stringify(step1Payload));
+  
+  const { data: step1Data, error: step1Error } = await supabase.from('company_research_steps').insert(step1Payload);
   if (step1Error) {
     console.error('[Pipeline] Step 1 save error:', step1Error);
+    console.error('[Pipeline] Step 1 error details:', JSON.stringify(step1Error));
+  } else {
+    console.log('[Pipeline] Step 1 saved successfully:', step1Data);
   }
   console.log('[Pipeline] Agent 1 result:', JSON.stringify(overview));
 
   // Step 2: Market/Competitive Intelligence
   console.log('[Pipeline] Agent 2: Market/Competitive Intelligence starting...');
   const market = await agentMarketIntelligence(url, overview);
-  const { error: step2Error } = await supabase.from('company_research_steps').insert({
+  console.log('[Pipeline] Agent 2 completed, attempting to save...');
+  
+  const step2Payload = {
     user_id,
     company_url: url,
     step_name: 'market_intelligence',
     step_output: market
-  });
+  };
+  console.log('[Pipeline] Step 2 payload:', JSON.stringify(step2Payload));
+  
+  const { data: step2Data, error: step2Error } = await supabase.from('company_research_steps').insert(step2Payload);
   if (step2Error) {
     console.error('[Pipeline] Step 2 save error:', step2Error);
+    console.error('[Pipeline] Step 2 error details:', JSON.stringify(step2Error));
+  } else {
+    console.log('[Pipeline] Step 2 saved successfully:', step2Data);
   }
   console.log('[Pipeline] Agent 2 result:', JSON.stringify(market));
 
   // Step 3: Technology/Features/Stack
   console.log('[Pipeline] Agent 3: Technology/Features/Stack starting...');
   const tech = await agentTechStack(url, { ...overview, ...market });
-  const { error: step3Error } = await supabase.from('company_research_steps').insert({
+  console.log('[Pipeline] Agent 3 completed, attempting to save...');
+  
+  const step3Payload = {
     user_id,
     company_url: url,
     step_name: 'tech_stack',
     step_output: tech
-  });
+  };
+  console.log('[Pipeline] Step 3 payload:', JSON.stringify(step3Payload));
+  
+  const { data: step3Data, error: step3Error } = await supabase.from('company_research_steps').insert(step3Payload);
   if (step3Error) {
     console.error('[Pipeline] Step 3 save error:', step3Error);
+    console.error('[Pipeline] Step 3 error details:', JSON.stringify(step3Error));
+  } else {
+    console.log('[Pipeline] Step 3 saved successfully:', step3Data);
   }
   console.log('[Pipeline] Agent 3 result:', JSON.stringify(tech));
 
   // Step 4: Sales/Go-to-Market/Final Synthesis
   console.log('[Pipeline] Agent 4: Sales/Go-to-Market/Final Synthesis starting...');
   const sales = await agentSalesGTM(url, { ...overview, ...market, ...tech });
-  const { error: step4Error } = await supabase.from('company_research_steps').insert({
+  console.log('[Pipeline] Agent 4 completed, attempting to save...');
+  
+  const step4Payload = {
     user_id,
     company_url: url,
     step_name: 'sales_gtm',
     step_output: sales
-  });
+  };
+  console.log('[Pipeline] Step 4 payload:', JSON.stringify(step4Payload));
+  
+  const { data: step4Data, error: step4Error } = await supabase.from('company_research_steps').insert(step4Payload);
   if (step4Error) {
     console.error('[Pipeline] Step 4 save error:', step4Error);
+    console.error('[Pipeline] Step 4 error details:', JSON.stringify(step4Error));
+  } else {
+    console.log('[Pipeline] Step 4 saved successfully:', step4Data);
   }
   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
