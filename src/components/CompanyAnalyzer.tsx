@@ -3,18 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Building, Users, TrendingUp, Target, AlertTriangle, MapPin } from "lucide-react";
+import { Loader2, Search, Building, Users, TrendingUp, Target, AlertTriangle, MapPin, Cpu, Rocket, FileText, BarChart2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
-import { useAuth } from "@/context/AuthContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
-import EmptyState from './ui/EmptyState';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { useUser } from '../hooks/useUserData';
+import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { CompanyReportCard } from './ui/CompanyReportCard';
+import ICPProfileDisplay from './ui/ICPProfileDisplay';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -31,58 +32,79 @@ function toArray(val: any): string[] {
   return [];
 }
 
+// Normalization function for LLM output
+function normalizeLLMOutput(llm: any) {
+  if (!llm) return {};
+  // If already in the expected format, return as is
+  if (llm.icp || llm.ibp) return llm;
+  // If using the new icp_analysis format, map fields
+  if (llm.icp_analysis) {
+    return {
+      icp: {
+        painPoints: llm.icp_analysis.pain_points,
+        buyerPersonas: llm.icp_analysis.buyer_personas,
+        buyingTriggers: llm.icp_analysis.buying_triggers,
+        valuePropositions: llm.icp_analysis.value_propositions,
+        techStack: llm.icp_analysis.tech_stack_alignment,
+        apolloSearchParameters: llm.icp_analysis.apollo_search_parameters,
+        targetingRecommendations: llm.icp_analysis.targeting_recommendations,
+        targetCompanyCharacteristics: llm.icp_analysis.target_company_characteristics,
+      },
+      // Add other mappings as needed
+    };
+  }
+  return llm;
+}
+
+// Helper to safely render any field
+function renderField(field: any) {
+  if (field == null) return 'N/A';
+  if (typeof field === 'string') return field;
+  if (Array.isArray(field)) return field.join(', ');
+  if (typeof field === 'object') return JSON.stringify(field);
+  return String(field);
+}
+
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
-  const { setResearch } = useCompany();
-  const { user, session, isLoading } = useUser();
-  const { data: preloadData, loading: preloadLoading } = useDataPreload();
-
-  // Use preloaded reports or fallback to cache
-  let initialReports = preloadData?.companyAnalyzer || [];
-  if (!initialReports.length) {
-    initialReports = getCache('yourwork_analyze', []);
-  }
-  const [reports, setReports] = useState(initialReports);
+  const user = useUser();
+  const session = useSession();
+  const [reports, setReports] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [justRefreshed, setJustRefreshed] = useState(false);
 
-  // Reload reports when preloadData changes (e.g., on tab switch)
-  useEffect(() => {
-    let newReports = preloadData?.companyAnalyzer || [];
-    if (!newReports.length) {
-      newReports = getCache('yourwork_analyze', []);
-    }
-    setReports(newReports);
-  }, [preloadData]);
-
-  const handleDeleteReport = async (id: string) => {
-    const prevReports = reports;
-    setReports(reports.filter(r => r.id !== id));
-    if (selectedReportId === id) {
-      setAnalysis(null);
-      setSelectedReportId(null);
-    }
-    const { error } = await supabase.from('company_analyzer_outputs_unrestricted').delete().eq('id', id);
-    if (error) {
-      toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
-      setReports(prevReports); // Rollback UI
-    } else {
-      toast({ title: 'Report Deleted', description: 'The report was deleted successfully.' });
+  // Always fetch reports from DB on load and after analysis
+  const fetchReports = async () => {
+    if (!user?.id) return;
+    const { data, error } = await supabase
+      .from('company_analyzer_outputs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (!error && data) {
+      setReports(data);
+      if (data.length > 0) {
+        setSelectedReportId(data[0].id);
+        setAnalysis(data[0]);
+      }
     }
   };
 
+  useEffect(() => {
+    fetchReports();
+  }, [user?.id]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session, isLoading });
     if (!session?.access_token) {
       toast({
         title: "Auth Error",
         description: "No access token found. Please log in again.",
         variant: "destructive",
       });
-      console.error('[CompanyAnalyzer] No access token found', { user, session });
       return;
     }
     if (!url.trim()) {
@@ -97,55 +119,40 @@ const CompanyAnalyzer = () => {
     setAnalysis(null);
     setIsAnalyzing(true);
     try {
-      console.log('=== Starting Company Analysis ===');
-      console.log('URL:', normalizedUrl);
-      console.log('User ID:', user?.id);
-      console.log('Session token available:', !!session?.access_token);
-      
-      const response = await fetch('https://hbogcsztrryrepudceww.supabase.co/functions/v1/company-analyze', {
+      const response = await fetch('/api/company-analyze', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ url: normalizedUrl, user_id: user?.id })
+        body: JSON.stringify({ url: normalizedUrl }),
       });
+      if (!response.ok) {
+        let errorMsg = `LLM failed: ${response.status}`;
+        try {
+          const errJson = await response.json();
+          errorMsg = errJson.error || errorMsg;
+        } catch {}
+        throw new Error(errorMsg);
+      }
       const data = await response.json();
       const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;
-
-      console.log('=== Supabase Function Response ===');
-      console.log('Data:', data);
-      console.log('Error:', error);
-
       if (error) {
-        console.error('Supabase function error details:', error);
         throw new Error(error.message || 'Analysis request failed');
       }
-
       if (data?.success && data?.output) {
-        console.log('Analysis successful:', data.output);
-        setAnalysis(data.output);
-        setResearch({
-          companyAnalysis: data.output,
-          isCached: false,
-          timestamp: new Date().toISOString()
-        });
-        // Prepend new report to reports and update pills/inline
-        setReports(prev => [data.output, ...prev]);
-        setSelectedReportId(data.output.id || null);
+        // Wait for DB to be ready, then fetch all reports
+        setTimeout(async () => {
+          await fetchReports();
+        }, 1000);
         toast({
           title: "Analysis Complete",
           description: `Successfully analyzed ${data.output.company_name || data.output.companyName}`,
         });
       } else {
-        console.error('Analysis failed - no success flag or analysis data');
         throw new Error(data?.error || 'Analysis failed - no data returned');
       }
     } catch (error: any) {
-      console.error('=== Analysis Error ===');
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error.message);
-      console.error('Full error:', error);
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze company. Please check the URL and try again.",
@@ -166,26 +173,17 @@ const CompanyAnalyzer = () => {
   // Pills selector for reports
   const renderReportPills = () => (
     <div className="flex flex-wrap gap-2 mb-4">
-      {reports.map((report) => {
-        const llm = report.llm_output ? JSON.parse(report.llm_output) : report;
-        return (
-          <Badge
-            key={report.id}
-            variant={selectedReportId === report.id ? 'default' : 'secondary'}
-            className={`cursor-pointer px-4 py-2 text-base transition-all duration-150 ${selectedReportId === report.id ? 'ring-2 ring-blue-500 bg-blue-600 text-white' : 'hover:bg-blue-100 hover:text-blue-900'}`}
-            onClick={() => {
-              setSelectedReportId(report.id);
-              setAnalysis(report);
-            }}
-          >
-            <span className="font-semibold">{llm.companyName || llm.company_name || 'Untitled'}</span>
-            <span className="ml-2 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}</span>
-            <Button size="sm" variant="destructive" className="ml-2" onClick={e => { e.stopPropagation(); handleDeleteReport(report.id); }}>
-              Delete
-            </Button>
-          </Badge>
-        );
-      })}
+      {reports.map((report) => (
+        <CompanyReportCard
+          key={report.id}
+          report={report}
+          selected={selectedReportId === report.id}
+          onClick={() => {
+            setSelectedReportId(report.id);
+            setAnalysis(report);
+          }}
+        />
+      ))}
     </div>
   );
 
@@ -215,19 +213,14 @@ const CompanyAnalyzer = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading || isAnalyzing}
+                disabled={isAnalyzing}
                 className="text-base"
                 autoComplete="off"
                 aria-label="Company URL"
               />
             </div>
-            <Button type="submit" disabled={isLoading || isAnalyzing || !url.trim()} className="w-full">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading user session...
-                </>
-              ) : isAnalyzing ? (
+            <Button type="submit" disabled={isAnalyzing || !url.trim()} className="w-full">
+              {isAnalyzing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Analyzing...
@@ -250,17 +243,22 @@ const CompanyAnalyzer = () => {
 
       {/* Results */}
       {reports.length === 0 ? (
-        <EmptyState message="No company analysis reports found. Run an analysis first." />
+        <div className="text-center text-muted-foreground py-8">No company analysis reports found. Run an analysis first.</div>
       ) : (
         <div className="space-y-6">
           {/* Details */}
           {analysis && selectedReportId && typeof analysis === 'object' ? (
             (() => {
-              const llm = analysis.llm_output ? JSON.parse(analysis.llm_output) : analysis;
-              if (!llm.companyName && !llm.company_name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
+              // --- Use llm_output as the single source of truth ---
+              let llm = analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : {};
+              llm = normalizeLLMOutput(llm);
+              // --- End llm_output normalization ---
+
+              const name = llm.company_name || llm.companyName || llm.companyname || 'Untitled';
+              if (!name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
               return (
                 <div className="space-y-6">
-                  {/* Company Overview */}
+                  {/* Company Overview Card */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -268,203 +266,220 @@ const CompanyAnalyzer = () => {
                         Company Overview
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">Company Name</label>
-                          <p className="font-medium">{llm.companyName || llm.company_name || 'N/A'}</p>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Basic Info */}
+                        <div className="space-y-4">
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Company Name</span>
+                            <p className="text-lg font-semibold">{renderField(llm.company_name)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Summary</span>
+                            <p className="text-sm">{renderField(llm.summary)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Industry</span>
+                            <p className="text-sm">{renderField(llm.industry)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Headquarters</span>
+                            <p className="text-sm">{renderField(llm.headquarters)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Founded</span>
+                            <p className="text-sm">{renderField(llm.founded)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Company Type</span>
+                            <p className="text-sm">{renderField(llm.company_type)}</p>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">Industry</label>
-                          <p className="font-medium">{llm.companyProfile?.industry || llm.industry || 'N/A'}</p>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">Company Size</label>
-                          <p className="font-medium">{llm.companyProfile?.companySize || llm.company_size || 'N/A'}</p>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">Revenue Range</label>
-                          <p className="font-medium">{llm.companyProfile?.revenueRange || llm.revenue_range || 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">Location</label>
-                          <p className="font-medium flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            {llm.location || 'N/A'}
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-muted-foreground">Website</label>
-                          <p className="font-medium">
-                            <a href={llm.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                              {llm.website}
-                            </a>
-                          </p>
+                        
+                        {/* Size & Financial */}
+                        <div className="space-y-4">
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Company Size</span>
+                            <p className="text-sm">{renderField(llm.company_size?.employees_range)} ({renderField(llm.company_size?.employee_count)} employees)</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
+                            <p className="text-sm">{renderField(llm.revenue_range)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Funding</span>
+                            <p className="text-sm">{renderField(llm.funding?.total_raised)}</p>
+                            {llm.funding?.latest_round && (
+                              <p className="text-xs text-muted-foreground">
+                                Latest: {llm.funding.latest_round.amount} ({llm.funding.latest_round.round_type}, {llm.funding.latest_round.year})
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Decision Makers */}
+                  {/* Products & Market */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Rocket className="h-5 w-5" />
+                        Products & Market
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Main Products</span>
+                          <div className="mt-2">
+                            {llm.main_products && llm.main_products.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {llm.main_products.map((product: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {product}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Target Market</span>
+                          <div className="mt-2">
+                            {llm.target_market && llm.target_market.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {llm.target_market.map((market: string, i: number) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {market}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Key Features & Platforms */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Cpu className="h-5 w-5" />
+                        Key Features & Platforms
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Key Features</span>
+                          <div className="mt-2">
+                            {llm.key_features && llm.key_features.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {llm.key_features.map((feature: string, i: number) => (
+                                  <li key={i}>{feature}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Platform Compatibility</span>
+                          <div className="mt-2">
+                            {llm.platform_compatibility && llm.platform_compatibility.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {llm.platform_compatibility.map((platform: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {platform}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Notable Clients */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Users className="h-5 w-5" />
-                        Decision Makers
+                        Notable Clients
                       </CardTitle>
-                      <CardDescription>
-                        Key roles and decision makers identified through Phase 1 research
-                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {toArray(llm.decisionMakers || llm.decision_makers).length > 0 ? (
-                          toArray(llm.decisionMakers || llm.decision_makers).map((role, index) => (
-                            <Badge key={index} variant="secondary" className="text-sm">
-                              {role}
+                      {llm.notable_clients && llm.notable_clients.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {llm.notable_clients.map((client: string, i: number) => (
+                            <Badge key={i} variant="outline">
+                              {client}
                             </Badge>
-                          ))
-                        ) : (
-                          <p className="text-muted-foreground">No decision makers identified</p>
-                        )}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No data available</span>
+                      )}
                     </CardContent>
                   </Card>
 
-                  {/* Pain Points */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5" />
-                        Pain Points
-                      </CardTitle>
-                      <CardDescription>
-                        Challenges identified through Phase 4 technology analysis
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {toArray(llm.painPoints || llm.pain_points).length > 0 ? (
-                          toArray(llm.painPoints || llm.pain_points).map((pain, index) => (
-                            <Badge key={index} variant="destructive" className="text-sm">
-                              {pain}
-                            </Badge>
-                          ))
-                        ) : (
-                          <p className="text-muted-foreground">No pain points identified</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Technologies */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        Technology Stack
-                      </CardTitle>
-                      <CardDescription>
-                        Technologies analyzed in Phase 4 research
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {toArray(llm.technologies).length > 0 ? (
-                          toArray(llm.technologies).map((tech, index) => (
-                            <Badge key={index} variant="outline" className="text-sm">
-                              {tech}
-                            </Badge>
-                          ))
-                        ) : (
-                          <p className="text-muted-foreground">No technologies identified</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Market Intelligence */}
+                  {/* Social Media */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5" />
-                        Market Intelligence
+                        Social Media & Research Summary
                       </CardTitle>
-                      <CardDescription>
-                        Insights from Phase 2 & 3 competitive analysis
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="font-medium mb-2">Market Trends</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {toArray(llm.marketTrends || llm.market_trends).length > 0 ? (
-                            toArray(llm.marketTrends || llm.market_trends).map((trend, index) => (
-                              <Badge key={index} variant="secondary" className="text-sm">
-                                {trend}
-                              </Badge>
-                            ))
-                          ) : (
-                            <p className="text-muted-foreground">No market trends identified</p>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="font-medium mb-2">Competitive Landscape</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {toArray(llm.competitiveLandscape || llm.competitive_landscape).length > 0 ? (
-                            toArray(llm.competitiveLandscape || llm.competitive_landscape).map((competitor, index) => (
-                              <Badge key={index} variant="outline" className="text-sm">
-                                {competitor}
-                              </Badge>
-                            ))
-                          ) : (
-                            <p className="text-muted-foreground">No competitors identified</p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Go-to-Market Strategy */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Target className="h-5 w-5" />
-                        Go-to-Market Strategy
-                      </CardTitle>
-                      <CardDescription>
-                        Strategic insights from Phase 5 synthesis
-                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm leading-relaxed">
-                        {llm.goToMarketStrategy || llm.go_to_market_strategy || 'No strategy identified'}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Research Summary */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>5-Phase Research Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm leading-relaxed">
-                        {llm.research_summary || llm.researchSummary || 'Multi-phase analysis completed with comprehensive company intelligence'}
-                      </p>
-                      {/* Optionally show full LLM JSON for debugging */}
-                      {/* <pre className="mt-4 text-xs bg-slate-100 p-2 rounded overflow-x-auto">{JSON.stringify(llm, null, 2)}</pre> */}
+                      <div className="space-y-4">
+                        {llm.social_media && (
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Social Media</span>
+                            <div className="mt-2 flex gap-4">
+                              {llm.social_media.linkedin && (
+                                <a href={`https://linkedin.com/company/${llm.social_media.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                  LinkedIn
+                                </a>
+                              )}
+                              {llm.social_media.twitter && (
+                                <a href={`https://twitter.com/${llm.social_media.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                  Twitter
+                                </a>
+                              )}
+                              {llm.social_media.facebook && (
+                                <a href={`https://facebook.com/${llm.social_media.facebook}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                  Facebook
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Research Summary</span>
+                          <p className="text-sm mt-2">{renderField(llm.research_summary)}</p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
               );
             })()
-          ) : selectedReportId ? (
-            <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>
-          ) : null}
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              Select a report to view details
+            </div>
+          )}
         </div>
       )}
     </div>
