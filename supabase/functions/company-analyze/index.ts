@@ -217,24 +217,27 @@ serve(async (req) => {
     }
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
+    // Before saving the report, log the user.id
+    console.debug('[Edge Function] About to save report for user.id:', user.id);
+
     // Save to database
     const { data: savedReport, error: saveError } = await supabaseClient
-      .from('company_analysis_reports')
+      .from('company_analyzer_outputs')
       .insert({
         user_id: user.id,
-        company_name: finalAnalysis.companyName,
-        company_url: normalizedUrl,
+        companyname: safeString(finalAnalysis.companyName),
         company_profile: finalAnalysis.companyProfile || {},
         decision_makers: finalAnalysis.decisionMakers || [],
         pain_points: finalAnalysis.painPoints || [],
         technologies: finalAnalysis.technologies || [],
         location: finalAnalysis.location || '',
-        market_trends: finalAnalysis.marketTrends.join(',') || '',
-        competitive_landscape: finalAnalysis.competitiveLandscape.join(',') || '',
+        market_trends: finalAnalysis.marketTrends || [],
+        competitive_landscape: finalAnalysis.competitiveLandscape || [],
         go_to_market_strategy: finalAnalysis.goToMarketStrategy || '',
         research_summary: finalAnalysis.researchSummary || '',
-        icp_profile: finalAnalysis.companyProfile || {},
-        llm_output: JSON.stringify(finalAnalysis)
+        website: normalizedUrl,
+        llm_output: JSON.stringify(finalAnalysis),
+        created_at: new Date().toISOString()
       })
       .select()
       .single();

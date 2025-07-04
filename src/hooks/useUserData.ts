@@ -1,55 +1,24 @@
-import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
-export const useUserData = () => {
-  const { user, profile } = useAuth();
-  
-  // Helper to capitalize first letter
-  const capitalize = (str?: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
-
-  const firstName = capitalize(profile?.first_name) || '';
-  const lastName = capitalize(profile?.last_name) || '';
-
-  return {
-    email: user?.email || '',
-    firstName,
-    lastName,
-    company: profile?.company || '',
-    fullName: firstName && lastName
-      ? `${firstName} ${lastName}`
-      : user?.email || '',
-    initials: firstName && lastName
-      ? `${firstName[0]}${lastName[0]}`.toUpperCase()
-      : user?.email?.[0]?.toUpperCase() || 'U'
-  };
-};
-
-export function useUser() {
+export function useUserData() {
   const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-    setIsLoading(true);
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        setUser(data?.session?.user ?? null);
-        setSession(data?.session ?? null);
-        setIsLoading(false);
+    const getSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (data?.session?.user) {
+        setUser(data.session.user);
+        console.debug('[Frontend] Supabase user.id:', data.session.user.id);
+      } else {
+        console.warn('[Frontend] No user session found', error);
+        setUser(null);
       }
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setSession(session ?? null);
-      setIsLoading(false);
-    });
-    return () => {
-      mounted = false;
-      listener?.subscription.unsubscribe();
+      setLoading(false);
     };
+    getSession();
   }, []);
 
-  return { user, session, isLoading };
+  return { user, loading };
 }
