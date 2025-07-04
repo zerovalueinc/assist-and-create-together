@@ -45,9 +45,14 @@ serve(async (req) => {
     // Call the LLM agent
     let llm_output;
     try {
-      // Run the full multi-agent pipeline in memory
-      llm_output = await runFullCompanyResearchPipeline(companyUrl);
-      // Only after all agents are done, save the final result
+      // Run the full multi-agent pipeline in memory and get all agent results
+      const pipelineResults = await runFullCompanyResearchPipeline(companyUrl);
+      console.log('[Edge] Agent 1 (overview):', JSON.stringify(pipelineResults.overview));
+      console.log('[Edge] Agent 2 (market):', JSON.stringify(pipelineResults.market));
+      console.log('[Edge] Agent 3 (tech):', JSON.stringify(pipelineResults.tech));
+      console.log('[Edge] Agent 4 (sales):', JSON.stringify(pipelineResults.sales));
+      console.log('[Edge] FINAL MERGED RESULT:', JSON.stringify(pipelineResults.merged));
+      llm_output = pipelineResults.merged;
     } catch (e) {
       return new Response(JSON.stringify({ error: 'LLM research failed', details: e.message }), { status: 500, headers: corsHeaders });
     }

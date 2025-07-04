@@ -108,5 +108,5 @@ export async function runFullCompanyResearchPipeline(url: string): Promise<any> 
     gtm_recommendations: sales.gtm_recommendations || 'N/A',
   };
   console.log('[Pipeline] FINAL MERGED RESULT:', JSON.stringify(merged));
-  return merged;
+  return { overview, market, tech, sales, merged };
 } 
