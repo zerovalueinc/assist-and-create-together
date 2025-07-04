@@ -198,6 +198,8 @@ serve(async (req) => {
     }
     let sanitizedAnalysis: any = {
       companyname: safeString(finalAnalysis.companyName),
+      company_name: safeString(finalAnalysis.companyName),
+      companyName: safeString(finalAnalysis.companyName),
       companyprofile: finalAnalysis.companyProfile ? JSON.stringify(finalAnalysis.companyProfile) : null,
       decisionmakers: toArray(finalAnalysis.decisionMakers),
       painpoints: toArray(finalAnalysis.painPoints),
@@ -245,7 +247,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        output: insertData,
+        output: {
+          ...insertData,
+          companyName: insertData.companyName || insertData.company_name || insertData.companyname || '',
+          company_name: insertData.company_name || insertData.companyName || insertData.companyname || '',
+          companyname: insertData.companyname || insertData.companyName || insertData.company_name || '',
+        },
         analysis: insertData,
         outputId: insertData.id || null,
         cached: false

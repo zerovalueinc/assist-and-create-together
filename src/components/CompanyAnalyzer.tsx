@@ -175,20 +175,22 @@ const CompanyAnalyzer = () => {
   const renderReportPills = () => (
     <div className="flex flex-wrap gap-2 mb-4">
       {reports.map((report) => {
+        // Normalize company name for pill
         const llm = report.llm_output ? JSON.parse(report.llm_output) : report;
+        const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
         return (
           <Button
             key={report.id}
             variant={selectedReportId === report.id ? 'default' : 'outline'}
             onClick={() => {
               setSelectedReportId(report.id);
-              setAnalysis(report);
+              setAnalysis({ ...report, companyName: name, company_name: name, companyname: name });
             }}
             className="flex items-center gap-2 px-3 py-1 text-sm"
             size="sm"
           >
             <img src={`https://www.google.com/s2/favicons?domain=${llm.companyUrl || llm.website || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-            {llm.companyName || llm.company_name || 'Untitled'}
+            {name}
             {selectedReportId === report.id && <CheckCircle className="h-3 w-3 ml-1" />}
           </Button>
         );
@@ -259,7 +261,8 @@ const CompanyAnalyzer = () => {
           {analysis && selectedReportId && typeof analysis === 'object' ? (
             (() => {
               const llm = analysis.llm_output ? JSON.parse(analysis.llm_output) : analysis;
-              if (!llm.companyName && !llm.company_name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
+              const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
+              if (!name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
               return (
                 <div className="space-y-6">
                   {/* Company Overview */}
@@ -274,7 +277,7 @@ const CompanyAnalyzer = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-muted-foreground">Company Name</label>
-                          <p className="font-medium">{llm.companyName || llm.company_name || 'N/A'}</p>
+                          <p className="font-medium">{name}</p>
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-muted-foreground">Industry</label>

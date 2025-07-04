@@ -40,6 +40,11 @@ const GTMGenerator = () => {
   if (!availableAnalyses.length) {
     availableAnalyses = getCache('yourwork_analyze', []);
   }
+  // Normalize company name for all analyses
+  availableAnalyses = availableAnalyses.map((item: any) => {
+    const name = item.companyName || item.company_name || item.companyname || 'Untitled';
+    return { ...item, companyName: name, company_name: name, companyname: name };
+  });
 
   const [icpProfiles, setIcpProfiles] = useState([]);
   
@@ -173,24 +178,27 @@ const GTMGenerator = () => {
 
     return (
       <div className="flex flex-wrap gap-2 mt-2">
-        {availableAnalyses.map((item: any) => (
-          <Button
-            key={item.id}
-            variant={selectedCompany?.id === item.id ? 'default' : 'outline'}
-            onClick={() => {
-              setSelectedCompany(item);
-              setSelectedAnalysisId(item.id);
-              setUrl(item.companyUrl || item.url || '');
-              setUseExistingAnalysis(true);
-            }}
-            className="flex items-center gap-2 px-3 py-1 text-sm"
-            size="sm"
-          >
-            <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-            {item.companyName || item.name || 'Unnamed'}
-            {selectedCompany?.id === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
-          </Button>
-        ))}
+        {availableAnalyses.map((item: any) => {
+          const name = item.companyName || item.company_name || item.companyname || 'Untitled';
+          return (
+            <Button
+              key={item.id}
+              variant={selectedCompany?.id === item.id ? 'default' : 'outline'}
+              onClick={() => {
+                setSelectedCompany({ ...item, companyName: name, company_name: name, companyname: name });
+                setSelectedAnalysisId(item.id);
+                setUrl(item.companyUrl || item.url || '');
+                setUseExistingAnalysis(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1 text-sm"
+              size="sm"
+            >
+              <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+              {name}
+              {selectedCompany?.id === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
+            </Button>
+          );
+        })}
       </div>
     );
   };

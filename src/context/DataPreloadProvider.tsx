@@ -72,12 +72,17 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
           supabase.from('gtm_playbooks').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         ]);
         if (cancelled) return;
-        const normalize = (arr: any[] = []) => arr.map((r: any) => ({
-          ...r,
-          companyName: r.companyName || r.company_name || '',
-          companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-          createdAt: r.createdAt || r.created_at || '',
-        }));
+        const normalize = (arr: any[] = []) => arr.map((r: any) => {
+          const name = r.companyName || r.company_name || r.companyname || '';
+          return {
+            ...r,
+            companyName: name,
+            company_name: name,
+            companyname: name,
+            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+            createdAt: r.createdAt || r.created_at || '',
+          };
+        });
         const data: DashboardData = {
           companyAnalyzer: normalize(companyAnalyzer.data),
           icps: [],
