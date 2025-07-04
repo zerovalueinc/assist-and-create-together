@@ -49,10 +49,10 @@ export async function proxyToEdgeFunction({
 //   return invokeEdgeFunction('pipeline-orchestrator', payload);
 // }
 
-// Shared utility to fetch company analysis reports from the unrestricted table
+// Shared utility to fetch company analysis reports from the correct table
 export async function getCompanyAnalysis({ userId }: { userId?: string } = {}) {
   let query = supabase
-    .from('company_analyzer_outputs_unrestricted')
+    .from('company_analyzer_outputs')
     .select('*')
     .order('created_at', { ascending: false });
   if (userId) {
