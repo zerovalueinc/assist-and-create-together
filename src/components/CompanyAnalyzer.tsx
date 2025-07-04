@@ -176,37 +176,38 @@ const CompanyAnalyzer = () => {
 
       if (data?.success && data?.output) {
         console.log('Analysis successful:', data.output);
-        setAnalysis(data.output);
+        
+        // Don't update UI immediately - wait for database to be ready
         setResearch({
           companyAnalysis: data.output,
           isCached: false,
           timestamp: new Date().toISOString()
         });
         
-        // Fetch the actual saved record from the database to ensure proper structure
-        try {
-          const { data: savedRecord, error: fetchError } = await supabase
-            .from('company_analyzer_outputs')
-            .select('*')
-            .eq('id', data.output.id)
-            .single();
-          
-          if (fetchError) {
-            console.error('Error fetching saved record:', fetchError);
-            // Fallback to response data
-            setReports(prev => [data.output, ...prev]);
-          } else {
-            console.log('Fetched saved record:', savedRecord);
-            // Use the actual saved record for UI
-            setReports(prev => [savedRecord, ...prev]);
-            setSelectedReportId(savedRecord.id);
+        // Wait a moment for the database to be fully updated, then refresh all reports
+        setTimeout(async () => {
+          try {
+            console.log('Refreshing reports from database...');
+            const { data: freshReports, error: fetchError } = await supabase
+              .from('company_analyzer_outputs')
+              .select('*')
+              .eq('user_id', user?.id)
+              .order('created_at', { ascending: false });
+            
+            if (fetchError) {
+              console.error('Error fetching fresh reports:', fetchError);
+            } else {
+              console.log('Fresh reports loaded:', freshReports);
+              setReports(freshReports || []);
+              if (freshReports && freshReports.length > 0) {
+                setSelectedReportId(freshReports[0].id);
+                setAnalysis(freshReports[0]);
+              }
+            }
+          } catch (error) {
+            console.error('Error refreshing reports:', error);
           }
-        } catch (fetchError) {
-          console.error('Error fetching saved record:', fetchError);
-          // Fallback to response data
-          setReports(prev => [data.output, ...prev]);
-          setSelectedReportId(data.output.id || null);
-        }
+        }, 1000); // Wait 1 second for database to be ready
         
         // Refresh the DataPreloadProvider to update all components
         refreshData();
