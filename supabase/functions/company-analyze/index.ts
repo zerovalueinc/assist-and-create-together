@@ -191,19 +191,22 @@ serve(async (req) => {
       };
     }
     const sanitizedAnalysis = {
-      companyName: safeString(finalAnalysis.companyName),
-      // Remove companyProfile for now - use individual fields
-      decisionMakers: toArray(finalAnalysis.decisionMakers),
-      painPoints: toArray(finalAnalysis.painPoints),
+      companyname: safeString(finalAnalysis.companyName),
+      companyprofile: finalAnalysis.companyProfile ? JSON.stringify(finalAnalysis.companyProfile) : null,
+      decisionmakers: toArray(finalAnalysis.decisionMakers),
+      painpoints: toArray(finalAnalysis.painPoints),
       technologies: toArray(finalAnalysis.technologies),
       location: safeString(finalAnalysis.location),
-      marketTrends: toArray(finalAnalysis.marketTrends),
-      competitiveLandscape: toArray(finalAnalysis.competitiveLandscape),
-      goToMarketStrategy: safeString(finalAnalysis.goToMarketStrategy),
-      researchSummary: safeString(finalAnalysis.researchSummary),
+      markettrends: toArray(finalAnalysis.marketTrends),
+      competitivelandscape: toArray(finalAnalysis.competitiveLandscape),
+      gotomarketstrategy: safeString(finalAnalysis.goToMarketStrategy),
+      researchsummary: safeString(finalAnalysis.researchSummary),
       website: normalizedUrl,
-      user_id: user.id,
+      user_id: user.id
     };
+    if ('llm_output' in finalAnalysis) {
+      sanitizedAnalysis.llm_output = JSON.stringify(finalAnalysis.llm_output);
+    }
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
     // Insert new analysis
@@ -213,7 +216,7 @@ serve(async (req) => {
     // First try a minimal insert to test the table
     const minimalTest = {
       user_id: user.id,
-      companyName: 'Test Company',
+      companyname: 'Test Company',
       website: 'https://test.com'
     };
     
