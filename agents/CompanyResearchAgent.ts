@@ -64,17 +64,24 @@ Return a JSON object with: notable_clients, social_media (linkedin, twitter, fac
 
 // Orchestrator: Run all agents in sequence, merging outputs
 export async function runFullCompanyResearchPipeline(url: string): Promise<any> {
-  // Step 1: Company Overview
+  console.log('[Pipeline] Agent 1: Company Overview starting...');
   const overview = await agentCompanyOverview(url);
-  // Step 2: Market/Competitive Intelligence
+  console.log('[Pipeline] Agent 1 result:', JSON.stringify(overview));
+
+  console.log('[Pipeline] Agent 2: Market/Competitive Intelligence starting...');
   const market = await agentMarketIntelligence(url, overview);
-  // Step 3: Technology/Features/Stack
+  console.log('[Pipeline] Agent 2 result:', JSON.stringify(market));
+
+  console.log('[Pipeline] Agent 3: Technology/Features/Stack starting...');
   const tech = await agentTechStack(url, { ...overview, ...market });
-  // Step 4: Sales/Go-to-Market/Final Synthesis
+  console.log('[Pipeline] Agent 3 result:', JSON.stringify(tech));
+
+  console.log('[Pipeline] Agent 4: Sales/Go-to-Market/Final Synthesis starting...');
   const sales = await agentSalesGTM(url, { ...overview, ...market, ...tech });
+  console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
   // Merge all results into a single object matching frontend schema
-  return {
+  const merged = {
     company_name: overview.company_name || 'N/A',
     summary: overview.summary || 'N/A',
     industry: overview.industry || 'N/A',
@@ -100,4 +107,6 @@ export async function runFullCompanyResearchPipeline(url: string): Promise<any> 
     sales_opportunities: sales.sales_opportunities || 'N/A',
     gtm_recommendations: sales.gtm_recommendations || 'N/A',
   };
+  console.log('[Pipeline] FINAL MERGED RESULT:', JSON.stringify(merged));
+  return merged;
 } 
