@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { LLMCompanyAnalyzer } from '../../../agents/LLMCompanyAnalyzer.ts';
+import { generateICPWithBestModel } from '../../../agents/analysisAgent.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -151,7 +152,7 @@ serve(async (req) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - THIRTY_DAYS_MS).toISOString();
     const { data: recentReport, error: recentError } = await supabaseClient
-      .from('company_analyzer_outputs')
+      .from('company_analyzer_outputs_unrestricted')
       .select('*')
       .eq('user_id', user.id)
       .eq('website', normalizedUrl)
@@ -179,6 +180,16 @@ serve(async (req) => {
     const analyzer = new LLMCompanyAnalyzer();
     const finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
     console.log('Analysis generated for:', finalAnalysis.companyName);
+
+    // Generate ICP profile using the best model and the company analysis as context
+    let icpProfile = null;
+    try {
+      const icpRaw = await generateICPWithBestModel(finalAnalysis);
+      icpProfile = typeof icpRaw === 'string' ? JSON.parse(icpRaw) : icpRaw;
+    } catch (e) {
+      console.error('ICP generation failed:', e);
+      icpProfile = null;
+    }
 
     // Sanitize and validate before insert
     function safeString(val: any): string {
@@ -210,7 +221,8 @@ serve(async (req) => {
       gotomarketstrategy: safeString(finalAnalysis.goToMarketStrategy),
       researchsummary: safeString(finalAnalysis.researchSummary),
       website: normalizedUrl,
-      user_id: user.id
+      user_id: user.id,
+      icp_profile: icpProfile ? JSON.stringify(icpProfile) : null
     };
     if ('llm_output' in finalAnalysis) {
       sanitizedAnalysis.llm_output = JSON.stringify(finalAnalysis.llm_output);
@@ -222,7 +234,7 @@ serve(async (req) => {
 
     // Save to database
     const { data: savedReport, error: saveError } = await supabaseClient
-      .from('company_analyzer_outputs')
+      .from('company_analyzer_outputs_unrestricted')
       .insert({
         user_id: user.id,
         companyname: safeString(finalAnalysis.companyName),
@@ -237,6 +249,7 @@ serve(async (req) => {
         research_summary: finalAnalysis.researchSummary || '',
         website: normalizedUrl,
         llm_output: JSON.stringify(finalAnalysis),
+        icp_profile: icpProfile ? JSON.stringify(icpProfile) : null,
         created_at: new Date().toISOString()
       })
       .select()
@@ -271,6 +284,7 @@ serve(async (req) => {
           companyName: savedReport.company_name || savedReport.companyname || '',
           company_name: savedReport.company_name || savedReport.companyName || savedReport.companyname || '',
           companyname: savedReport.companyname || savedReport.companyName || savedReport.company_name || '',
+          icp_profile: savedReport.icp_profile ? (typeof savedReport.icp_profile === 'string' ? JSON.parse(savedReport.icp_profile) : savedReport.icp_profile) : null
         },
         analysis: savedReport,
         outputId: savedReport.id || null,

@@ -95,7 +95,7 @@ export async function analyzeWithBestModel(task: AnalysisTask): Promise<Analysis
 }
 
 // ICP Generation with best model
-async function generateICPWithBestModel(websiteData: any): Promise<any> {
+export async function generateICPWithBestModel(websiteData: any): Promise<any> {
   const systemPrompt = `You are a world-class ICP (Ideal Customer Profile) analyst specializing in B2B SaaS and technology companies.
 
 Your expertise includes:
