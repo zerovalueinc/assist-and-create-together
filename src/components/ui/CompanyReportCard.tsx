@@ -7,9 +7,22 @@ interface CompanyReportCardProps {
   onClick?: () => void;
 }
 
+function getCompanyDomain(report: any): string {
+  // Try all possible fields for a company domain
+  return (
+    report.companyUrl ||
+    report.url ||
+    report.website ||
+    report.company_url ||
+    report.websiteUrl ||
+    ''
+  );
+}
+
 export function CompanyReportCard({ report, selected, onClick }: CompanyReportCardProps) {
   const name = report.companyName || report.company_name || report.companyname || 'Untitled';
-  const faviconUrl = `https://www.google.com/s2/favicons?domain=${report.companyUrl || report.url || report.company_url || ''}`;
+  const domain = getCompanyDomain(report);
+  // Only show favicon if domain exists
   return (
     <Button
       variant={selected ? 'default' : 'outline'}
@@ -17,7 +30,9 @@ export function CompanyReportCard({ report, selected, onClick }: CompanyReportCa
       className="flex items-center gap-2 px-3 py-1 text-sm"
       size="sm"
     >
-      <img src={faviconUrl} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+      {domain && (
+        <img src={`https://www.google.com/s2/favicons?domain=${domain}`} alt="favicon" className="w-4 h-4 mr-1" />
+      )}
       {name}
       {selected && <CheckCircle className="h-3 w-3 ml-1" />}
     </Button>
