@@ -15,6 +15,7 @@ import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
+import ICPProfileDisplay from './ui/ICPProfileDisplay';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -403,6 +404,27 @@ const CompanyAnalyzer = () => {
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* ICP Profile (Full ICP Document) */}
+                  {(() => {
+                    // Try to get icp_profile from analysis or llm
+                    let icpProfile = null;
+                    if (analysis.icp_profile) {
+                      try {
+                        icpProfile = typeof analysis.icp_profile === 'string' ? JSON.parse(analysis.icp_profile) : analysis.icp_profile;
+                      } catch {}
+                    } else if (llm.icp_profile) {
+                      try {
+                        icpProfile = typeof llm.icp_profile === 'string' ? JSON.parse(llm.icp_profile) : llm.icp_profile;
+                      } catch {}
+                    }
+                    return icpProfile ? (
+                      <div>
+                        <h3 className="text-xl font-bold mt-8 mb-2">Ideal Customer Profile (ICP)</h3>
+                        <ICPProfileDisplay icpProfile={icpProfile} />
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               );
             })()
