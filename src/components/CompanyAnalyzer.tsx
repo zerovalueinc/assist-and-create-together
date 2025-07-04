@@ -68,66 +68,43 @@ function renderField(field: any) {
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
-  const { setResearch } = useCompany();
   const user = useUser();
   const session = useSession();
-  const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
-
-  // Use preloaded reports or fallback to cache
-  let initialReports = preloadData?.companyAnalyzer || [];
-  if (!initialReports.length) {
-    initialReports = getCache('yourwork_analyze', []);
-  }
-  const [reports, setReports] = useState(initialReports);
+  const [reports, setReports] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [justRefreshed, setJustRefreshed] = useState(false);
 
-  // Reload reports when preloadData changes (e.g., on tab switch)
-  useEffect(() => {
-    let newReports = preloadData?.companyAnalyzer || [];
-    if (!newReports.length) {
-      newReports = getCache('yourwork_analyze', []);
-    }
-    setReports(newReports);
-  }, [preloadData]);
-
-  useEffect(() => {
+  // Always fetch reports from DB on load and after analysis
+  const fetchReports = async () => {
     if (!user?.id) return;
-    getCompanyAnalysis({ userId: user.id }).then((data) => {
+    const { data, error } = await supabase
+      .from('company_analyzer_outputs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (!error && data) {
       setReports(data);
       if (data.length > 0) {
         setSelectedReportId(data[0].id);
+        setAnalysis(data[0]);
       }
-    });
-  }, [user?.id]);
-
-  const handleDeleteReport = async (id: string) => {
-    const prevReports = reports;
-    setReports(reports.filter(r => r.id !== id));
-    if (selectedReportId === id) {
-      setAnalysis(null);
-      setSelectedReportId(null);
-    }
-    const { error } = await supabase.from('company_analyzer_outputs_unrestricted').delete().eq('id', id);
-    if (error) {
-      toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
-      setReports(prevReports); // Rollback UI
-    } else {
-      toast({ title: 'Report Deleted', description: 'The report was deleted successfully.' });
     }
   };
 
+  useEffect(() => {
+    fetchReports();
+  }, [user?.id]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    console.log('[CompanyAnalyzer] handleSubmit triggered', { url, user, session });
     if (!session?.access_token) {
       toast({
         title: "Auth Error",
         description: "No access token found. Please log in again.",
         variant: "destructive",
       });
-      console.error('[CompanyAnalyzer] No access token found', { user, session });
       return;
     }
     if (!url.trim()) {
@@ -142,10 +119,6 @@ const CompanyAnalyzer = () => {
     setAnalysis(null);
     setIsAnalyzing(true);
     try {
-      console.log('=== Starting Company Analysis ===');
-      console.log('URL:', normalizedUrl);
-      console.log('User ID:', user?.id);
-      console.log('Session token available:', !!session?.access_token);
       const response = await fetch('/api/company-analyze', {
         method: 'POST',
         headers: {
@@ -164,66 +137,22 @@ const CompanyAnalyzer = () => {
       }
       const data = await response.json();
       const error = !response.ok ? { message: data.error || 'Analysis request failed' } : null;
-
-      console.log('=== Supabase Function Response ===');
-      console.log('Data:', data);
-      console.log('Error:', error);
-
       if (error) {
-        console.error('Supabase function error details:', error);
         throw new Error(error.message || 'Analysis request failed');
       }
-
       if (data?.success && data?.output) {
-        console.log('Analysis successful:', data.output);
-        
-        // Don't update UI immediately - wait for database to be ready
-        setResearch({
-          companyAnalysis: data.output,
-          isCached: false,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Wait a moment for the database to be fully updated, then refresh all reports
+        // Wait for DB to be ready, then fetch all reports
         setTimeout(async () => {
-          try {
-            console.log('Refreshing reports from database...');
-            const { data: freshReports, error: fetchError } = await supabase
-              .from('company_analyzer_outputs')
-              .select('*')
-              .eq('user_id', user?.id)
-              .order('created_at', { ascending: false });
-            
-            if (fetchError) {
-              console.error('Error fetching fresh reports:', fetchError);
-            } else {
-              console.log('Fresh reports loaded:', freshReports);
-              setReports(freshReports || []);
-              if (freshReports && freshReports.length > 0) {
-                setSelectedReportId(freshReports[0].id);
-                setAnalysis(freshReports[0]);
-              }
-            }
-          } catch (error) {
-            console.error('Error refreshing reports:', error);
-          }
-        }, 1000); // Wait 1 second for database to be ready
-        
-        // Refresh the DataPreloadProvider to update all components
-        refreshData();
+          await fetchReports();
+        }, 1000);
         toast({
           title: "Analysis Complete",
           description: `Successfully analyzed ${data.output.company_name || data.output.companyName}`,
         });
       } else {
-        console.error('Analysis failed - no success flag or analysis data');
         throw new Error(data?.error || 'Analysis failed - no data returned');
       }
     } catch (error: any) {
-      console.error('=== Analysis Error ===');
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error.message);
-      console.error('Full error:', error);
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze company. Please check the URL and try again.",
