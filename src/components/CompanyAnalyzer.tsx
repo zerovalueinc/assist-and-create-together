@@ -14,6 +14,7 @@ import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { CompanyReportCard } from './ui/CompanyReportCard';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -185,27 +186,17 @@ const CompanyAnalyzer = () => {
   // Pills selector for reports
   const renderReportPills = () => (
     <div className="flex flex-wrap gap-2 mb-4">
-      {reports.map((report) => {
-        const llm = report.llm_output ? JSON.parse(report.llm_output) : report;
-        const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
-        const faviconUrl = `https://www.google.com/s2/favicons?domain=${llm.website || llm.companyUrl || report.company_url || ''}`;
-        return (
-          <Button
-            key={report.id}
-            variant={selectedReportId === report.id ? 'default' : 'outline'}
-            onClick={() => {
-              setSelectedReportId(report.id);
-              setAnalysis(report);
-            }}
-            className="flex items-center gap-2 px-3 py-1 text-sm"
-            size="sm"
-          >
-            <img src={faviconUrl} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-            {name}
-            {selectedReportId === report.id && <CheckCircle className="h-3 w-3 ml-1" />}
-          </Button>
-        );
-      })}
+      {reports.map((report) => (
+        <CompanyReportCard
+          key={report.id}
+          report={report}
+          selected={selectedReportId === report.id}
+          onClick={() => {
+            setSelectedReportId(report.id);
+            setAnalysis(report);
+          }}
+        />
+      ))}
     </div>
   );
 

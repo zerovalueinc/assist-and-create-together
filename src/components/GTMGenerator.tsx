@@ -12,6 +12,7 @@ import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { useCompany } from '../context/CompanyContext';
 import { invokeEdgeFunction, getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { CompanyReportCard } from './ui/CompanyReportCard';
 
 // Set this to true to use the backend proxy for GTM Playbook
 const USE_GTM_PROXY = true;
@@ -186,29 +187,20 @@ const GTMGenerator = () => {
     }
     return (
       <div className="flex flex-wrap gap-2 mb-4">
-        {reports.map((report) => {
-          const name = report.companyName || report.company_name || report.companyname || 'Untitled';
-          const faviconUrl = `https://www.google.com/s2/favicons?domain=${report.companyUrl || report.url || report.company_url || ''}`;
-          return (
-            <Button
-              key={report.id}
-              variant={selectedReportId === report.id ? 'default' : 'outline'}
-              onClick={() => {
-                setSelectedReportId(report.id);
-                setSelectedCompany(report);
-                setSelectedAnalysisId(report.id);
-                setUrl(report.companyUrl || report.url || '');
-                setUseExistingAnalysis(true);
-              }}
-              className="flex items-center gap-2 px-3 py-1 text-sm"
-              size="sm"
-            >
-              <img src={faviconUrl} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-              {name}
-              {selectedReportId === report.id && <CheckCircle className="h-3 w-3 ml-1" />}
-            </Button>
-          );
-        })}
+        {reports.map((report) => (
+          <CompanyReportCard
+            key={report.id}
+            report={report}
+            selected={selectedReportId === report.id}
+            onClick={() => {
+              setSelectedReportId(report.id);
+              setSelectedCompany(report);
+              setSelectedAnalysisId(report.id);
+              setUrl(report.companyUrl || report.url || '');
+              setUseExistingAnalysis(true);
+            }}
+          />
+        ))}
       </div>
     );
   };

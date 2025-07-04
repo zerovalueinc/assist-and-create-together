@@ -8,6 +8,7 @@ import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useCompany } from '../context/CompanyContext';
 import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { CompanyReportCard } from './ui/CompanyReportCard';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -23,6 +24,8 @@ export default function YourWork() {
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
   const [reports, setReports] = useState<any[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<any | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -112,16 +115,17 @@ export default function YourWork() {
                 <div className="py-8 text-center text-slate-500">No company analysis reports found. Run an analysis first.</div>
               ) : (
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {analyzeWork.map((item) => (
-                    <Button
-                      key={item.id}
-                      variant="outline"
-                      className="flex items-center gap-2 px-3 py-1 text-sm"
-                      size="sm"
-                    >
-                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-                      {item.companyName || 'Untitled'}
-                    </Button>
+                  {analyzeWork.map((report) => (
+                    <CompanyReportCard
+                      key={report.id}
+                      report={report}
+                      selected={selectedReportId === report.id}
+                      onClick={() => {
+                        setSelectedReportId(report.id);
+                        setSelectedCompany(report);
+                        // Add any other selection logic as needed
+                      }}
+                    />
                   ))}
                 </div>
               )}
