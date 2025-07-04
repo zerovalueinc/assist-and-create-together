@@ -243,11 +243,37 @@ const GTMGenerator = () => {
     );
   };
 
+  const [selectedPlaybookId, setSelectedPlaybookId] = useState<string | null>(null);
+  const [selectedPlaybook, setSelectedPlaybook] = useState<any>(null);
+
+  // Select most recent playbook by default
+  useEffect(() => {
+    if (availablePlaybooks.length > 0 && !selectedPlaybookId) {
+      const mostRecent = availablePlaybooks[0];
+      setSelectedPlaybookId(mostRecent.id);
+      // Parse playbook_data if present
+      let playbookData = mostRecent.playbook_data;
+      if (typeof playbookData === 'string') {
+        try { playbookData = JSON.parse(playbookData); } catch {}
+      }
+      setSelectedPlaybook({ ...mostRecent, gtmPlaybook: playbookData || mostRecent.gtmPlaybook });
+    }
+  }, [availablePlaybooks, selectedPlaybookId]);
+
+  // When a pill is clicked, set selectedPlaybookId and selectedPlaybook
+  const handleSelectPlaybook = (item: any) => {
+    setSelectedPlaybookId(item.id);
+    let playbookData = item.playbook_data;
+    if (typeof playbookData === 'string') {
+      try { playbookData = JSON.parse(playbookData); } catch {}
+    }
+    setSelectedPlaybook({ ...item, gtmPlaybook: playbookData || item.gtmPlaybook });
+  };
+
   const renderGTMPlaybookPills = () => {
     if (!availablePlaybooks.length) {
       return <p className="text-gray-500 mt-2">No GTM playbooks found. Generate a playbook first.</p>;
     }
-
     return (
       <div className="flex flex-wrap gap-2 mt-2">
         {availablePlaybooks.map((item: any) => {
@@ -255,16 +281,14 @@ const GTMGenerator = () => {
           return (
             <Button
               key={item.id}
-              variant="outline"
-              onClick={() => {
-                console.log("Selected GTM Playbook:", item);
-                // You can add logic here to load the selected playbook
-              }}
+              variant={selectedPlaybookId === item.id ? 'default' : 'outline'}
+              onClick={() => handleSelectPlaybook(item)}
               className="flex items-center gap-2 px-3 py-1 text-sm"
               size="sm"
             >
               <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
               {name}
+              {selectedPlaybookId === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
             </Button>
           );
         })}
@@ -401,12 +425,14 @@ const GTMGenerator = () => {
         </CardContent>
       </Card>
 
-      {gtmPlaybook && (
+      {availablePlaybooks.length === 0 ? (
+        <div className="text-center text-muted-foreground py-8">No GTM playbooks found. Generate a playbook first.</div>
+      ) : selectedPlaybook && selectedPlaybook.gtmPlaybook ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              GTM Playbook Generated
+              GTM Playbook
             </CardTitle>
             <CardDescription>
               Comprehensive go-to-market intelligence and strategy
@@ -431,7 +457,7 @@ const GTMGenerator = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm leading-relaxed">
-                      {gtmPlaybook.gtmPlaybook?.executiveSummary || 'Executive summary not available'}
+                      {selectedPlaybook.gtmPlaybook?.executiveSummary || 'Executive summary not available'}
                     </p>
                   </CardContent>
                 </Card>
@@ -443,12 +469,12 @@ const GTMGenerator = () => {
                   <CardContent className="space-y-3">
                     <div>
                       <h4 className="font-medium mb-2">Primary Value</h4>
-                      <p className="text-sm">{gtmPlaybook.gtmPlaybook?.valueProposition?.primaryValue || 'N/A'}</p>
+                      <p className="text-sm">{selectedPlaybook.gtmPlaybook?.valueProposition?.primaryValue || 'N/A'}</p>
                     </div>
                     <div>
                       <h4 className="font-medium mb-2">Key Differentiators</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.valueProposition?.keyDifferentiators?.map((diff: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.valueProposition?.keyDifferentiators?.map((diff: string, index: number) => (
                           <Badge key={index} variant="outline">{diff}</Badge>
                         )) || <span className="text-muted-foreground">None specified</span>}
                       </div>
@@ -469,18 +495,18 @@ const GTMGenerator = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Total Addressable Market</label>
-                        <p className="font-medium text-lg">{gtmPlaybook.gtmPlaybook?.marketAnalysis?.totalAddressableMarket || 'N/A'}</p>
+                        <p className="font-medium text-lg">{selectedPlaybook.gtmPlaybook?.marketAnalysis?.totalAddressableMarket || 'N/A'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Serviceable Addressable Market</label>
-                        <p className="font-medium text-lg">{gtmPlaybook.gtmPlaybook?.marketAnalysis?.servicableAddressableMarket || 'N/A'}</p>
+                        <p className="font-medium text-lg">{selectedPlaybook.gtmPlaybook?.marketAnalysis?.servicableAddressableMarket || 'N/A'}</p>
                       </div>
                     </div>
                     
                     <div>
                       <h4 className="font-medium mb-2">Market Trends</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.marketAnalysis?.marketTrends?.map((trend: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.marketAnalysis?.marketTrends?.map((trend: string, index: number) => (
                           <Badge key={index} variant="secondary">{trend}</Badge>
                         )) || <span className="text-muted-foreground">No trends identified</span>}
                       </div>
@@ -489,7 +515,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Competitive Landscape</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.marketAnalysis?.competitiveLandscape?.map((competitor: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.marketAnalysis?.competitiveLandscape?.map((competitor: string, index: number) => (
                           <Badge key={index} variant="outline">{competitor}</Badge>
                         )) || <span className="text-muted-foreground">No competitors identified</span>}
                       </div>
@@ -525,19 +551,19 @@ const GTMGenerator = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Channel Strategy</label>
-                        <p className="font-medium">{gtmPlaybook.gtmPlaybook?.goToMarketStrategy?.channel || 'N/A'}</p>
+                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.channel || 'N/A'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Sales Motion</label>
-                        <p className="font-medium">{gtmPlaybook.gtmPlaybook?.goToMarketStrategy?.salesMotion || 'N/A'}</p>
+                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.salesMotion || 'N/A'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Pricing Strategy</label>
-                        <p className="font-medium">{gtmPlaybook.gtmPlaybook?.goToMarketStrategy?.pricingStrategy || 'N/A'}</p>
+                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.pricingStrategy || 'N/A'}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Sales Cycle Length</label>
-                        <p className="font-medium">{gtmPlaybook.gtmPlaybook?.goToMarketStrategy?.salesCycleLength || 'N/A'}</p>
+                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.salesCycleLength || 'N/A'}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -555,13 +581,13 @@ const GTMGenerator = () => {
                   <CardContent className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-2">Primary Message</h4>
-                      <p className="text-sm bg-blue-50 p-3 rounded-md">{gtmPlaybook.gtmPlaybook?.messagingFramework?.primaryMessage || 'N/A'}</p>
+                      <p className="text-sm bg-blue-50 p-3 rounded-md">{selectedPlaybook.gtmPlaybook?.messagingFramework?.primaryMessage || 'N/A'}</p>
                     </div>
                     
                     <div>
                       <h4 className="font-medium mb-2">Secondary Messages</h4>
                       <div className="space-y-2">
-                        {gtmPlaybook.gtmPlaybook?.messagingFramework?.secondaryMessages?.map((message: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.messagingFramework?.secondaryMessages?.map((message: string, index: number) => (
                           <p key={index} className="text-sm bg-gray-50 p-2 rounded-md">• {message}</p>
                         )) || <p className="text-muted-foreground">No secondary messages</p>}
                       </div>
@@ -570,7 +596,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Objection Handling</h4>
                       <div className="space-y-3">
-                        {gtmPlaybook.gtmPlaybook?.messagingFramework?.objectionHandling?.map((item: any, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.messagingFramework?.objectionHandling?.map((item: any, index: number) => (
                           <div key={index} className="border-l-2 border-orange-200 pl-3">
                             <p className="text-sm font-medium text-orange-800">"{item.objection}"</p>
                             <p className="text-sm text-gray-600 mt-1">{item.response}</p>
@@ -594,7 +620,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Battle Cards</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.salesEnablement?.battleCards?.map((card: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.salesEnablement?.battleCards?.map((card: string, index: number) => (
                           <Badge key={index} variant="outline">{card}</Badge>
                         )) || <span className="text-muted-foreground">No battle cards</span>}
                       </div>
@@ -603,7 +629,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Talk Tracks</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.salesEnablement?.talkTracks?.map((track: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.salesEnablement?.talkTracks?.map((track: string, index: number) => (
                           <Badge key={index} variant="secondary">{track}</Badge>
                         )) || <span className="text-muted-foreground">No talk tracks</span>}
                       </div>
@@ -612,7 +638,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Demo Scripts</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.salesEnablement?.demoScripts?.map((script: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.salesEnablement?.demoScripts?.map((script: string, index: number) => (
                           <Badge key={index} variant="outline">{script}</Badge>
                         )) || <span className="text-muted-foreground">No demo scripts</span>}
                       </div>
@@ -631,7 +657,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Channels</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.demandGeneration?.channels?.map((channel: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.demandGeneration?.channels?.map((channel: string, index: number) => (
                           <Badge key={index} variant="secondary">{channel}</Badge>
                         )) || <span className="text-muted-foreground">No channels defined</span>}
                       </div>
@@ -640,7 +666,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Campaign Ideas</h4>
                       <div className="space-y-2">
-                        {gtmPlaybook.gtmPlaybook?.demandGeneration?.campaignIdeas?.map((idea: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.demandGeneration?.campaignIdeas?.map((idea: string, index: number) => (
                           <p key={index} className="text-sm bg-green-50 p-2 rounded-md">• {idea}</p>
                         )) || <p className="text-muted-foreground">No campaign ideas</p>}
                       </div>
@@ -661,7 +687,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Leading Indicators</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.metricsAndKPIs?.leadingIndicators?.map((metric: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.metricsAndKPIs?.leadingIndicators?.map((metric: string, index: number) => (
                           <Badge key={index} variant="outline">{metric}</Badge>
                         )) || <span className="text-muted-foreground">No leading indicators</span>}
                       </div>
@@ -670,7 +696,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Lagging Indicators</h4>
                       <div className="flex flex-wrap gap-2">
-                        {gtmPlaybook.gtmPlaybook?.metricsAndKPIs?.laggingIndicators?.map((metric: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.metricsAndKPIs?.laggingIndicators?.map((metric: string, index: number) => (
                           <Badge key={index} variant="secondary">{metric}</Badge>
                         )) || <span className="text-muted-foreground">No lagging indicators</span>}
                       </div>
@@ -679,7 +705,7 @@ const GTMGenerator = () => {
                     <div>
                       <h4 className="font-medium mb-2">Success Metrics</h4>
                       <div className="space-y-2">
-                        {gtmPlaybook.gtmPlaybook?.metricsAndKPIs?.successMetrics?.map((metric: string, index: number) => (
+                        {selectedPlaybook.gtmPlaybook?.metricsAndKPIs?.successMetrics?.map((metric: string, index: number) => (
                           <p key={index} className="text-sm bg-blue-50 p-2 rounded-md flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-600" />
                             {metric}
@@ -693,6 +719,8 @@ const GTMGenerator = () => {
             </Tabs>
           </CardContent>
         </Card>
+      ) : (
+        <div className="text-center text-muted-foreground py-8">Select a GTM playbook to view details.</div>
       )}
     </div>
   );
