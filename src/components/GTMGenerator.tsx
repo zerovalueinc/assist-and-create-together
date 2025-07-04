@@ -29,8 +29,12 @@ const GTMGenerator = () => {
   const session = useSession();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
-  // Use workspaceId from selectedCompany if available
-  const workspaceId = selectedCompany?.workspace_id || '';
+  const [companyReports, setCompanyReports] = useState<any[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsError, setReportsError] = useState<string | null>(null);
+
+  // Get workspaceId from the first available company report, or from selectedCompany
+  const workspaceId = selectedCompany?.workspace_id || (companyReports.length > 0 ? companyReports[0].workspace_id : undefined);
 
   // Debug logging
   console.log("preloadData", preloadData);
@@ -83,6 +87,33 @@ const GTMGenerator = () => {
       description: "Updating available company analyses...",
     });
   };
+
+  useEffect(() => {
+    // Show cached reports instantly
+    const cachedReports = getCache<any[]>('gtm_company_reports', []);
+    if (cachedReports.length > 0) setCompanyReports(cachedReports);
+    if (!user || !workspaceId) return;
+    setReportsLoading(true);
+    setReportsError(null);
+    const fetchReports = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('company_analyzer_outputs')
+          .select('*')
+          .eq('workspace_id', workspaceId)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setCompanyReports(data || []);
+        setCache('gtm_company_reports', data || []);
+      } catch (err: any) {
+        setReportsError(err.message || 'Failed to fetch company analysis reports.');
+        console.error('Failed to fetch company analysis reports:', err);
+      } finally {
+        setReportsLoading(false);
+      }
+    };
+    fetchReports();
+  }, [user, workspaceId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -187,13 +218,18 @@ const GTMGenerator = () => {
   };
 
   const renderCompanyPills = () => {
-    if (!availableAnalyses.length) {
+    if (reportsLoading) {
+      return <p className="text-gray-500 mt-2">Loading companies...</p>;
+    }
+    if (reportsError) {
+      return <p className="text-red-500 mt-2">{reportsError}</p>;
+    }
+    if (!companyReports.length) {
       return <p className="text-gray-500 mt-2">No companies analyzed yet. Use Company Analyzer first.</p>;
     }
-
     return (
-      <div className="flex flex-wrap gap-2 mt-2">
-        {availableAnalyses.map((item: any) => {
+      <div className="flex flex-wrap gap-2 mb-4">
+        {companyReports.map((item: any) => {
           const name = item.companyName || item.company_name || item.companyname || 'Untitled';
           return (
             <Button
@@ -386,7 +422,7 @@ const GTMGenerator = () => {
                 )}
               </Button>
             </div>
-            {availableAnalyses.length > 0 && renderCompanyPills()}
+            {renderCompanyPills()}
           </div>
 
           <div className="mb-4">
