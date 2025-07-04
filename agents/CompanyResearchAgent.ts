@@ -6,7 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 declare const Deno: any;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Helper to get Supabase client
+// Helper to get Supabase client (fallback for standalone usage)
 function getSupabaseClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
@@ -73,50 +73,63 @@ Return a JSON object with: notable_clients, social_media (linkedin, twitter, fac
 }
 
 // Orchestrator: Run all agents in sequence, merging outputs, and save each step
-export async function runFullCompanyResearchPipeline(url: string, user_id: string): Promise<any> {
-  const supabase = getSupabaseClient();
+export async function runFullCompanyResearchPipeline(url: string, user_id: string, supabaseClient?: any): Promise<any> {
+  const supabase = supabaseClient || getSupabaseClient();
+  
   // Step 1: Company Overview
   console.log('[Pipeline] Agent 1: Company Overview starting...');
   const overview = await agentCompanyOverview(url);
-  await supabase.from('company_research_steps').insert({
+  const { error: step1Error } = await supabase.from('company_research_steps').insert({
     user_id,
     company_url: url,
     step_name: 'company_overview',
     step_output: overview
   });
+  if (step1Error) {
+    console.error('[Pipeline] Step 1 save error:', step1Error);
+  }
   console.log('[Pipeline] Agent 1 result:', JSON.stringify(overview));
 
   // Step 2: Market/Competitive Intelligence
   console.log('[Pipeline] Agent 2: Market/Competitive Intelligence starting...');
   const market = await agentMarketIntelligence(url, overview);
-  await supabase.from('company_research_steps').insert({
+  const { error: step2Error } = await supabase.from('company_research_steps').insert({
     user_id,
     company_url: url,
     step_name: 'market_intelligence',
     step_output: market
   });
+  if (step2Error) {
+    console.error('[Pipeline] Step 2 save error:', step2Error);
+  }
   console.log('[Pipeline] Agent 2 result:', JSON.stringify(market));
 
   // Step 3: Technology/Features/Stack
   console.log('[Pipeline] Agent 3: Technology/Features/Stack starting...');
   const tech = await agentTechStack(url, { ...overview, ...market });
-  await supabase.from('company_research_steps').insert({
+  const { error: step3Error } = await supabase.from('company_research_steps').insert({
     user_id,
     company_url: url,
     step_name: 'tech_stack',
     step_output: tech
   });
+  if (step3Error) {
+    console.error('[Pipeline] Step 3 save error:', step3Error);
+  }
   console.log('[Pipeline] Agent 3 result:', JSON.stringify(tech));
 
   // Step 4: Sales/Go-to-Market/Final Synthesis
   console.log('[Pipeline] Agent 4: Sales/Go-to-Market/Final Synthesis starting...');
   const sales = await agentSalesGTM(url, { ...overview, ...market, ...tech });
-  await supabase.from('company_research_steps').insert({
+  const { error: step4Error } = await supabase.from('company_research_steps').insert({
     user_id,
     company_url: url,
     step_name: 'sales_gtm',
     step_output: sales
   });
+  if (step4Error) {
+    console.error('[Pipeline] Step 4 save error:', step4Error);
+  }
   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
   // Merge all results into a single object matching frontend schema
