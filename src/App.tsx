@@ -10,14 +10,24 @@ import Workspace from '@/pages/Workspace';
 import Account from '@/pages/Account';
 import Analytics from '@/pages/Analytics';
 import { useSession } from '@supabase/auth-helpers-react';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 function withAuth(Component: React.ComponentType) {
   return function AuthGuard(props: any) {
     const session = useSession();
+    const navigate = useNavigate();
+    
+    useEffect(() => {
+      if (!session) {
+        navigate('/auth');
+      }
+    }, [session, navigate]);
+    
     if (!session) {
-      window.location.href = '/login';
-      return null;
+      return null; // Don't render anything while redirecting
     }
+    
     return <Component {...props} />;
   };
 }
@@ -29,7 +39,8 @@ const AppRoutes = () => {
   const AnalyticsWithAuth = withAuth(Analytics);
   return (
     <Routes>
-      <Route path="/login" element={<Auth />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/login" element={<Auth />} /> {/* Keep for backward compatibility */}
       <Route path="/verify-email" element={<EmailVerification />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<PasswordReset />} />

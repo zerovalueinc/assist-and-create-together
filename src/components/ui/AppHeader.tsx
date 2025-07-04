@@ -25,7 +25,7 @@ export default function AppHeader() {
   const handleLogout = async () => {
     const { supabase } = await import('@/lib/supabaseClient');
     await supabase.auth.signOut();
-    navigate('/login');
+    navigate('/auth');
   };
 
   return (
@@ -108,7 +108,7 @@ export default function AppHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="outline" className="ml-4" onClick={() => navigate('/login')}>
+              <Button variant="outline" className="ml-4" onClick={() => navigate('/auth')}>
                 Sign In
               </Button>
             )}
