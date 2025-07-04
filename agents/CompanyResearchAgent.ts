@@ -79,6 +79,26 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   console.log('[Pipeline] Starting pipeline with user_id:', user_id, 'url:', url);
   console.log('[Pipeline] Supabase client type:', typeof supabase);
   
+  // Test table existence first
+  console.log('[Pipeline] Testing table existence...');
+  try {
+    const { data: tableTest, error: tableError } = await supabase
+      .from('company_research_steps')
+      .select('count')
+      .limit(1);
+    
+    if (tableError) {
+      console.error('[Pipeline] ❌ TABLE DOES NOT EXIST OR NOT ACCESSIBLE:', tableError);
+      console.error('[Pipeline] Table error details:', JSON.stringify(tableError, null, 2));
+      throw new Error(`Table access failed: ${tableError.message}`);
+    } else {
+      console.log('[Pipeline] ✅ Table exists and is accessible');
+    }
+  } catch (tableErr) {
+    console.error('[Pipeline] ❌ Table test failed:', tableErr);
+    throw tableErr;
+  }
+  
   // Step 1: Company Overview
   console.log('[Pipeline] Agent 1: Company Overview starting...');
   const overview = await agentCompanyOverview(url);
@@ -92,12 +112,18 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   };
   console.log('[Pipeline] Step 1 payload:', JSON.stringify(step1Payload));
   
-  const { data: step1Data, error: step1Error } = await supabase.from('company_research_steps').insert(step1Payload);
-  if (step1Error) {
-    console.error('[Pipeline] Step 1 save error:', step1Error);
-    console.error('[Pipeline] Step 1 error details:', JSON.stringify(step1Error));
-  } else {
-    console.log('[Pipeline] Step 1 saved successfully:', step1Data);
+  try {
+    const { data: step1Data, error: step1Error } = await supabase.from('company_research_steps').insert(step1Payload);
+    if (step1Error) {
+      console.error('[Pipeline] ❌ Step 1 save error:', step1Error);
+      console.error('[Pipeline] Step 1 error details:', JSON.stringify(step1Error, null, 2));
+      console.error('[Pipeline] Step 1 error code:', step1Error.code);
+      console.error('[Pipeline] Step 1 error hint:', step1Error.hint);
+    } else {
+      console.log('[Pipeline] ✅ Step 1 saved successfully:', step1Data);
+    }
+  } catch (step1Err) {
+    console.error('[Pipeline] ❌ Step 1 save exception:', step1Err);
   }
   console.log('[Pipeline] Agent 1 result:', JSON.stringify(overview));
 
@@ -114,12 +140,16 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   };
   console.log('[Pipeline] Step 2 payload:', JSON.stringify(step2Payload));
   
-  const { data: step2Data, error: step2Error } = await supabase.from('company_research_steps').insert(step2Payload);
-  if (step2Error) {
-    console.error('[Pipeline] Step 2 save error:', step2Error);
-    console.error('[Pipeline] Step 2 error details:', JSON.stringify(step2Error));
-  } else {
-    console.log('[Pipeline] Step 2 saved successfully:', step2Data);
+  try {
+    const { data: step2Data, error: step2Error } = await supabase.from('company_research_steps').insert(step2Payload);
+    if (step2Error) {
+      console.error('[Pipeline] ❌ Step 2 save error:', step2Error);
+      console.error('[Pipeline] Step 2 error details:', JSON.stringify(step2Error, null, 2));
+    } else {
+      console.log('[Pipeline] ✅ Step 2 saved successfully:', step2Data);
+    }
+  } catch (step2Err) {
+    console.error('[Pipeline] ❌ Step 2 save exception:', step2Err);
   }
   console.log('[Pipeline] Agent 2 result:', JSON.stringify(market));
 
@@ -136,12 +166,16 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   };
   console.log('[Pipeline] Step 3 payload:', JSON.stringify(step3Payload));
   
-  const { data: step3Data, error: step3Error } = await supabase.from('company_research_steps').insert(step3Payload);
-  if (step3Error) {
-    console.error('[Pipeline] Step 3 save error:', step3Error);
-    console.error('[Pipeline] Step 3 error details:', JSON.stringify(step3Error));
-  } else {
-    console.log('[Pipeline] Step 3 saved successfully:', step3Data);
+  try {
+    const { data: step3Data, error: step3Error } = await supabase.from('company_research_steps').insert(step3Payload);
+    if (step3Error) {
+      console.error('[Pipeline] ❌ Step 3 save error:', step3Error);
+      console.error('[Pipeline] Step 3 error details:', JSON.stringify(step3Error, null, 2));
+    } else {
+      console.log('[Pipeline] ✅ Step 3 saved successfully:', step3Data);
+    }
+  } catch (step3Err) {
+    console.error('[Pipeline] ❌ Step 3 save exception:', step3Err);
   }
   console.log('[Pipeline] Agent 3 result:', JSON.stringify(tech));
 
@@ -158,12 +192,16 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   };
   console.log('[Pipeline] Step 4 payload:', JSON.stringify(step4Payload));
   
-  const { data: step4Data, error: step4Error } = await supabase.from('company_research_steps').insert(step4Payload);
-  if (step4Error) {
-    console.error('[Pipeline] Step 4 save error:', step4Error);
-    console.error('[Pipeline] Step 4 error details:', JSON.stringify(step4Error));
-  } else {
-    console.log('[Pipeline] Step 4 saved successfully:', step4Data);
+  try {
+    const { data: step4Data, error: step4Error } = await supabase.from('company_research_steps').insert(step4Payload);
+    if (step4Error) {
+      console.error('[Pipeline] ❌ Step 4 save error:', step4Error);
+      console.error('[Pipeline] Step 4 error details:', JSON.stringify(step4Error, null, 2));
+    } else {
+      console.log('[Pipeline] ✅ Step 4 saved successfully:', step4Data);
+    }
+  } catch (step4Err) {
+    console.error('[Pipeline] ❌ Step 4 save exception:', step4Err);
   }
   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
