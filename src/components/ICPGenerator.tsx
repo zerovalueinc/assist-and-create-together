@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
+import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
@@ -111,35 +112,12 @@ const ICPGenerator = () => {
   // Fetch recent/generated reports with embedded ICP profiles
   const hasFetchedReports = useRef(false);
 
-  const fetchRecentReports = async () => {
-    if (!user || hasFetchedReports.current) return;
-    
-    try {
-      const { data: reports, error } = await supabase
-        .from('company_analyzer_outputs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error('Error fetching reports:', error);
-        return;
-      }
-
-      // Filter reports that have ICP profiles
-      const reportsWithICP = reports.filter(report => report.icp_profile);
-      setRecentReports(reportsWithICP);
-      hasFetchedReports.current = true;
-      
-      console.log('Fetched reports with ICP profiles:', reportsWithICP);
-    } catch (error) {
-      console.error('Error fetching recent reports:', error);
-    }
-  };
-
   useEffect(() => {
-    fetchRecentReports();
+    if (!user) return;
+    getCompanyAnalysis({ userId: user.id }).then((data) => {
+      setRecentReports(data);
+      hasFetchedReports.current = true;
+    });
   }, [user]);
 
   // Auto-select company when reports are loaded
@@ -266,7 +244,10 @@ const ICPGenerator = () => {
       });
 
       // Refresh the list
-      fetchRecentReports();
+      getCompanyAnalysis({ userId: user.id }).then((data) => {
+        setRecentReports(data);
+        hasFetchedReports.current = true;
+      });
     } catch (error) {
       console.error('Error saving GTM playbook:', error);
       toast({

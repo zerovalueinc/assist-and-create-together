@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useCompany } from '../context/CompanyContext';
+import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
 
@@ -24,45 +25,15 @@ export default function YourWork() {
   const [reports, setReports] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    // Show cached data instantly
-    const cachedAnalyze = getCache<any[]>('yourwork_analyze', []);
-    const cachedGTM = getCache<any[]>('yourwork_gtm', []);
-    if (cachedAnalyze.length > 0) setAnalyzeWork(cachedAnalyze);
-    if (cachedGTM.length > 0) setGtmWork(cachedGTM);
-    setAnalyzeLoading(false);
-    setGtmLoading(false);
-    console.log('[YourWork] cachedAnalyze:', cachedAnalyze);
-    console.log('[YourWork] cachedGTM:', cachedGTM);
-
-    let cancelled = false;
-    const fetchCompanyAnalyzer = async () => {
-      setAnalyzeError(null);
-      try {
-        const { data, error } = await supabase
-          .from('company_analyzer_outputs')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        const normalized = (data || []).map((r: any) => ({
-          ...r,
-          companyName: capitalizeFirstLetter(r.companyName || r.company_name || ''),
-          companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
-          createdAt: r.createdAt || r.created_at || '',
-        }));
-        setAnalyzeWork(normalized);
-        setCache('yourwork_analyze', normalized);
-      } catch (err: any) {
-        if (!cancelled) {
-          setAnalyzeError(err.message || 'Failed to load Company Analyzer reports.');
-          console.error('Error fetching company analyzer reports:', err);
-        }
-      }
-    };
-    fetchCompanyAnalyzer();
-    return () => { cancelled = true; };
-  }, [user?.id]);
+    if (!session?.user?.id) return;
+    getCompanyAnalysis({ userId: session.user.id }).then((data) => {
+      setAnalyzeWork(data);
+    }).catch(() => {
+      setAnalyzeError('Failed to load Company Analyzer reports.');
+    }).finally(() => {
+      setAnalyzeLoading(false);
+    });
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -94,7 +65,7 @@ export default function YourWork() {
     
     try {
       const { data: reports, error } = await supabase
-        .from('company_analyzer_outputs')
+        .from('company_analyzer_outputs_unrestricted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });

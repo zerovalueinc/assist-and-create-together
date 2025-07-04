@@ -13,6 +13,7 @@ import { CheckCircle } from 'lucide-react';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
+import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -58,26 +59,12 @@ const CompanyAnalyzer = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    setIsAnalyzing(false);
-    setAnalysis(null);
-    setSelectedReportId(null);
-    setReports([]);
-    // Fetch all saved reports for the user
-    supabase
-      .from('company_analyzer_outputs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (data) {
-          setReports(data);
-          // Optionally, set the first report as selected
-          if (data.length > 0) {
-            setSelectedReportId(data[0].id);
-            setAnalysis(data[0]);
-          }
-        }
-      });
+    getCompanyAnalysis({ userId: user.id }).then((data) => {
+      setReports(data);
+      if (data.length > 0) {
+        setSelectedReportId(data[0].id);
+      }
+    });
   }, [user?.id]);
 
   const handleDeleteReport = async (id: string) => {
@@ -87,7 +74,7 @@ const CompanyAnalyzer = () => {
       setAnalysis(null);
       setSelectedReportId(null);
     }
-    const { error } = await supabase.from('company_analyzer_outputs').delete().eq('id', id);
+    const { error } = await supabase.from('company_analyzer_outputs_unrestricted').delete().eq('id', id);
     if (error) {
       toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
       setReports(prevReports); // Rollback UI

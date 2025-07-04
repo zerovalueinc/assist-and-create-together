@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase'; // See README for global pattern
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { useCompany } from '../context/CompanyContext';
-import { invokeEdgeFunction } from '../lib/supabase/edgeClient';
+import { invokeEdgeFunction, getCompanyAnalysis } from '../lib/supabase/edgeClient';
 
 // Set this to true to use the backend proxy for GTM Playbook
 const USE_GTM_PROXY = true;
@@ -74,19 +74,12 @@ const GTMGenerator = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    supabase
-      .from('company_analyzer_outputs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          setReports(data);
-          if (data.length > 0) {
-            setSelectedReportId(data[0].id);
-          }
-        }
-      });
+    getCompanyAnalysis({ userId: user.id }).then((data) => {
+      setReports(data);
+      if (data.length > 0) {
+        setSelectedReportId(data[0].id);
+      }
+    });
   }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {

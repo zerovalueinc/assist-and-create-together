@@ -47,4 +47,18 @@ export async function proxyToEdgeFunction({
 // Add more specialized wrappers as needed, e.g.:
 // export async function invokePipelineOrchestrator(payload: any) {
 //   return invokeEdgeFunction('pipeline-orchestrator', payload);
-// } 
+// }
+
+// Shared utility to fetch company analysis reports from the unrestricted table
+export async function getCompanyAnalysis({ userId }: { userId?: string } = {}) {
+  let query = supabase
+    .from('company_analyzer_outputs_unrestricted')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+} 

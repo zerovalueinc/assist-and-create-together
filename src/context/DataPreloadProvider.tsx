@@ -4,6 +4,7 @@ import { getCache, setCache } from '@/lib/utils';
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCompany } from './CompanyContext';
+import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
 
 interface DashboardData {
   companyAnalyzer: any[];
@@ -68,7 +69,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
       console.log('[DataPreloadProvider] Fetching dashboard data for user', { user });
       try {
         const [companyAnalyzer, playbooks] = await Promise.all([
-          supabase.from('company_analyzer_outputs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+          getCompanyAnalysis({ userId: user.id }),
           supabase.from('gtm_playbooks').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         ]);
         if (cancelled) return;
@@ -84,8 +85,8 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
           };
         });
         const data: DashboardData = {
-          companyAnalyzer: normalize(companyAnalyzer.data),
-          icps: [], // ICPs are now embedded in company_analyzer_outputs
+          companyAnalyzer: companyAnalyzer,
+          icps: [], // ICPs are now embedded in company_analyzer_outputs_unrestricted
           playbooks: playbooks.data || [],
           salesintel: [],
         };
