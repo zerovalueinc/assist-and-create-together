@@ -79,15 +79,6 @@ const GTMGenerator = () => {
   const [primaryGoals, setPrimaryGoals] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
 
-  // Add a refresh button for company analyses
-  const handleRefreshAnalyses = () => {
-    refreshData();
-    toast({
-      title: "Refreshing",
-      description: "Updating available company analyses...",
-    });
-  };
-
   useEffect(() => {
     // Show cached reports instantly
     const cachedReports = getCache<any[]>('gtm_company_reports', []);
@@ -401,27 +392,7 @@ const GTMGenerator = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-1">
-              <div className="font-semibold text-base">Select Target Company</div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRefreshAnalyses}
-                disabled={preloadLoading}
-              >
-                {preloadLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Refreshing...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
-                  </>
-                )}
-              </Button>
-            </div>
+            <div className="text-sm font-medium mb-1">Select Target Company</div>
             {renderCompanyPills()}
           </div>
 
