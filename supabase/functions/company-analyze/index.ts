@@ -91,8 +91,6 @@ serve(async (req) => {
       );
     }
 
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
@@ -110,6 +108,14 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     console.log('Extracted token length:', token.length);
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
@@ -190,7 +196,7 @@ serve(async (req) => {
         revenueRange: safeString(profile?.revenueRange),
       };
     }
-    const sanitizedAnalysis = {
+    let sanitizedAnalysis: any = {
       companyname: safeString(finalAnalysis.companyName),
       companyprofile: finalAnalysis.companyProfile ? JSON.stringify(finalAnalysis.companyProfile) : null,
       decisionmakers: toArray(finalAnalysis.decisionMakers),
@@ -209,37 +215,12 @@ serve(async (req) => {
     }
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
-    // Insert new analysis
-    console.log('Attempting to insert into company_analyzer_outputs table...');
-    console.log('Table schema expected fields: id, user_id, companyName, companyProfile, decisionMakers, painPoints, technologies, location, marketTrends, competitiveLandscape, goToMarketStrategy, researchSummary, website, created_at');
-    
-    // First try a minimal insert to test the table
-    const minimalTest = {
-      user_id: user.id,
-      companyname: 'Test Company',
-      website: 'https://test.com'
-    };
-    
-    console.log('Testing minimal insert with:', minimalTest);
-    const { data: testData, error: testError } = await supabaseClient
-      .from('company_analyzer_outputs')
-      .insert([minimalTest])
-      .select()
-      .single();
-    
-    if (testError) {
-      console.error('Minimal insert test failed:', testError);
-    } else {
-      console.log('Minimal insert test succeeded:', testData);
-    }
-    
-    // Now try the full insert
+    // Only do the real insert
     const { data: insertData, error: insertError } = await supabaseClient
       .from('company_analyzer_outputs')
       .insert([sanitizedAnalysis])
       .select()
       .single();
-    
     if (insertError) {
       console.error('Insert error details:', {
         code: insertError.code,
@@ -248,40 +229,6 @@ serve(async (req) => {
         hint: insertError.hint,
         fullError: insertError
       });
-      
-          // Try to get table info to debug schema issues
-    try {
-      const { data: tableInfo, error: tableError } = await supabaseClient
-        .from('company_analyzer_outputs')
-        .select('*')
-        .limit(0);
-      console.log('Table exists check result:', { tableInfo, tableError });
-      
-      // Try to get a single row to see the actual structure
-      const { data: sampleRow, error: sampleError } = await supabaseClient
-        .from('company_analyzer_outputs')
-        .select('*')
-        .limit(1);
-      console.log('Sample row check:', { sampleRow, sampleError });
-      
-      // Try to describe the table structure by attempting different column names
-      console.log('Testing column access...');
-      const testColumns = ['companyName', 'company_name', 'companyname'];
-      for (const col of testColumns) {
-        try {
-          const { data: colTest, error: colError } = await supabaseClient
-            .from('company_analyzer_outputs')
-            .select(col)
-            .limit(0);
-          console.log(`Column ${col} test:`, { data: colTest, error: colError });
-        } catch (e) {
-          console.log(`Column ${col} failed:`, e.message);
-        }
-      }
-    } catch (tableCheckError) {
-      console.error('Table check error:', tableCheckError);
-    }
-      
       return new Response(
         JSON.stringify({ 
           error: 'Failed to save analysis', 
@@ -295,7 +242,6 @@ serve(async (req) => {
         }
       );
     }
-
     return new Response(
       JSON.stringify({
         success: true,
