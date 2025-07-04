@@ -1,9 +1,7 @@
 // @ts-ignore: Deno runtime provides Deno.env in edge functions
-// Modular Company Research Agent for PersonaOps
-// Runs specialized LLM calls for each research section and merges results
+// PersonaOps Sequential Multi-Agent Company Research Pipeline
 
 declare const Deno: any;
-
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Helper to call the LLM with a prompt
@@ -36,31 +34,44 @@ async function callLLM(prompt: string, systemPrompt = 'You are an expert B2B res
   }
 }
 
-export async function runFullCompanyResearch(url: string): Promise<any> {
-  // 1. Company Overview
-  const overviewPrompt = `Research the company at this URL: ${url}.
+// Agent 1: Company Overview
+async function agentCompanyOverview(url: string) {
+  const prompt = `Research the company at this URL: ${url}.
 Return a JSON object with: company_name, summary, industry, headquarters, founded, company_type, company_size, revenue_range, funding.`;
-  const overview = await callLLM(overviewPrompt);
+  return await callLLM(prompt);
+}
 
-  // 2. Products & Market
-  const productsPrompt = `Research the company at this URL: ${url}.
-Return a JSON object with: main_products, target_market.`;
-  const products = await callLLM(productsPrompt);
+// Agent 2: Market/Competitive Intelligence
+async function agentMarketIntelligence(url: string, prev: any) {
+  const prompt = `Given this company data: ${JSON.stringify(prev)}\nResearch the market and competitive landscape for the company at ${url}.
+Return a JSON object with: main_products, target_market, competitors, market_trends, positioning, value_proposition.`;
+  return await callLLM(prompt);
+}
 
-  // 3. Key Features & Platforms
-  const featuresPrompt = `Research the company at this URL: ${url}.
-Return a JSON object with: key_features, platform_compatibility.`;
-  const features = await callLLM(featuresPrompt);
+// Agent 3: Technology/Features/Stack
+async function agentTechStack(url: string, prev: any) {
+  const prompt = `Given this company and market data: ${JSON.stringify(prev)}\nResearch the technology stack, key features, platform compatibility, and integrations for the company at ${url}.
+Return a JSON object with: key_features, platform_compatibility, technology_stack, integration_capabilities.`;
+  return await callLLM(prompt);
+}
 
-  // 4. Notable Clients
-  const clientsPrompt = `Research the company at this URL: ${url}.
-Return a JSON object with: notable_clients.`;
-  const clients = await callLLM(clientsPrompt);
+// Agent 4: Sales/Go-to-Market/Opportunity/Final Synthesis
+async function agentSalesGTM(url: string, prev: any) {
+  const prompt = `Given this full company, market, and technology data: ${JSON.stringify(prev)}\nSynthesize actionable sales, go-to-market, and opportunity insights for the company at ${url}.
+Return a JSON object with: notable_clients, social_media (linkedin, twitter, facebook), research_summary, sales_opportunities, gtm_recommendations.`;
+  return await callLLM(prompt);
+}
 
-  // 5. Social Media & Research Summary
-  const socialPrompt = `Research the company at this URL: ${url}.
-Return a JSON object with: social_media (linkedin, twitter, facebook), research_summary.`;
-  const social = await callLLM(socialPrompt);
+// Orchestrator: Run all agents in sequence, merging outputs
+export async function runFullCompanyResearchPipeline(url: string): Promise<any> {
+  // Step 1: Company Overview
+  const overview = await agentCompanyOverview(url);
+  // Step 2: Market/Competitive Intelligence
+  const market = await agentMarketIntelligence(url, overview);
+  // Step 3: Technology/Features/Stack
+  const tech = await agentTechStack(url, { ...overview, ...market });
+  // Step 4: Sales/Go-to-Market/Final Synthesis
+  const sales = await agentSalesGTM(url, { ...overview, ...market, ...tech });
 
   // Merge all results into a single object matching frontend schema
   return {
@@ -73,12 +84,20 @@ Return a JSON object with: social_media (linkedin, twitter, facebook), research_
     company_size: overview.company_size || 'N/A',
     revenue_range: overview.revenue_range || 'N/A',
     funding: overview.funding || 'N/A',
-    main_products: products.main_products || 'N/A',
-    target_market: products.target_market || 'N/A',
-    key_features: features.key_features || 'N/A',
-    platform_compatibility: features.platform_compatibility || 'N/A',
-    notable_clients: clients.notable_clients || 'N/A',
-    social_media: social.social_media || { linkedin: 'N/A', twitter: 'N/A', facebook: 'N/A' },
-    research_summary: social.research_summary || 'N/A',
+    main_products: market.main_products || 'N/A',
+    target_market: market.target_market || 'N/A',
+    competitors: market.competitors || 'N/A',
+    market_trends: market.market_trends || 'N/A',
+    positioning: market.positioning || 'N/A',
+    value_proposition: market.value_proposition || 'N/A',
+    key_features: tech.key_features || 'N/A',
+    platform_compatibility: tech.platform_compatibility || 'N/A',
+    technology_stack: tech.technology_stack || 'N/A',
+    integration_capabilities: tech.integration_capabilities || 'N/A',
+    notable_clients: sales.notable_clients || 'N/A',
+    social_media: sales.social_media || { linkedin: 'N/A', twitter: 'N/A', facebook: 'N/A' },
+    research_summary: sales.research_summary || 'N/A',
+    sales_opportunities: sales.sales_opportunities || 'N/A',
+    gtm_recommendations: sales.gtm_recommendations || 'N/A',
   };
 } 
