@@ -56,6 +56,15 @@ function normalizeLLMOutput(llm: any) {
   return llm;
 }
 
+// Helper to safely render any field
+function renderField(field: any) {
+  if (field == null) return 'N/A';
+  if (typeof field === 'string') return field;
+  if (Array.isArray(field)) return field.join(', ');
+  if (typeof field === 'object') return JSON.stringify(field);
+  return String(field);
+}
+
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
@@ -303,16 +312,16 @@ const CompanyAnalyzer = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><span className="text-sm font-medium text-muted-foreground">Industry</span><p className="text-sm">{llm.ibp?.industry || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Segment</span><p className="text-sm">{llm.ibp?.segment || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{llm.ibp?.companySize || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Revenue Range</span><p className="text-sm">{llm.ibp?.revenueRange || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Geography</span><p className="text-sm">{Array.isArray(llm.ibp?.geography) ? llm.ibp.geography.join(', ') : (llm.ibp?.geography || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Business Model</span><p className="text-sm">{llm.ibp?.businessModel || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Sales Motion</span><p className="text-sm">{llm.ibp?.salesMotion || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Go-To-Market Model</span><p className="text-sm">{llm.ibp?.goToMarketModel || 'N/A'}</p></div>
-                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.ibp?.techStack) ? llm.ibp.techStack.join(', ') : (llm.ibp?.techStack || 'N/A')}</p></div>
-                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Fit Signals</span><p className="text-sm">{Array.isArray(llm.ibp?.fitSignals) ? llm.ibp.fitSignals.join(', ') : (llm.ibp?.fitSignals || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Industry</span><p className="text-sm">{renderField(llm.ibp?.industry)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Segment</span><p className="text-sm">{renderField(llm.ibp?.segment)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{renderField(llm.ibp?.companySize)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Revenue Range</span><p className="text-sm">{renderField(llm.ibp?.revenueRange)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Geography</span><p className="text-sm">{renderField(llm.ibp?.geography)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Business Model</span><p className="text-sm">{renderField(llm.ibp?.businessModel)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Sales Motion</span><p className="text-sm">{renderField(llm.ibp?.salesMotion)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Go-To-Market Model</span><p className="text-sm">{renderField(llm.ibp?.goToMarketModel)}</p></div>
+                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{renderField(llm.ibp?.techStack)}</p></div>
+                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Fit Signals</span><p className="text-sm">{renderField(llm.ibp?.fitSignals)}</p></div>
                       </div>
                     </CardContent>
                   </Card>
@@ -324,18 +333,18 @@ const CompanyAnalyzer = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><span className="text-sm font-medium text-muted-foreground">Buyer Titles</span><p className="text-sm">{Array.isArray(llm.icp?.buyerTitles) ? llm.icp.buyerTitles.join(', ') : (llm.icp?.buyerTitles || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Department</span><p className="text-sm">{llm.icp?.department || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Seniority Level</span><p className="text-sm">{llm.icp?.seniorityLevel || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Key Responsibilities</span><p className="text-sm">{Array.isArray(llm.icp?.keyResponsibilities) ? llm.icp.keyResponsibilities.join(', ') : (llm.icp?.keyResponsibilities || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span><p className="text-sm">{Array.isArray(llm.icp?.painPoints) ? llm.icp.painPoints.join(', ') : (llm.icp?.painPoints || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Buying Triggers</span><p className="text-sm">{Array.isArray(llm.icp?.buyingTriggers) ? llm.icp.buyingTriggers.join(', ') : (llm.icp?.buyingTriggers || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">KPIs</span><p className="text-sm">{Array.isArray(llm.icp?.KPIs) ? llm.icp.KPIs.join(', ') : (llm.icp?.KPIs || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.icp?.techStack) ? llm.icp.techStack.join(', ') : (llm.icp?.techStack || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Decision Process</span><p className="text-sm">{llm.icp?.decisionProcess || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Common Objections</span><p className="text-sm">{Array.isArray(llm.icp?.commonObjections) ? llm.icp.commonObjections.join(', ') : (llm.icp?.commonObjections || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Budget Range</span><p className="text-sm">{llm.icp?.budgetRange || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Emotional Drivers</span><p className="text-sm">{Array.isArray(llm.icp?.emotionalDrivers) ? llm.icp.emotionalDrivers.join(', ') : (llm.icp?.emotionalDrivers || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Buyer Titles</span><p className="text-sm">{renderField(llm.icp?.buyerTitles)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Department</span><p className="text-sm">{renderField(llm.icp?.department)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Seniority Level</span><p className="text-sm">{renderField(llm.icp?.seniorityLevel)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Key Responsibilities</span><p className="text-sm">{renderField(llm.icp?.keyResponsibilities)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span><p className="text-sm">{renderField(llm.icp?.painPoints)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Buying Triggers</span><p className="text-sm">{renderField(llm.icp?.buyingTriggers)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">KPIs</span><p className="text-sm">{renderField(llm.icp?.KPIs)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{renderField(llm.icp?.techStack)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Decision Process</span><p className="text-sm">{renderField(llm.icp?.decisionProcess)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Common Objections</span><p className="text-sm">{renderField(llm.icp?.commonObjections)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Budget Range</span><p className="text-sm">{renderField(llm.icp?.budgetRange)}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Emotional Drivers</span><p className="text-sm">{renderField(llm.icp?.emotionalDrivers)}</p></div>
                       </div>
                     </CardContent>
                   </Card>
@@ -346,7 +355,7 @@ const CompanyAnalyzer = () => {
                       <CardTitle>Go-To-Market Insights</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p>{llm.goToMarketInsights || 'No data available'}</p>
+                      <p>{renderField(llm.goToMarketInsights)}</p>
                     </CardContent>
                   </Card>
 
@@ -397,8 +406,8 @@ const CompanyAnalyzer = () => {
                             <tbody>
                               {llm.decisionMakers.map((dm: any, i: number) => (
                                 <tr key={i} className="border-t">
-                                  <td className="pr-4">{dm.name || 'N/A'}</td>
-                                  <td className="pr-4">{dm.title || 'N/A'}</td>
+                                  <td className="pr-4">{renderField(dm.name)}</td>
+                                  <td className="pr-4">{renderField(dm.title)}</td>
                                   <td>{dm.linkedin ? <a href={dm.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">LinkedIn</a> : 'N/A'}</td>
                                 </tr>
                               ))}
@@ -417,7 +426,7 @@ const CompanyAnalyzer = () => {
                       <CardTitle>Research Summary</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p>{llm.researchSummary || 'No data available'}</p>
+                      <p>{renderField(llm.researchSummary)}</p>
                     </CardContent>
                   </Card>
                 </div>
