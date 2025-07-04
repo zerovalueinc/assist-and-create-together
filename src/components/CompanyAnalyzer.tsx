@@ -176,17 +176,24 @@ const CompanyAnalyzer = () => {
 
       if (data?.success && data?.output) {
         console.log('Analysis successful:', data.output);
-        // Fetch the fresh record from Supabase by ID
-        try {
-          const freshReport = await getCompanyAnalysisById(data.output.id);
-          setAnalysis(freshReport);
-          setReports(prev => [freshReport, ...prev.filter(r => r.id !== freshReport.id)]);
-          setSelectedReportId(freshReport.id || null);
-        } catch (fetchErr) {
-          // Fallback to using the immediate output if fetch fails
+        console.log('[DEBUG] Attempting to fetch fresh report by ID:', data.output.id, data.output);
+        if (data.output.id) {
+          try {
+            const freshReport = await getCompanyAnalysisById(data.output.id);
+            setAnalysis(freshReport);
+            setReports(prev => [freshReport, ...prev.filter(r => r.id !== freshReport.id)]);
+            setSelectedReportId(freshReport.id || null);
+          } catch (fetchErr) {
+            console.warn('[WARN] Failed to fetch fresh report by ID, falling back to immediate output:', fetchErr);
+            setAnalysis(data.output);
+            setReports(prev => [data.output, ...prev]);
+            setSelectedReportId(data.output.id || null);
+          }
+        } else {
+          console.warn('[WARN] No ID found on data.output, using immediate output:', data.output);
           setAnalysis(data.output);
           setReports(prev => [data.output, ...prev]);
-          setSelectedReportId(data.output.id || null);
+          setSelectedReportId(null);
         }
         setResearch({
           companyAnalysis: data.output,
@@ -230,7 +237,7 @@ const CompanyAnalyzer = () => {
     <div className="flex flex-wrap gap-2 mb-4">
       {reports.map((report) => (
         <CompanyReportCard
-          key={report.id}
+          key={report.id || report.companyUrl || Math.random()}
           report={report}
           selected={selectedReportId === report.id}
           onClick={() => {
