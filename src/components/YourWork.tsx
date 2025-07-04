@@ -32,6 +32,8 @@ export default function YourWork() {
     if (cachedGTM.length > 0) setGtmWork(cachedGTM);
     setAnalyzeLoading(false);
     setGtmLoading(false);
+    console.log('[YourWork] cachedAnalyze:', cachedAnalyze);
+    console.log('[YourWork] cachedGTM:', cachedGTM);
 
     let cancelled = false;
     const fetchCompanyAnalyzer = async () => {

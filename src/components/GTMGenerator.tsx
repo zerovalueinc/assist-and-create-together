@@ -45,6 +45,7 @@ const GTMGenerator = () => {
     const name = item.companyName || item.company_name || item.companyname || 'Untitled';
     return { ...item, companyName: name, company_name: name, companyname: name };
   });
+  console.log('[GTMGenerator] availableAnalyses:', availableAnalyses);
 
   // Use preloaded GTM playbooks for pills or fallback to cache
   let availablePlaybooks = preloadData?.playbooks || [];
@@ -56,14 +57,15 @@ const GTMGenerator = () => {
     const name = item.companyName || item.company_name || item.companyname || 'Untitled Playbook';
     return { ...item, companyName: name, company_name: name, companyname: name };
   });
+  console.log('[GTMGenerator] availablePlaybooks:', availablePlaybooks);
 
   const [reportsWithICP, setReportsWithICP] = useState([]);
   
   useEffect(() => {
     let reports = preloadData?.companyAnalyzer || getCache('yourwork_analyze', []);
-    // Filter reports that have ICP profiles
-    const reportsWithICPProfiles = reports.filter((report: any) => report.icp_profile);
-    setReportsWithICP(reportsWithICPProfiles);
+    setReportsWithICP(reports); // No filter, show all for pills
+    // If you want to filter for ICP details, do it only in the ICP section
+    console.log('[GTMGenerator] reportsWithICP:', reports);
   }, [preloadData]);
 
   // GTM strategy form fields

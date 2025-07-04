@@ -93,6 +93,8 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
         setCache('yourwork_analyze', data.companyAnalyzer);
         setCache('icp_playbooks', data.playbooks);
         setCache('yourwork_gtm', data.playbooks);
+        console.log('[DataPreloadProvider] companyAnalyzer:', data.companyAnalyzer);
+        console.log('[DataPreloadProvider] playbooks:', data.playbooks);
         setDashboardData(data);
         setLoading(false);
       } catch (err: any) {

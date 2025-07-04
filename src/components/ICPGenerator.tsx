@@ -89,6 +89,15 @@ const ICPGenerator = () => {
   if (!availableCompanies.length) {
     availableCompanies = getCache('yourwork_analyze', []);
   }
+  // Normalize company name for all analyses
+  availableCompanies = availableCompanies.map((item: any) => {
+    const name = item.companyName || item.company_name || item.companyname || 'Untitled';
+    return { ...item, companyName: name, company_name: name, companyname: name };
+  });
+  console.log('[ICPGenerator] availableCompanies:', availableCompanies);
+
+  // Pills should show for all reports, not just those with icp_profile
+  // Only filter for ICP details in the modal/section
 
   // Add a refresh function for company analyses
   const handleRefreshCompanies = () => {
