@@ -266,13 +266,21 @@ serve(async (req) => {
     // Before saving the report, log the user.id
     console.debug('[Edge Function] About to save report for user.id:', user.id);
 
+    // Always save the full LLM output for every analysis (future-proof, robust)
+    let rawLlmOutput = null;
+    try {
+      rawLlmOutput = typeof finalAnalysis === 'string' ? JSON.parse(finalAnalysis) : finalAnalysis;
+    } catch (e) {
+      rawLlmOutput = finalAnalysis || {};
+    }
+
     // Save to database
     const { data: savedReport, error: saveError } = await supabaseClient
       .from('company_analyzer_outputs')
       .insert({
         user_id: user.id,
         website: normalizedUrl,
-        llm_output: JSON.stringify(finalAnalysis),
+        llm_output: rawLlmOutput, // Always save the full LLM output as JSONB
         ibp: finalAnalysis.ibp || {},
         icp: finalAnalysis.icp || {},
         go_to_market_insights: finalAnalysis.goToMarketInsights || '',
