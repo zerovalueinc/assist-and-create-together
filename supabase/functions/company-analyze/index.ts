@@ -204,35 +204,27 @@ serve(async (req) => {
       }
     }
 
-    // Map LLM output to top-level columns (snake_case only)
-    let company_profile = null;
-    let decision_makers = [];
-    let pain_points = [];
-    let technologies = [];
-    let location = null;
-    let market_trends = [];
-    let competitive_landscape = [];
-    let go_to_market_strategy = null;
-    let research_summary = null;
-    let company_name = extractDomain(normalizedUrl);
-
-    if (finalAnalysis.icp_analysis) {
-      company_profile = finalAnalysis.icp_analysis.target_company_characteristics || null;
-      if (Array.isArray(finalAnalysis.icp_analysis.buyer_personas)) {
-        decision_makers = finalAnalysis.icp_analysis.buyer_personas.flatMap(bp => [
+    // Map LLM output to top-level columns (snake_case only, with strict defaults)
+    let company_profile = finalAnalysis.icp_analysis?.target_company_characteristics || {};
+    let decision_makers = Array.isArray(finalAnalysis.icp_analysis?.buyer_personas)
+      ? finalAnalysis.icp_analysis.buyer_personas.flatMap(bp => [
           ...(bp.primary_decision_maker?.titles || []),
           ...(bp.secondary_influencer?.titles || []),
-        ]);
-      }
-      pain_points = finalAnalysis.icp_analysis.pain_points || [];
-      technologies = finalAnalysis.icp_analysis.tech_stack_alignment?.current_tools || [];
-      // location, market_trends, competitive_landscape, go_to_market_strategy, research_summary: not present in icp_analysis, leave null/empty
-    }
-
-    // Only include snake_case keys that match the table schema
+        ])
+      : [];
+    let pain_points = finalAnalysis.icp_analysis?.pain_points || [];
+    let technologies = finalAnalysis.icp_analysis?.tech_stack_alignment?.current_tools || [];
+    let location = finalAnalysis.icp_analysis?.location || '';
+    let market_trends = finalAnalysis.icp_analysis?.market_trends || [];
+    let competitive_landscape = finalAnalysis.icp_analysis?.competitive_landscape || [];
+    let go_to_market_strategy = finalAnalysis.icp_analysis?.go_to_market_strategy || '';
+    let research_summary = finalAnalysis.icp_analysis?.research_summary || '';
+    let company_name = extractDomain(normalizedUrl) || 'unknown';
+    let website = normalizedUrl || 'unknown';
+    // Only include snake_case keys that match the table schema, with strict defaults
     const insertPayload = {
       user_id: user.id,
-      website: normalizedUrl,
+      website,
       llm_output: finalAnalysis, // Save the raw, structured output
       created_at: new Date().toISOString(),
       company_name,
