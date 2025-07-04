@@ -208,7 +208,7 @@ serve(async (req) => {
       website: normalizedUrl,
       llm_output: finalAnalysis, // Save the raw, structured output
       created_at: new Date().toISOString(),
-      companyname: finalAnalysis.companyName || finalAnalysis.companyname || extractDomain(normalizedUrl),
+      companyname: extractDomain(normalizedUrl), // Always use extracted domain
     };
     console.log('[Edge Function] RAW INSERT PAYLOAD:', JSON.stringify(insertPayload));
     const { data: savedReport, error: saveError } = await supabaseClient
