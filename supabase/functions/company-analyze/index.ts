@@ -178,8 +178,44 @@ serve(async (req) => {
 
     // Use normalizedUrl for analysis and saving
     const analyzer = new LLMCompanyAnalyzer();
-    const finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
+    let finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
     console.log('Analysis generated for:', finalAnalysis.companyName);
+
+    // --- Normalization step for new fields ---
+    // Ensure companyProfile
+    finalAnalysis.companyProfile = {
+      description: finalAnalysis.companyProfile?.description || '',
+      industry: finalAnalysis.companyProfile?.industry || '',
+      segment: finalAnalysis.companyProfile?.segment || '',
+      companySize: finalAnalysis.companyProfile?.companySize || '',
+      revenueRange: finalAnalysis.companyProfile?.revenueRange || '',
+      location: finalAnalysis.companyProfile?.location || '',
+      businessModel: finalAnalysis.companyProfile?.businessModel || '',
+      foundingYear: finalAnalysis.companyProfile?.foundingYear || ''
+    };
+    // Ensure funding
+    finalAnalysis.funding = {
+      totalRaised: finalAnalysis.funding?.totalRaised || '',
+      investors: Array.isArray(finalAnalysis.funding?.investors) ? finalAnalysis.funding.investors : [],
+      lastRound: finalAnalysis.funding?.lastRound || '',
+      lastRoundDate: finalAnalysis.funding?.lastRoundDate || ''
+    };
+    // Ensure decisionMakers
+    finalAnalysis.decisionMakers = Array.isArray(finalAnalysis.decisionMakers)
+      ? finalAnalysis.decisionMakers.map(dm => ({
+          name: dm?.name || '',
+          title: dm?.title || '',
+          linkedin: dm?.linkedin || ''
+        }))
+      : [];
+    // Ensure competitiveLandscape
+    finalAnalysis.competitiveLandscape = Array.isArray(finalAnalysis.competitiveLandscape)
+      ? finalAnalysis.competitiveLandscape.map(cl => ({
+          name: cl?.name || '',
+          description: cl?.description || ''
+        }))
+      : [];
+    // --- End normalization ---
 
     // Generate ICP profile using the best model and the company analysis as context
     let icpProfile = null;
@@ -224,9 +260,7 @@ serve(async (req) => {
       user_id: user.id,
       icp_profile: icpProfile ? JSON.stringify(icpProfile) : null
     };
-    if ('llm_output' in finalAnalysis) {
-      sanitizedAnalysis.llm_output = JSON.stringify(finalAnalysis.llm_output);
-    }
+    sanitizedAnalysis.llm_output = JSON.stringify(finalAnalysis);
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
     // Before saving the report, log the user.id
