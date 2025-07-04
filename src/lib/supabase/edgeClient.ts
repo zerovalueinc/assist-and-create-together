@@ -61,4 +61,14 @@ export async function getCompanyAnalysis({ userId }: { userId?: string } = {}) {
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+export async function getCompanyAnalysisById(id: string) {
+  const { data, error } = await supabase
+    .from('company_analyzer_outputs')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
 } 

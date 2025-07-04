@@ -13,7 +13,7 @@ import { CheckCircle } from 'lucide-react';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { getCompanyAnalysis, getCompanyAnalysisById } from '../lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import ICPProfileDisplay from './ui/ICPProfileDisplay';
 
@@ -176,15 +176,23 @@ const CompanyAnalyzer = () => {
 
       if (data?.success && data?.output) {
         console.log('Analysis successful:', data.output);
-        setAnalysis(data.output);
+        // Fetch the fresh record from Supabase by ID
+        try {
+          const freshReport = await getCompanyAnalysisById(data.output.id);
+          setAnalysis(freshReport);
+          setReports(prev => [freshReport, ...prev.filter(r => r.id !== freshReport.id)]);
+          setSelectedReportId(freshReport.id || null);
+        } catch (fetchErr) {
+          // Fallback to using the immediate output if fetch fails
+          setAnalysis(data.output);
+          setReports(prev => [data.output, ...prev]);
+          setSelectedReportId(data.output.id || null);
+        }
         setResearch({
           companyAnalysis: data.output,
           isCached: false,
           timestamp: new Date().toISOString()
         });
-        // Prepend new report to reports and update pills/inline
-        setReports(prev => [data.output, ...prev]);
-        setSelectedReportId(data.output.id || null);
         // Refresh the DataPreloadProvider to update all components
         refreshData();
         toast({
