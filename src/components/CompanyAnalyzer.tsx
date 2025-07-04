@@ -56,6 +56,30 @@ const CompanyAnalyzer = () => {
     setReports(newReports);
   }, [preloadData]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    setIsAnalyzing(false);
+    setAnalysis(null);
+    setSelectedReportId(null);
+    setReports([]);
+    // Fetch all saved reports for the user
+    supabase
+      .from('company_analysis_reports')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (data) {
+          setReports(data);
+          // Optionally, set the first report as selected
+          if (data.length > 0) {
+            setSelectedReportId(data[0].id);
+            setAnalysis(data[0]);
+          }
+        }
+      });
+  }, [user?.id]);
+
   const handleDeleteReport = async (id: string) => {
     const prevReports = reports;
     setReports(reports.filter(r => r.id !== id));
@@ -175,21 +199,21 @@ const CompanyAnalyzer = () => {
   const renderReportPills = () => (
     <div className="flex flex-wrap gap-2 mb-4">
       {reports.map((report) => {
-        // Normalize company name for pill
         const llm = report.llm_output ? JSON.parse(report.llm_output) : report;
         const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
+        const faviconUrl = `https://www.google.com/s2/favicons?domain=${llm.website || llm.companyUrl || report.company_url || ''}`;
         return (
           <Button
             key={report.id}
             variant={selectedReportId === report.id ? 'default' : 'outline'}
             onClick={() => {
               setSelectedReportId(report.id);
-              setAnalysis({ ...report, companyName: name, company_name: name, companyname: name });
+              setAnalysis(report);
             }}
             className="flex items-center gap-2 px-3 py-1 text-sm"
             size="sm"
           >
-            <img src={`https://www.google.com/s2/favicons?domain=${llm.companyUrl || llm.website || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+            <img src={faviconUrl} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
             {name}
             {selectedReportId === report.id && <CheckCircle className="h-3 w-3 ml-1" />}
           </Button>
