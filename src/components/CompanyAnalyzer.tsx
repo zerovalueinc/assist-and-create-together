@@ -13,7 +13,7 @@ import { CheckCircle } from 'lucide-react';
 import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { getCompanyAnalysis, getCompanyAnalysisById } from '../lib/supabase/edgeClient';
+import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '../lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import ICPProfileDisplay from './ui/ICPProfileDisplay';
 
@@ -82,6 +82,9 @@ const CompanyAnalyzer = () => {
   const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [researchSteps, setResearchSteps] = useState<any[]>([]);
+  const [stepsLoading, setStepsLoading] = useState(false);
+  const [expandedStepIndexes, setExpandedStepIndexes] = useState<number[]>([]);
 
   // Reload reports when preloadData changes (e.g., on tab switch)
   useEffect(() => {
@@ -101,6 +104,31 @@ const CompanyAnalyzer = () => {
       }
     });
   }, [user?.id]);
+
+  // Fetch research steps when analysis or selectedReportId changes
+  useEffect(() => {
+    async function fetchSteps() {
+      if (!analysis || !selectedReportId || !user?.id) {
+        setResearchSteps([]);
+        return;
+      }
+      const companyUrl = analysis.company_url || analysis.companyUrl || (analysis.llm_output && (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output).company_url : analysis.llm_output.company_url));
+      if (!companyUrl) {
+        setResearchSteps([]);
+        return;
+      }
+      setStepsLoading(true);
+      try {
+        const steps = await getCompanyResearchSteps({ companyUrl, userId: user.id });
+        setResearchSteps(steps);
+      } catch (err) {
+        setResearchSteps([]);
+      } finally {
+        setStepsLoading(false);
+      }
+    }
+    fetchSteps();
+  }, [analysis, selectedReportId, user?.id]);
 
   const handleDeleteReport = async (id: string) => {
     const prevReports = reports;
@@ -546,6 +574,50 @@ const CompanyAnalyzer = () => {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Research Steps (Audit Trail) Card */}
+                  {researchSteps.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          Research Steps (Audit Trail)
+                        </CardTitle>
+                        <CardDescription>
+                          Step-by-step outputs from each agent in the research pipeline.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {stepsLoading ? (
+                          <div className="text-center text-muted-foreground py-4">Loading steps...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {researchSteps.map((step, idx) => {
+                              const isExpanded = expandedStepIndexes.includes(idx);
+                              const output = typeof step.step_output === 'string' ? step.step_output : JSON.stringify(step.step_output, null, 2);
+                              const truncated = output.length > 300 && !isExpanded ? output.slice(0, 300) + '...' : output;
+                              return (
+                                <div key={step.id || idx} className="border rounded p-3 bg-muted/50">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <span className="font-semibold">{step.step_name}</span>
+                                      <span className="ml-2 text-xs text-muted-foreground">{new Date(step.created_at).toLocaleString()}</span>
+                                    </div>
+                                    {output.length > 300 && (
+                                      <Button size="sm" variant="ghost" onClick={() => setExpandedStepIndexes(isExpanded ? expandedStepIndexes.filter(i => i !== idx) : [...expandedStepIndexes, idx])}>
+                                        {isExpanded ? 'Collapse' : 'Expand'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <pre className="mt-2 text-xs whitespace-pre-wrap break-all">{truncated}</pre>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               );
             })()

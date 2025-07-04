@@ -71,4 +71,19 @@ export async function getCompanyAnalysisById(id: string) {
     .single();
   if (error) throw error;
   return data;
+}
+
+// Fetch all research steps for a given company (by company_url or report id)
+export async function getCompanyResearchSteps({ companyUrl, userId }: { companyUrl: string, userId?: string }) {
+  let query = supabase
+    .from('company_research_steps')
+    .select('*')
+    .eq('company_url', companyUrl)
+    .order('created_at', { ascending: true });
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 } 
