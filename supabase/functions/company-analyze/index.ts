@@ -152,7 +152,7 @@ serve(async (req) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - THIRTY_DAYS_MS).toISOString();
     const { data: recentReport, error: recentError } = await supabaseClient
-      .from('company_analyzer_outputs_unrestricted')
+      .from('company_analyzer_outputs')
       .select('*')
       .eq('user_id', user.id)
       .eq('website', normalizedUrl)
@@ -268,22 +268,18 @@ serve(async (req) => {
 
     // Save to database
     const { data: savedReport, error: saveError } = await supabaseClient
-      .from('company_analyzer_outputs_unrestricted')
+      .from('company_analyzer_outputs')
       .insert({
         user_id: user.id,
-        companyname: safeString(finalAnalysis.companyName),
-        company_profile: finalAnalysis.companyProfile || {},
-        decision_makers: finalAnalysis.decisionMakers || [],
-        pain_points: finalAnalysis.painPoints || [],
-        technologies: finalAnalysis.technologies || [],
-        location: finalAnalysis.location || '',
-        market_trends: finalAnalysis.marketTrends || [],
-        competitive_landscape: finalAnalysis.competitiveLandscape || [],
-        go_to_market_strategy: finalAnalysis.goToMarketStrategy || '',
-        research_summary: finalAnalysis.researchSummary || '',
         website: normalizedUrl,
         llm_output: JSON.stringify(finalAnalysis),
-        icp_profile: icpProfile ? JSON.stringify(icpProfile) : null,
+        ibp: finalAnalysis.ibp || {},
+        icp: finalAnalysis.icp || {},
+        go_to_market_insights: finalAnalysis.goToMarketInsights || '',
+        market_trends: Array.isArray(finalAnalysis.marketTrends) ? finalAnalysis.marketTrends : [],
+        competitive_landscape: Array.isArray(finalAnalysis.competitiveLandscape) ? finalAnalysis.competitiveLandscape : [],
+        decision_makers: Array.isArray(finalAnalysis.decisionMakers) ? finalAnalysis.decisionMakers : [],
+        research_summary: finalAnalysis.researchSummary || '',
         created_at: new Date().toISOString()
       })
       .select()
@@ -315,10 +311,13 @@ serve(async (req) => {
         success: true,
         output: {
           ...savedReport,
-          companyName: savedReport.company_name || savedReport.companyname || '',
-          company_name: savedReport.company_name || savedReport.companyName || savedReport.companyname || '',
-          companyname: savedReport.companyname || savedReport.companyName || savedReport.company_name || '',
-          icp_profile: savedReport.icp_profile ? (typeof savedReport.icp_profile === 'string' ? JSON.parse(savedReport.icp_profile) : savedReport.icp_profile) : null
+          ibp: savedReport.ibp || {},
+          icp: savedReport.icp || {},
+          go_to_market_insights: savedReport.go_to_market_insights || '',
+          market_trends: savedReport.market_trends || [],
+          competitive_landscape: savedReport.competitive_landscape || [],
+          decision_makers: savedReport.decision_makers || [],
+          research_summary: savedReport.research_summary || '',
         },
         analysis: savedReport,
         outputId: savedReport.id || null,
