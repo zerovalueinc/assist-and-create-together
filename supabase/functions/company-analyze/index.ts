@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { runFullCompanyResearch } from '../../../agents/CompanyResearchAgent.ts';
+import { generateSalesIntelligenceReport } from '../../../agents/salesIntelligenceAgent.ts';
 
 declare const Deno: any;
 
@@ -45,7 +45,26 @@ serve(async (req) => {
     // Call the LLM agent
     let llm_output;
     try {
-      llm_output = await runFullCompanyResearch(companyUrl);
+      const report = await generateSalesIntelligenceReport(companyUrl);
+      // Normalize output to match frontend schema
+      llm_output = {
+        company_name: report.companyOverview?.companyName || 'N/A',
+        summary: 'N/A',
+        industry: report.companyOverview?.industryClassification || 'N/A',
+        headquarters: report.companyOverview?.headquarters || 'N/A',
+        founded: report.companyOverview?.foundingYear || 'N/A',
+        company_type: 'N/A',
+        company_size: report.companyOverview?.employeeRange || 'N/A',
+        revenue_range: report.financialPerformance?.estimatedAnnualRevenue || 'N/A',
+        funding: report.financialPerformance?.totalAmountRaised || 'N/A',
+        main_products: report.technologyStack?.productOfferings || 'N/A',
+        target_market: report.marketIntelligence?.customerSegments || 'N/A',
+        key_features: report.technologyStack?.uniqueSellingPropositions || 'N/A',
+        platform_compatibility: report.technologyStack?.integrations || 'N/A',
+        notable_clients: Array.isArray(report.companyOverview?.executiveTeam) ? report.companyOverview.executiveTeam.map(e => e.name) : 'N/A',
+        social_media: { linkedin: 'N/A', twitter: 'N/A', facebook: 'N/A' },
+        research_summary: 'N/A',
+      };
     } catch (e) {
       return new Response(JSON.stringify({ error: 'LLM research failed', details: e.message }), { status: 500, headers: corsHeaders });
     }
