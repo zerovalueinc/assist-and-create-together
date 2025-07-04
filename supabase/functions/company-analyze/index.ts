@@ -193,19 +193,31 @@ serve(async (req) => {
         website: normalizedUrl,
       };
     }
+    // Remove all camelCase keys from the insert payload
+    delete llm.companyProfile;
+    delete llm.decisionMakers;
+    delete llm.painPoints;
+    delete llm.technologies;
+    delete llm.location;
+    delete llm.marketTrends;
+    delete llm.competitiveLandscape;
+    delete llm.goToMarketStrategy;
+    delete llm.researchSummary;
+    delete llm.companyName;
+    // Build the insert payload with only lowercase keys
     const insertPayload = {
       user_id: user.id,
       website: safe(llm.website, normalizedUrl),
-      companyname: safe(llm.companyname || llm.companyName, 'unknown'),
-      companyprofile: safe(llm.companyprofile || llm.companyProfile, {}),
-      decisionmakers: safe(llm.decisionmakers || llm.decisionMakers, []),
-      painpoints: safe(llm.painpoints || llm.painPoints, []),
+      companyname: safe(llm.companyname, 'unknown'),
+      companyprofile: safe(llm.companyprofile, {}),
+      decisionmakers: safe(llm.decisionmakers, []),
+      painpoints: safe(llm.painpoints, []),
       technologies: safe(llm.technologies, []),
       location: safe(llm.location, ''),
-      markettrends: safe(llm.markettrends || llm.marketTrends, []),
-      competitivelandscape: safe(llm.competitivelandscape || llm.competitiveLandscape, []),
-      gotomarketstrategy: safe(llm.gotomarketstrategy || llm.goToMarketStrategy, ''),
-      researchsummary: safe(llm.researchsummary || llm.researchSummary, ''),
+      markettrends: safe(llm.markettrends, []),
+      competitivelandscape: safe(llm.competitivelandscape, []),
+      gotomarketstrategy: safe(llm.gotomarketstrategy, ''),
+      researchsummary: safe(llm.researchsummary, ''),
       llm_output: finalAnalysis,
       created_at: new Date().toISOString(),
     };
