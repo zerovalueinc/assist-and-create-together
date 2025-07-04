@@ -469,6 +469,84 @@ export type Database = {
         }
         Relationships: []
       }
+      company_analyzer_outputs: {
+        Row: {
+          id: string;
+          user_id: string;
+          workspace_id: string | null;
+          schemaVersion: number | null;
+          companyname: string | null;
+          company_profile: any | null;
+          decision_makers: string[] | null;
+          pain_points: string[] | null;
+          technologies: string[] | null;
+          location: string | null;
+          market_trends: string[] | null;
+          competitive_landscape: string[] | null;
+          go_to_market_strategy: string | null;
+          research_summary: string | null;
+          website: string | null;
+          llm_output: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          workspace_id?: string | null;
+          schemaVersion?: number | null;
+          companyname?: string | null;
+          company_profile?: any | null;
+          decision_makers?: string[] | null;
+          pain_points?: string[] | null;
+          technologies?: string[] | null;
+          location?: string | null;
+          market_trends?: string[] | null;
+          competitive_landscape?: string[] | null;
+          go_to_market_strategy?: string | null;
+          research_summary?: string | null;
+          website?: string | null;
+          llm_output?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          workspace_id?: string | null;
+          schemaVersion?: number | null;
+          companyname?: string | null;
+          company_profile?: any | null;
+          decision_makers?: string[] | null;
+          pain_points?: string[] | null;
+          technologies?: string[] | null;
+          location?: string | null;
+          market_trends?: string[] | null;
+          competitive_landscape?: string[] | null;
+          go_to_market_strategy?: string | null;
+          research_summary?: string | null;
+          website?: string | null;
+          llm_output?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "company_analyzer_outputs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "company_analyzer_outputs_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          }
+        ];
+      }
     }
     Views: {
       [_ in never]: never

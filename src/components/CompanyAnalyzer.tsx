@@ -64,7 +64,7 @@ const CompanyAnalyzer = () => {
     setReports([]);
     // Fetch all saved reports for the user
     supabase
-      .from('company_analysis_reports')
+      .from('company_analyzer_outputs')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -87,7 +87,7 @@ const CompanyAnalyzer = () => {
       setAnalysis(null);
       setSelectedReportId(null);
     }
-    const { error } = await supabase.from('company_analysis_reports').delete().eq('id', id);
+    const { error } = await supabase.from('company_analyzer_outputs').delete().eq('id', id);
     if (error) {
       toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
       setReports(prevReports); // Rollback UI

@@ -40,7 +40,7 @@ export default function YourWork() {
       setAnalyzeError(null);
       try {
         const { data, error } = await supabase
-          .from('company_analysis_reports')
+          .from('company_analyzer_outputs')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
@@ -94,7 +94,7 @@ export default function YourWork() {
     
     try {
       const { data: reports, error } = await supabase
-        .from('company_analysis_reports')
+        .from('company_analyzer_outputs')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
