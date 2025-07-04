@@ -2,13 +2,11 @@
 // High-quality analysis and intelligence processing using the best LLM models
 // Processes raw web crawling data into actionable intelligence reports
 
-interface AnalysisTask {
-  type: 'icp_generation' | 'ibp_analysis' | 'sales_intelligence' | 'market_analysis' | 'competitive_intelligence' | 
-        'competitor_research' | 'tech_stack_research' | 'decision_maker_research' | 'pain_point_research' | 
-        'market_trends_research' | 'company_profile_research' | 'gtm_strategy_research';
-  data: any;
-  context?: string;
-}
+export type AnalysisTask = {
+  type: 'icp_generation' | 'ibp_analysis' | 'sales_intelligence' | 'market_analysis' | 'competitive_intelligence' | 'competitor_research' | 'tech_stack_research' | 'decision_maker_research' | 'pain_point_research' | 'market_trends_research' | 'company_profile_research' | 'gtm_strategy_research',
+  data: any,
+  context?: string
+};
 
 interface AnalysisResult {
   success: boolean;

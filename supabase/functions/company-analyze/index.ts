@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { LLMCompanyAnalyzer } from '../../../agents/LLMCompanyAnalyzer.ts';
+import { analyzeWithBestModel, type AnalysisTask } from '../../../agents/analysisAgent.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -175,47 +176,29 @@ serve(async (req) => {
       );
     }
 
-    // Use normalizedUrl for analysis and saving
-    const analyzer = new LLMCompanyAnalyzer();
-    let finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
-    console.log('Analysis generated for:', finalAnalysis.companyName);
+    // Use the full research logic with your improved prompt
+    const task: AnalysisTask = {
+      type: 'icp_generation',
+      data: { url: normalizedUrl }
+    };
+    const analysisResult = await analyzeWithBestModel(task);
+    const finalAnalysis = analysisResult.data;
 
-    // ABSOLUTE MINIMAL: Only save the raw LLM output to llm_output
     const insertPayload = {
       user_id: user.id,
       website: normalizedUrl,
-      llm_output: finalAnalysis, // EXACT raw LLM agent output
+      llm_output: finalAnalysis, // Save the raw, structured output
       created_at: new Date().toISOString(),
       companyName: finalAnalysis.companyName || '', // Only if required by schema
     };
     console.log('[Edge Function] RAW INSERT PAYLOAD:', JSON.stringify(insertPayload));
     const { data: savedReport, error: saveError } = await supabaseClient
       .from('company_analyzer_outputs')
-      .insert(insertPayload)
-      .select()
-      .single();
-    console.log('[Edge Function] Supabase insert response:', { savedReport, saveError });
-
+      .insert([insertPayload])
+      .select();
     if (saveError) {
-      console.error('Insert error details:', {
-        code: saveError.code,
-        message: saveError.message,
-        details: saveError.details,
-        hint: saveError.hint,
-        fullError: saveError
-      });
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to save analysis', 
-          details: saveError.message,
-          code: saveError.code,
-          hint: saveError.hint
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[Edge Function] Supabase insert error:', saveError);
+      return new Response(JSON.stringify({ error: 'Failed to save analysis', details: saveError }), { status: 500 });
     }
     return new Response(
       JSON.stringify({
