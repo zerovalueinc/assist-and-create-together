@@ -45,11 +45,13 @@ serve(async (req) => {
     // Call the LLM agent
     let llm_output;
     try {
+      // Run the full multi-agent pipeline in memory
       llm_output = await runFullCompanyResearchPipeline(companyUrl);
+      // Only after all agents are done, save the final result
     } catch (e) {
       return new Response(JSON.stringify({ error: 'LLM research failed', details: e.message }), { status: 500, headers: corsHeaders });
     }
-    // Save to DB
+    // Save to DB (single insert, final result only)
     const insertPayload = {
       user_id: user.id,
       website: companyUrl,
