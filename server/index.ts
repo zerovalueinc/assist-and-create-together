@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import icpRoutes from './routes/icp';
 import { leadsRoutes } from './routes/leads';
 import { enrichRoutes } from './routes/enrich';
 import { emailRoutes } from './routes/email';
@@ -237,11 +236,11 @@ app.post('/test/system', async (req, res) => {
     // Test 1: Supabase database operations
     try {
       const { error: err1 } = await require('../src/integrations/supabase/client').supabase
-        .from('company_analyzer_outputs')
+        .from('company_analysis_reports')
         .select('id')
         .limit(1);
       const { error: err2 } = await require('../src/integrations/supabase/client').supabase
-        .from('icps')
+        .from('gtm_playbooks')
         .select('id')
         .limit(1);
       if (!err1 && !err2) {
@@ -356,7 +355,7 @@ app.post('/test/performance', async (req, res) => {
     const dbStart = Date.now();
     for (let i = 0; i < 10; i++) {
       await require('../src/integrations/supabase/client').supabase
-        .from('icps')
+        .from('gtm_playbooks')
         .select('id')
         .limit(1);
     }
@@ -458,7 +457,6 @@ app.post('/test/load', async (req, res) => {
 
 // API routes with enhanced error handling
 app.use('/api/auth', authRoutes);
-app.use('/api/icp', icpRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/enrich', enrichRoutes);
 app.use('/api/email', emailRoutes);
@@ -501,7 +499,6 @@ app.use('*', (req, res) => {
     availableEndpoints: [
       '/health',
       '/api/status',
-      '/api/icp',
       '/api/leads',
       '/api/enrich',
       '/api/email',
@@ -564,7 +561,6 @@ async function startServer() {
       console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`📈 API Status: http://localhost:${PORT}/api/status`);
       console.log(`🎯 Available endpoints:`);
-      console.log(`   - /api/icp - ICP/IBP generation`);
       console.log(`   - /api/leads - Lead search and enrichment`);
       console.log(`   - /api/enrich - Lead enrichment`);
       console.log(`   - /api/email - Email personalization`);

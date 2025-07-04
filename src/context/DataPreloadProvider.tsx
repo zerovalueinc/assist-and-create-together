@@ -68,7 +68,7 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
       console.log('[DataPreloadProvider] Fetching dashboard data for user', { user });
       try {
         const [companyAnalyzer, playbooks] = await Promise.all([
-          supabase.from('company_analyzer_outputs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+          supabase.from('company_analysis_reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
           supabase.from('gtm_playbooks').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         ]);
         if (cancelled) return;
@@ -79,13 +79,13 @@ export const DataPreloadProvider = ({ children }: { children: ReactNode }) => {
             companyName: name,
             company_name: name,
             companyname: name,
-            companyUrl: r.companyUrl || r.url || r.websiteUrl || r.website || '',
+            companyUrl: r.companyUrl || r.company_url || r.url || r.websiteUrl || r.website || '',
             createdAt: r.createdAt || r.created_at || '',
           };
         });
         const data: DashboardData = {
           companyAnalyzer: normalize(companyAnalyzer.data),
-          icps: [],
+          icps: [], // ICPs are now embedded in company_analysis_reports
           playbooks: playbooks.data || [],
           salesintel: [],
         };

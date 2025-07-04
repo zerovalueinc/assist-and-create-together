@@ -9,67 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      company_analyzer_outputs: {
+      company_analysis_reports: {
         Row: {
           company_name: string | null
-          company_size: string | null
-          competitive_landscape: Json | null
+          company_profile: Json | null
+          company_url: string | null
+          competitive_landscape: string | null
           created_at: string | null
           decision_makers: Json | null
           go_to_market_strategy: string | null
+          icp_profile: Json | null
           id: string
-          industry: string | null
           location: string | null
-          market_trends: Json | null
+          llm_output: string | null
+          market_trends: string | null
           pain_points: Json | null
           research_summary: string | null
-          revenue_range: string | null
           technologies: Json | null
           user_id: string
-          website: string | null
+          workspace_id: string | null
         }
         Insert: {
           company_name?: string | null
-          company_size?: string | null
-          competitive_landscape?: Json | null
+          company_profile?: Json | null
+          company_url?: string | null
+          competitive_landscape?: string | null
           created_at?: string | null
           decision_makers?: Json | null
           go_to_market_strategy?: string | null
+          icp_profile?: Json | null
           id?: string
-          industry?: string | null
           location?: string | null
-          market_trends?: Json | null
+          llm_output?: string | null
+          market_trends?: string | null
           pain_points?: Json | null
           research_summary?: string | null
-          revenue_range?: string | null
           technologies?: Json | null
           user_id: string
-          website?: string | null
+          workspace_id?: string | null
         }
         Update: {
           company_name?: string | null
-          company_size?: string | null
-          competitive_landscape?: Json | null
+          company_profile?: Json | null
+          company_url?: string | null
+          competitive_landscape?: string | null
           created_at?: string | null
           decision_makers?: Json | null
           go_to_market_strategy?: string | null
+          icp_profile?: Json | null
           id?: string
-          industry?: string | null
           location?: string | null
-          market_trends?: Json | null
+          llm_output?: string | null
+          market_trends?: string | null
           pain_points?: Json | null
           research_summary?: string | null
-          revenue_range?: string | null
           technologies?: Json | null
           user_id?: string
-          website?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "company_analyzer_outputs_user_id_fkey"
+            foreignKeyName: "company_analysis_reports_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_analysis_reports_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -152,47 +162,42 @@ export type Database = {
       gtm_playbooks: {
         Row: {
           company_name: string
-          confidence: number | null
+          company_url: string | null
           created_at: string
           id: string
-          playbook_data: Json
-          research_summary: string | null
-          sources: Json | null
-          status: string | null
-          updated_at: string
-          user_id: string | null
-          website_url: string
+          icp_data: Json
+          playbook_type: string | null
+          user_id: string
           workspace_id: string | null
         }
         Insert: {
           company_name: string
-          confidence?: number | null
+          company_url?: string | null
           created_at?: string
           id?: string
-          playbook_data: Json
-          research_summary?: string | null
-          sources?: Json | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string | null
-          website_url: string
+          icp_data: Json
+          playbook_type?: string | null
+          user_id: string
           workspace_id?: string | null
         }
         Update: {
           company_name?: string
-          confidence?: number | null
+          company_url?: string | null
           created_at?: string
           id?: string
-          playbook_data?: Json
-          research_summary?: string | null
-          sources?: Json | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string | null
-          website_url?: string
+          icp_data?: Json
+          playbook_type?: string | null
+          user_id?: string
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "gtm_playbooks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gtm_playbooks_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -202,72 +207,7 @@ export type Database = {
           },
         ]
       }
-      icps: {
-        Row: {
-          company_size: string | null
-          created_at: string | null
-          funding: string | null
-          id: number
-          industries: string | null
-          industry: string | null
-          job_titles: string | null
-          location_country: string | null
-          pain_points: string | null
-          persona: string | null
-          technologies: string | null
-          user_id: string
-          valid_use_case: string | null
-          workspace_id: string | null
-        }
-        Insert: {
-          company_size?: string | null
-          created_at?: string | null
-          funding?: string | null
-          id?: number
-          industries?: string | null
-          industry?: string | null
-          job_titles?: string | null
-          location_country?: string | null
-          pain_points?: string | null
-          persona?: string | null
-          technologies?: string | null
-          user_id: string
-          valid_use_case?: string | null
-          workspace_id?: string | null
-        }
-        Update: {
-          company_size?: string | null
-          created_at?: string | null
-          funding?: string | null
-          id?: number
-          industries?: string | null
-          industry?: string | null
-          job_titles?: string | null
-          location_country?: string | null
-          pain_points?: string | null
-          persona?: string | null
-          technologies?: string | null
-          user_id?: string
-          valid_use_case?: string | null
-          workspace_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "icps_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "icps_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
       pipeline_results: {
         Row: {
           created_at: string
@@ -388,7 +328,7 @@ export type Database = {
         Row: {
           company_name: string | null
           created_at: string | null
-          icp_id: number | null
+          report_id: string | null
           id: number
           url: string | null
           user_id: string | null
@@ -397,7 +337,7 @@ export type Database = {
         Insert: {
           company_name?: string | null
           created_at?: string | null
-          icp_id?: number | null
+          report_id?: string | null
           id?: number
           url?: string | null
           user_id?: string | null
@@ -406,7 +346,7 @@ export type Database = {
         Update: {
           company_name?: string | null
           created_at?: string | null
-          icp_id?: number | null
+          report_id?: string | null
           id?: number
           url?: string | null
           user_id?: string | null
@@ -414,10 +354,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "saved_reports_icp_id_fkey"
-            columns: ["icp_id"]
+            foreignKeyName: "saved_reports_report_id_fkey"
+            columns: ["report_id"]
             isOneToOne: false
-            referencedRelation: "icps"
+            referencedRelation: "company_analysis_reports"
             referencedColumns: ["id"]
           },
           {

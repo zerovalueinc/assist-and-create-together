@@ -483,24 +483,19 @@ export default async function handler(req, res) {
           
           if (cachedResult && new Date(cachedResult.expires_at) > new Date()) {
             // Return cached result
-            const { data: icp } = await supabase
-              .from('icps')
+            const { data: report } = await supabase
+              .from('company_analysis_reports')
               .select('*')
-              .eq('id', cachedResult.icp_id)
+              .eq('id', cachedResult.report_id)
               .eq('user_id', user.id)
               .single();
             
             return res.json({
               success: true,
-              ibp: {
-                ...icp,
-                painPoints: icp?.pain_points ? JSON.parse(icp.pain_points) : [],
-                technologies: icp?.technologies ? JSON.parse(icp.technologies) : [],
-                companySize: icp?.company_size ? JSON.parse(icp.company_size) : [],
-                jobTitles: icp?.job_titles ? JSON.parse(icp.job_titles) : [],
-                locationCountry: icp?.location_country ? JSON.parse(icp.location_country) : [],
-                industries: icp?.industries ? JSON.parse(icp.industries) : [],
-                comprehensiveIBP: cachedResult.comprehensive_data,
+              report: {
+                ...report,
+                icp_profile: report?.icp_profile || {},
+                comprehensive_data: cachedResult.comprehensive_data,
                 isCached: true,
                 isExpired: false,
                 cachedAt: cachedResult.created_at,
@@ -509,48 +504,57 @@ export default async function handler(req, res) {
             });
           }
           
-          // Generate new IBP (placeholder - would integrate with Claude agent)
-          const comprehensiveIBP = {
-            quantitativeMarketAnalysis: {
-              marketMaturity: "Technology",
-              marketSize: "Unknown"
-            },
-            salesIntelligence: {
-              buyingTriggers: ["Efficiency", "Scalability"]
-            },
-            enhancedBuyerPersonas: {
-              decisionMakers: [{ title: "CTO" }]
-            },
-            competitiveIntelligence: {
-              competitiveAdvantages: ["Technology Stack"]
-            },
-            revenueOptimization: {
-              salesCycleOptimization: ["Business optimization"]
+          // Generate new comprehensive analysis (placeholder)
+          const comprehensiveData = {
+            company_name: companyUrl,
+            company_profile: { industry: "Technology", size: "11-50 employees" },
+            decision_makers: ["CTO", "VP Engineering"],
+            pain_points: ["Efficiency", "Scalability"],
+            technologies: ["Web Technologies"],
+            location: "United States",
+            market_trends: "Growing demand for automation",
+            competitive_landscape: "Competitive market with focus on innovation",
+            go_to_market_strategy: "Direct sales with content marketing",
+            research_summary: "Technology company focused on efficiency solutions",
+            icp_profile: {
+              target_industries: ["Technology"],
+              target_company_size: { revenue_range: "Unknown", employee_range: "11-50" },
+              pain_points_and_triggers: ["Efficiency", "Scalability"],
+              buyer_personas: [{ title: "CTO" }],
+              recommended_apollo_search_params: {
+                technologies: ["Web Technologies"],
+                titles: ["CTO", "VP Engineering"],
+                locations: ["United States"]
+              },
+              messaging_angles: ["Business process optimization"]
             }
           };
           
-          // Save to database
-          const { data: icp, error: icpError } = await supabase
-            .from('icps')
+          // Save to company_analysis_reports with embedded ICP
+          const { data: report, error: reportError } = await supabase
+            .from('company_analysis_reports')
             .insert({
-              industry: comprehensiveIBP.quantitativeMarketAnalysis?.marketMaturity || "Technology",
-              funding: comprehensiveIBP.quantitativeMarketAnalysis?.marketSize || "Unknown",
-              pain_points: JSON.stringify(comprehensiveIBP.salesIntelligence?.buyingTriggers || []),
-              persona: comprehensiveIBP.enhancedBuyerPersonas?.decisionMakers?.[0]?.title || "CTO",
-              technologies: JSON.stringify(comprehensiveIBP.competitiveIntelligence?.competitiveAdvantages || []),
-              valid_use_case: comprehensiveIBP.revenueOptimization?.salesCycleOptimization?.[0] || "Business optimization",
-              company_size: JSON.stringify([comprehensiveIBP.quantitativeMarketAnalysis?.marketSize || "11-50"]),
-              job_titles: JSON.stringify(comprehensiveIBP.enhancedBuyerPersonas?.decisionMakers?.map((p: any) => p.title) || []),
-              location_country: JSON.stringify(["United States"]),
-              industries: JSON.stringify([comprehensiveIBP.quantitativeMarketAnalysis?.marketMaturity || "Technology"]),
-              user_id: user.id
+              user_id: user.id,
+              company_name: comprehensiveData.company_name || companyUrl,
+              company_url: companyUrl,
+              company_profile: comprehensiveData.company_profile || {},
+              decision_makers: comprehensiveData.decision_makers || [],
+              pain_points: comprehensiveData.pain_points || [],
+              technologies: comprehensiveData.technologies || [],
+              location: comprehensiveData.location || '',
+              market_trends: comprehensiveData.market_trends || '',
+              competitive_landscape: comprehensiveData.competitive_landscape || '',
+              go_to_market_strategy: comprehensiveData.go_to_market_strategy || '',
+              research_summary: comprehensiveData.research_summary || '',
+              icp_profile: comprehensiveData.icp_profile || {},
+              llm_output: JSON.stringify(comprehensiveData)
             })
             .select()
             .single();
           
-          if (icpError) {
-            console.error('ICP save error:', icpError);
-            return res.status(500).json({ error: 'Failed to save ICP' });
+          if (reportError) {
+            console.error('Report save error:', reportError);
+            return res.status(500).json({ error: 'Failed to save report' });
           }
           
           // Save to cache
@@ -562,30 +566,25 @@ export default async function handler(req, res) {
             .insert({
               url: companyUrl,
               is_comprehensive: true,
-              comprehensive_data: comprehensiveIBP,
-              icp_id: icp.id,
+              comprehensive_data: comprehensiveData,
+              report_id: report.id,
               user_id: user.id,
               expires_at: expiresAt.toISOString()
             });
           
           return res.json({
             success: true,
-            ibp: {
-              ...icp,
-              painPoints: JSON.parse(icp.pain_points || '[]'),
-              technologies: JSON.parse(icp.technologies || '[]'),
-              companySize: JSON.parse(icp.company_size || '[]'),
-              jobTitles: JSON.parse(icp.job_titles || '[]'),
-              locationCountry: JSON.parse(icp.location_country || '[]'),
-              industries: JSON.parse(icp.industries || '[]'),
-              comprehensiveIBP: comprehensiveIBP,
+            report: {
+              ...report,
+              icp_profile: report.icp_profile || {},
+              comprehensive_data: comprehensiveData,
               isCached: false,
               isExpired: false
             }
           });
         }
         
-        // Generate basic ICP
+        // Generate basic company analysis
         if (method === 'POST' && url.includes('/generate')) {
           const { url: companyUrl, comprehensive = false } = body;
           if (!companyUrl) {
@@ -605,48 +604,63 @@ export default async function handler(req, res) {
           if (cachedResult && new Date(cachedResult.expires_at) > new Date()) {
             return res.json({
               success: true,
-              icp: cachedResult,
+              report: cachedResult,
               isCached: true,
               isExpired: false
             });
           }
           
-          // Generate new ICP (placeholder)
+          // Generate new analysis (placeholder)
           const result = {
-            targetIndustries: ["Technology"],
-            targetCompanySize: { revenueRange: "Unknown", employeeRange: "11-50" },
-            painPointsAndTriggers: ["Efficiency", "Scalability"],
-            buyerPersonas: [{ title: "CTO" }],
-            recommendedApolloSearchParams: {
-              technologies: ["Web Technologies"],
-              titles: ["CTO", "VP Engineering"],
-              locations: ["United States"]
-            },
-            messagingAngles: ["Business process optimization"]
+            company_name: companyUrl,
+            company_profile: { industry: "Technology", size: "11-50 employees" },
+            decision_makers: ["CTO", "VP Engineering"],
+            pain_points: ["Efficiency", "Scalability"],
+            technologies: ["Web Technologies"],
+            location: "United States",
+            market_trends: "Growing demand for automation",
+            competitive_landscape: "Competitive market with focus on innovation",
+            go_to_market_strategy: "Direct sales with content marketing",
+            research_summary: "Technology company focused on efficiency solutions",
+            icp_profile: {
+              target_industries: ["Technology"],
+              target_company_size: { revenue_range: "Unknown", employee_range: "11-50" },
+              pain_points_and_triggers: ["Efficiency", "Scalability"],
+              buyer_personas: [{ title: "CTO" }],
+              recommended_apollo_search_params: {
+                technologies: ["Web Technologies"],
+                titles: ["CTO", "VP Engineering"],
+                locations: ["United States"]
+              },
+              messaging_angles: ["Business process optimization"]
+            }
           };
           
-          // Save to database
-          const { data: icp, error: icpError } = await supabase
-            .from('icps')
+          // Save to company_analysis_reports
+          const { data: report, error: reportError } = await supabase
+            .from('company_analysis_reports')
             .insert({
-              industry: result.targetIndustries?.[0] || "Technology",
-              funding: result.targetCompanySize?.revenueRange || "Unknown",
-              pain_points: JSON.stringify(result.painPointsAndTriggers || ["Efficiency", "Scalability"]),
-              persona: result.buyerPersonas?.[0]?.title || "CTO",
-              technologies: JSON.stringify(result.recommendedApolloSearchParams?.technologies || ["Web Technologies"]),
-              valid_use_case: result.messagingAngles?.[0] || "Business process optimization",
-              company_size: JSON.stringify([result.targetCompanySize?.employeeRange || "11-50"]),
-              job_titles: JSON.stringify(result.recommendedApolloSearchParams?.titles || ["CTO", "VP Engineering"]),
-              location_country: JSON.stringify(result.recommendedApolloSearchParams?.locations || ["United States"]),
-              industries: JSON.stringify(result.targetIndustries || ["Technology"]),
-              user_id: user.id
+              user_id: user.id,
+              company_name: result.company_name,
+              company_url: companyUrl,
+              company_profile: result.company_profile,
+              decision_makers: result.decision_makers,
+              pain_points: result.pain_points,
+              technologies: result.technologies,
+              location: result.location,
+              market_trends: result.market_trends,
+              competitive_landscape: result.competitive_landscape,
+              go_to_market_strategy: result.go_to_market_strategy,
+              research_summary: result.research_summary,
+              icp_profile: result.icp_profile,
+              llm_output: JSON.stringify(result)
             })
             .select()
             .single();
           
-          if (icpError) {
-            console.error('ICP save error:', icpError);
-            return res.status(500).json({ error: 'Failed to save ICP' });
+          if (reportError) {
+            console.error('Report save error:', reportError);
+            return res.status(500).json({ error: 'Failed to save report' });
           }
           
           // Save to cache
@@ -658,147 +672,72 @@ export default async function handler(req, res) {
             .insert({
               url: cacheKey,
               is_comprehensive: comprehensive,
-              comprehensive_data: comprehensive ? result : null,
-              icp_id: icp.id,
+              comprehensive_data: result,
+              report_id: report.id,
               user_id: user.id,
               expires_at: expiresAt.toISOString()
             });
           
           return res.json({
             success: true,
-            icp: icp,
-            isCached: false,
-            isExpired: false
+            report: {
+              ...report,
+              icp_profile: report.icp_profile || {},
+              isCached: false,
+              isExpired: false
+            }
           });
         }
         
-        // Get all ICPs or generate for specific URL
-        if (method === 'GET' && url === '/api/icp') {
-          const { url: companyUrl } = query;
+        // Get all company analysis reports
+        if (method === 'GET' && url === '/api/company-analysis') {
+          const { data: reports, error: reportsError } = await supabase
+            .from('company_analysis_reports')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
           
-          if (companyUrl) {
-            // Generate ICP for specific URL
-            const cacheKey = `${companyUrl} (basic)`;
-            const { data: cachedResult } = await supabase
-              .from('cache')
-              .select('*')
-              .eq('url', cacheKey)
-              .eq('is_comprehensive', false)
-              .eq('user_id', user.id)
-              .single();
-            
-            if (cachedResult && new Date(cachedResult.expires_at) > new Date()) {
-              return res.json({
-                success: true,
-                icp: cachedResult,
-                isCached: true,
-                isExpired: false
-              });
-            }
-            
-            // Generate new (placeholder)
-            const result = {
-              targetIndustries: ["Technology"],
-              targetCompanySize: { revenueRange: "Unknown", employeeRange: "11-50" },
-              painPointsAndTriggers: ["Efficiency", "Scalability"],
-              buyerPersonas: [{ title: "CTO" }],
-              recommendedApolloSearchParams: {
-                technologies: ["Web Technologies"],
-                titles: ["CTO", "VP Engineering"],
-                locations: ["United States"]
-              },
-              messagingAngles: ["Business process optimization"]
-            };
-            
-            const { data: icp, error: icpError } = await supabase
-              .from('icps')
-              .insert({
-                industry: result.targetIndustries?.[0] || "Technology",
-                funding: result.targetCompanySize?.revenueRange || "Unknown",
-                pain_points: JSON.stringify(result.painPointsAndTriggers || ["Efficiency", "Scalability"]),
-                persona: result.buyerPersonas?.[0]?.title || "CTO",
-                technologies: JSON.stringify(result.recommendedApolloSearchParams?.technologies || ["Web Technologies"]),
-                valid_use_case: result.messagingAngles?.[0] || "Business process optimization",
-                company_size: JSON.stringify([result.targetCompanySize?.employeeRange || "11-50"]),
-                job_titles: JSON.stringify(result.recommendedApolloSearchParams?.titles || ["CTO", "VP Engineering"]),
-                location_country: JSON.stringify(result.recommendedApolloSearchParams?.locations || ["United States"]),
-                industries: JSON.stringify(result.targetIndustries || ["Technology"]),
-                user_id: user.id
-              })
-              .select()
-              .single();
-            
-            if (icpError) {
-              console.error('ICP save error:', icpError);
-              return res.status(500).json({ error: 'Failed to save ICP' });
-            }
-            
-            return res.json({
-              success: true,
-              icp: icp,
-              isCached: false,
-              isExpired: false
-            });
-          } else {
-            // Get all ICPs for user
-            const { data: icps, error: icpsError } = await supabase
-              .from('icps')
-              .select('*')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false });
-            
-            if (icpsError) {
-              console.error('ICPs fetch error:', icpsError);
-              return res.status(500).json({ error: 'Failed to fetch ICPs' });
-            }
-            
-            const formattedIcps = icps.map(icp => ({
-              ...icp,
-              painPoints: icp.pain_points ? JSON.parse(icp.pain_points) : [],
-              technologies: icp.technologies ? JSON.parse(icp.technologies) : [],
-              companySize: icp.company_size ? JSON.parse(icp.company_size) : [],
-              jobTitles: icp.job_titles ? JSON.parse(icp.job_titles) : [],
-              locationCountry: icp.location_country ? JSON.parse(icp.location_country) : [],
-              industries: icp.industries ? JSON.parse(icp.industries) : []
-            }));
-            
-            return res.json({ success: true, icps: formattedIcps });
+          if (reportsError) {
+            console.error('Reports fetch error:', reportsError);
+            return res.status(500).json({ error: 'Failed to fetch reports' });
           }
+          
+          const formattedReports = reports.map(report => ({
+            ...report,
+            icp_profile: report.icp_profile || {}
+          }));
+          
+          return res.json({ success: true, reports: formattedReports });
         }
         
-        // Get specific ICP by ID
-        if (method === 'GET' && url.match(/\/api\/icp\/([^\/]+)$/)) {
-          const icpId = url.match(/\/api\/icp\/([^\/]+)$/)[1];
+        // Get specific company analysis report by ID
+        if (method === 'GET' && url.match(/\/api\/company-analysis\/([^\/]+)$/)) {
+          const reportId = url.match(/\/api\/company-analysis\/([^\/]+)$/)[1];
           
-          const { data: icp, error: icpError } = await supabase
-            .from('icps')
+          const { data: report, error: reportError } = await supabase
+            .from('company_analysis_reports')
             .select('*')
-            .eq('id', icpId)
+            .eq('id', reportId)
             .eq('user_id', user.id)
             .single();
           
-          if (icpError || !icp) {
-            return res.status(404).json({ error: 'ICP not found' });
+          if (reportError || !report) {
+            return res.status(404).json({ error: 'Report not found' });
           }
           
-          const formattedIcp = {
-            ...icp,
-            painPoints: icp.pain_points ? JSON.parse(icp.pain_points) : [],
-            technologies: icp.technologies ? JSON.parse(icp.technologies) : [],
-            companySize: icp.company_size ? JSON.parse(icp.company_size) : [],
-            jobTitles: icp.job_titles ? JSON.parse(icp.job_titles) : [],
-            locationCountry: icp.location_country ? JSON.parse(icp.location_country) : [],
-            industries: icp.industries ? JSON.parse(icp.industries) : []
+          const formattedReport = {
+            ...report,
+            icp_profile: report.icp_profile || {}
           };
           
-          return res.json({ success: true, icp: formattedIcp });
+          return res.json({ success: true, report: formattedReport });
         }
         
         // Save report
         if (method === 'POST' && url.includes('/save-report')) {
-          const { companyName, url: companyUrl, icpId } = body;
-          if (!companyName || !companyUrl || !icpId) {
-            return res.status(400).json({ error: 'companyName, url, and icpId are required' });
+          const { companyName, url: companyUrl, reportId } = body;
+          if (!companyName || !companyUrl || !reportId) {
+            return res.status(400).json({ error: 'companyName, url, and reportId are required' });
           }
           
           const { error: reportError } = await supabase
@@ -807,7 +746,7 @@ export default async function handler(req, res) {
               user_id: user.id,
               company_name: companyName,
               url: companyUrl,
-              icp_id: icpId
+              report_id: reportId
             });
           
           if (reportError) {

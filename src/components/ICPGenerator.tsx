@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Target, Users, Building2, MapPin, DollarSign, ArrowUpRight, Lightbulb, BarChart2, ClipboardList, TrendingUp, FileText, CheckCircle, AlertTriangle, Rocket, Globe, Zap } from "lucide-react";
+import { Loader2, Target, Users, Building2, MapPin, DollarSign, ArrowUpRight, Lightbulb, BarChart2, ClipboardList, TrendingUp, FileText, CheckCircle, AlertTriangle, Rocket, Globe, Zap, RefreshCw, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
@@ -22,37 +22,37 @@ import { useDataPreload } from '@/context/DataPreloadProvider';
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
 const GTMICPSchemaZod = z.object({
-  schemaVersion: z.string(),
+  schemaVersion: z.string().optional(),
   personas: z.array(z.object({
     title: z.string(),
     role: z.string(),
     painPoints: z.array(z.string()),
-    responsibilities: z.array(z.string()).optional(),
-  })),
+    responsibilities: z.array(z.string())
+  })).optional(),
   firmographics: z.object({
     industry: z.string(),
     companySize: z.string(),
     revenueRange: z.string(),
-    region: z.string(),
-  }),
-  messagingAngles: z.array(z.string()),
-  gtmRecommendations: z.string(),
-  competitivePositioning: z.string(),
-  objectionHandling: z.array(z.string()),
-  campaignIdeas: z.array(z.string()),
-  metricsToTrack: z.array(z.string()),
-  filmReviews: z.string(),
-  crossFunctionalAlignment: z.string(),
-  demandGenFramework: z.string(),
-  iterativeMeasurement: z.string(),
-  trainingEnablement: z.string(),
+    region: z.string()
+  }).optional(),
+  messagingAngles: z.array(z.string()).optional(),
+  gtmRecommendations: z.string().optional(),
+  competitivePositioning: z.string().optional(),
+  objectionHandling: z.array(z.string()).optional(),
+  campaignIdeas: z.array(z.string()).optional(),
+  metricsToTrack: z.array(z.string()).optional(),
+  filmReviews: z.string().optional(),
+  crossFunctionalAlignment: z.string().optional(),
+  demandGenFramework: z.string().optional(),
+  iterativeMeasurement: z.string().optional(),
+  trainingEnablement: z.string().optional(),
   apolloSearchParams: z.object({
     employeeCount: z.string(),
     titles: z.array(z.string()),
     industries: z.array(z.string()),
     technologies: z.array(z.string()),
-    locations: z.array(z.string()),
-  }).optional(),
+    locations: z.array(z.string())
+  }).optional()
 });
 
 const ICPGenerator = () => {
@@ -76,13 +76,13 @@ const ICPGenerator = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { data: preloadData, retry: refreshData } = useDataPreload();
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
-  const [recentICPs, setRecentICPs] = useState<any[]>([]);
+  const [recentReports, setRecentReports] = useState<any[]>([]);
   const [recentPlaybooks, setRecentPlaybooks] = useState<any[]>([]);
   const [showICPModal, setShowICPModal] = useState(false);
   const [modalICP, setModalICP] = useState<any>(null);
 
-  // Debug log for recentICPs
-  console.log('recentICPs:', recentICPs);
+  // Debug log for recentReports
+  console.log('recentReports:', recentReports);
 
   // Use preloaded company analyses for pills or fallback to cache
   let availableCompanies = preloadData?.companyAnalyzer || [];
@@ -99,98 +99,47 @@ const ICPGenerator = () => {
     });
   };
 
-  // Fetch recent/generated ICPs
-  const hasFetchedICPs = useRef(false);
-  useEffect(() => {
-    // Show cached ICPs instantly
-    const cachedICPs = getCache<any[]>('icp_icps', []);
-    if (cachedICPs.length > 0) setRecentICPs(cachedICPs);
-    if (hasFetchedICPs.current) return;
-    hasFetchedICPs.current = true;
-    let cancelled = false;
-    const fetchICPs = async () => {
-      if (!user?.id) return;
-      try {
-        const { data, error } = await supabase
-          .from('icps')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (!cancelled) {
-          if (error) throw error;
-          setRecentICPs(data || []);
-          setCache('icp_icps', data || []);
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          toast({
-            title: "Error fetching ICPs",
-            description: err.message || "Failed to fetch ICPs.",
-            variant: "destructive",
-          });
-        }
-      }
-    };
-    fetchICPs();
-    return () => { cancelled = true; };
-  }, [user]);
+  // Fetch recent/generated reports with embedded ICP profiles
+  const hasFetchedReports = useRef(false);
 
-  // Fetch recent/generated GTM Playbooks (ICPs are part of playbooks now)
-  const hasFetchedPlaybooks = useRef(false);
-  useEffect(() => {
-    if (!user?.id) return;
-    // Show cached playbooks instantly
-    const cachedPlaybooks = getCache<any[]>('icp_playbooks', []);
-    if (cachedPlaybooks.length > 0) setRecentPlaybooks(cachedPlaybooks);
-    if (hasFetchedPlaybooks.current) return;
-    hasFetchedPlaybooks.current = true;
-    let cancelled = false;
-    const fetchPlaybooks = async () => {
-      if (typeof user.id !== 'string' || !user.id) return;
-      try {
-        const { data, error } = await supabase
-          .from('gtm_playbooks')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (!cancelled) {
-          if (error) throw error;
-          setRecentPlaybooks(data || []);
-          setCache('icp_playbooks', data || []);
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          toast({
-            title: "Error fetching playbooks",
-            description: err.message || "Failed to fetch playbooks.",
-            variant: "destructive",
-          });
-        }
-      }
-    };
-    fetchPlaybooks();
-    return () => { cancelled = true; };
-  }, [user]);
+  const fetchRecentReports = async () => {
+    if (!user || hasFetchedReports.current) return;
+    
+    try {
+      const { data: reports, error } = await supabase
+        .from('company_analysis_reports')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-  // Auto-load saved playbooks
-  useEffect(() => {
-    if (!icp && recentICPs.length > 0) {
-      try {
-        const latest = recentICPs[0];
-        const parsed = GTMICPSchemaZod.safeParse(JSON.parse(latest.icpData));
-        if (parsed.success) {
-          setICP(parsed.data as GTMICPSchema);
-        }
-      } catch {
-        // Handle parsing error silently
+      if (error) {
+        console.error('Error fetching reports:', error);
+        return;
       }
+
+      // Filter reports that have ICP profiles
+      const reportsWithICP = reports.filter(report => report.icp_profile);
+      setRecentReports(reportsWithICP);
+      hasFetchedReports.current = true;
+      
+      console.log('Fetched reports with ICP profiles:', reportsWithICP);
+    } catch (error) {
+      console.error('Error fetching recent reports:', error);
     }
-  }, [recentICPs, icp]);
+  };
 
   useEffect(() => {
-    if (selectedCompany && recentICPs.length > 0) {
-      const match = recentICPs.find((icp) => icp.companyUrl === selectedCompany.companyUrl);
+    fetchRecentReports();
+  }, [user]);
+
+  // Auto-select company when reports are loaded
+  useEffect(() => {
+    if (selectedCompany && recentReports.length > 0) {
+      const match = recentReports.find((report) => report.company_url === selectedCompany.companyUrl);
       if (match) {
         try {
-          const parsed = GTMICPSchemaZod.safeParse(JSON.parse(match.icpData));
+          const parsed = GTMICPSchemaZod.safeParse(match.icp_profile);
           if (parsed.success) {
             setICP(parsed.data as GTMICPSchema);
           }
@@ -201,7 +150,7 @@ const ICPGenerator = () => {
         setICP(null);
       }
     }
-  }, [selectedCompany, recentICPs]);
+  }, [selectedCompany, recentReports]);
 
   const handleGoalChange = (goal: string, checked: boolean) => {
     if (checked) {
@@ -219,761 +168,218 @@ const ICPGenerator = () => {
     }
   };
 
-  const startICPWorkflow = async () => {
-    if (!selectedCompany || !playbookType || !productStage || !channelExpansion || !targetMarket || !salesCycle || !competitivePosition || primaryGoals.length === 0 || marketingChannels.length === 0) {
+  const generateGTMPlaybook = async () => {
+    if (!selectedCompany) {
       toast({
-        title: "Required Fields Missing",
-        description: "Please fill out all required fields before generating the GTM playbook.",
+        title: "No Company Selected",
+        description: "Please select a target company first.",
         variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
-    setICP(null);
-    setSessionId(null);
-    
     try {
-      const formData = {
-        playbookType,
-        productStage,
-        channelExpansion,
-        targetMarket,
-        salesCycle,
-        competitivePosition,
-        primaryGoals,
-        marketingChannels,
-        additionalContext
-      };
-
-      const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/workflow/start`, {
+      const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/gtm-generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          workflowName: 'icp-generator',
-          params: {
-            url: selectedCompany?.companyUrl || '',
-            comprehensive: false,
-            userId: user?.id,
-            formData: formData,
-          },
+          companyUrl: selectedCompany.companyUrl,
+          playbookType,
+          productStage,
+          channelExpansion,
+          targetMarket,
+          salesCycle,
+          competitivePosition,
+          primaryGoals,
+          marketingChannels,
+          additionalContext,
         }),
       });
-      
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to start GTM playbook generation');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const result = await response.json();
       
-      setSessionId(data.sessionId);
-      toast({
-        title: "GTM Playbook Generation Started",
-        description: "Your enterprise GTM playbook is being generated. This may take a few moments.",
-      });
-      
-      pollWorkflowState(data.sessionId);
+      if (result.success) {
+        setICP(result.gtmPlaybook);
+        toast({
+          title: "GTM Playbook Generated",
+          description: "Your comprehensive GTM strategy is ready!",
+        });
+      } else {
+        throw new Error(result.error || 'Failed to generate GTM playbook');
+      }
     } catch (error) {
+      console.error('Error generating GTM playbook:', error);
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to start GTM playbook generation.",
+        description: error.message || "Failed to generate GTM playbook. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
 
-  // Poll for workflow state/results
-  const pollWorkflowState = async (sessionId: string) => {
-    let attempts = 0;
-    const maxAttempts = 30;
-    const poll = async () => {
-      attempts++;
-      try {
-        const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/workflow/state?workflowName=icp-generator&sessionId=${encodeURIComponent(sessionId)}`, {
-          headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
+  const saveGTMPlaybook = async () => {
+    if (!icp || !selectedCompany) {
+      toast({
+        title: "Nothing to Save",
+        description: "Please generate a GTM playbook first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('gtm_playbooks')
+        .insert({
+          user_id: user.id,
+          company_name: selectedCompany.companyName || selectedCompany.company_name,
+          company_url: selectedCompany.companyUrl,
+          icp_data: JSON.stringify(icp),
+          playbook_type: playbookType,
+          created_at: new Date().toISOString(),
         });
-        const data = await response.json();
-        if (data.success && data.state) {
-          if (data.state.status === 'completed') {
-            setICP(data.state.result as GTMICPSchema);
-            setLoading(false);
-            toast({
-              title: "GTM Playbook Generated",
-              description: "Your enterprise GTM playbook has been created successfully.",
-            });
-            // Auto-save the result
-            try {
-              await fetch(`${SUPABASE_FUNCTIONS_BASE}/icp/playbooks`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-                },
-                body: JSON.stringify({
-                  companyUrl: selectedCompany?.companyUrl || '',
-                  icpData: data.state.result,
-                  playbookContent: JSON.stringify(data.state.result),
-                }),
-              });
-            } catch (saveErr) {
-              console.error('Failed to save GTM playbook:', saveErr);
-            }
-            return;
-          } else if (data.state.status === 'failed') {
-            setLoading(false);
-            toast({
-              title: "Generation Failed",
-              description: data.state.error || "GTM playbook generation failed.",
-              variant: "destructive",
-            });
-            return;
-          }
-        }
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 2000);
-        } else {
-          setLoading(false);
-          toast({
-            title: "Timeout",
-            description: "GTM playbook generation took too long. Please try again.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        setLoading(false);
-        toast({
-          title: "Polling Error",
-          description: error.message || "Failed to poll workflow state.",
-          variant: "destructive",
-        });
-      }
-    };
-    poll();
+
+      if (error) throw error;
+
+      toast({
+        title: "Playbook Saved",
+        description: "Your GTM playbook has been saved successfully!",
+      });
+
+      // Refresh the list
+      fetchRecentReports();
+    } catch (error) {
+      console.error('Error saving GTM playbook:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save GTM playbook. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openICPModal = (report: any) => {
+    setModalICP(report.icp_profile);
+    setShowICPModal(true);
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Target className="h-5 w-5 text-blue-600" />
-          <span>Enterprise GTM Playbook Generator</span>
-        </CardTitle>
-        <CardDescription>
-          <span className="font-semibold">Step 2 of 5:</span> Select a company and configure your go-to-market strategy parameters to generate a comprehensive enterprise GTM playbook.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Saved GTM Playbook Pills */}
-        {/* The following block is removed as per user request:
-        {availableCompanies.length > 0 && (
-          <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
-            {availableCompanies.map((c) => (
-              <Button
-                key={c.id}
-                variant={selectedCompany?.id === c.id ? 'default' : 'outline'}
-                onClick={() => setSelectedCompany(c)}
-                className="flex items-center gap-2 px-3 py-1 text-sm"
-                size="sm"
-              >
-                <img src={`https://www.google.com/s2/favicons?domain=${c.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
-                {c.companyName || c.companyUrl}
-                {selectedCompany?.id === c.id && <CheckCircle className="h-3 w-3 ml-1" />}
-              </Button>
-            ))}
-          </div>
-        )}
-        */}
-        {recentICPs.length > 0 && (
-          <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
-            {recentICPs.map((icpObj) => {
-              let parsed: GTMICPSchema | null = null;
-              try {
-                const result = GTMICPSchemaZod.safeParse(JSON.parse(icpObj.icpData));
-                if (result.success) parsed = result.data as GTMICPSchema;
-              } catch {
-                parsed = null;
-              }
-              const isActive = icp && parsed && JSON.stringify(icp) === JSON.stringify(parsed);
-              return (
-                <button
-                  key={icpObj.id}
-                  className={`flex items-center gap-2 px-3 py-1 rounded-full border transition text-sm font-medium min-w-[120px] max-w-[220px] truncate ${isActive ? 'bg-primary text-white border-primary' : 'bg-background border-muted text-foreground hover:bg-accent/40'}`}
-                  style={{ flex: '0 0 auto' }}
-                  onClick={() => {
-                    if (parsed) setICP(parsed as GTMICPSchema);
-                    setModalICP(parsed);
-                    setShowICPModal(true);
-                  }}
-                >
-                  <img
-                    src={`https://www.google.com/s2/favicons?domain=${icpObj.companyUrl}`}
-                    alt="favicon"
-                    className="w-4 h-4 mr-1 rounded"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.ico'; }}
-                  />
-                  <span className="truncate">{icpObj.companyName || icpObj.companyUrl}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-        {recentPlaybooks.length > 0 && (
-          <div className="flex flex-row gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
-            {recentPlaybooks.map((pb) => {
-              let parsed;
-              try {
-                parsed = JSON.parse(pb.icpData);
-              } catch {
-                parsed = { summary: pb.icpData };
-              }
-              return (
-                <Button
-                  key={pb.id}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 px-3 py-1 text-sm"
-                  onClick={() => {
-                    setICP(parsed as GTMICPSchema);
-                    setModalICP(parsed);
-                    setShowICPModal(true);
-                  }}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  {parsed.summary || parsed.gtmRecommendations || 'Open to view details.'}
-                </Button>
-              );
-            })}
-          </div>
-        )}
-        {/* ICP Doc Modal */}
-        <Dialog open={showICPModal} onOpenChange={setShowICPModal}>
-          <DialogContent className="max-w-2xl w-full">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CheckCircle className="text-green-500 h-5 w-5" /> ICP Document <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Saved!</span>
-              </DialogTitle>
-              <DialogDescription>
-                This ICP was automatically saved for you. Review all details below.
-              </DialogDescription>
-            </DialogHeader>
-            {modalICP && (
-              <div className="space-y-6">
-                {/* Executive Summary */}
-                {modalICP.gtmRecommendations && (
-                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                    <CardHeader className="flex flex-row items-center gap-3">
-                      <BarChart2 className="h-6 w-6 text-blue-500" />
-                      <CardTitle className="text-xl font-bold">Executive Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-base text-gray-700 whitespace-pre-line">
-                        {modalICP.gtmRecommendations}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                {/* Main Playbook Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Personas */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <Users className="h-5 w-5 text-indigo-500" />
-                      <CardTitle className="text-lg">Target Personas</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {Array.isArray(modalICP.personas) && modalICP.personas.length > 0 ? (
-                        <div className="space-y-2">
-                          {modalICP.personas.map((persona: any, idx: number) => (
-                            <div key={idx} className="mb-2 p-2 rounded bg-muted/40">
-                              <div className="font-semibold text-sm">{persona.title}{persona.role ? ` (${persona.role})` : ''}</div>
-                              {persona.painPoints && Array.isArray(persona.painPoints) && (
-                                <div className="text-xs text-gray-600 mt-1">
-                                  <span className="font-medium">Pain Points:</span>
-                                  <ul className="list-disc list-inside ml-4">
-                                    {persona.painPoints.map((pp: string, i: number) => (
-                                      <li key={i}>{pp}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {persona.responsibilities && Array.isArray(persona.responsibilities) && (
-                                <div className="text-xs text-gray-600 mt-1">
-                                  <span className="font-medium">Responsibilities:</span>
-                                  <ul className="list-disc list-inside ml-4">
-                                    {persona.responsibilities.map((r: string, i: number) => (
-                                      <li key={i}>{r}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : <div className="text-xs text-gray-400">No personas available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Firmographics */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <Target className="h-5 w-5 text-green-500" />
-                      <CardTitle className="text-lg">Firmographics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.firmographics && typeof modalICP.firmographics === 'object' ? (
-                        <div className="grid grid-cols-1 gap-2 text-sm">
-                          {Object.entries(modalICP.firmographics).map(([key, value]) => (
-                            <div key={key} className="flex items-center gap-2">
-                              <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                              <span>{String(value) || 'N/A'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : <div className="text-xs text-gray-400">No firmographics available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Messaging Angles */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <Lightbulb className="h-5 w-5 text-yellow-500" />
-                      <CardTitle className="text-lg">Messaging Angles</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {Array.isArray(modalICP.messagingAngles) && modalICP.messagingAngles.length > 0 ? (
-                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                          {modalICP.messagingAngles.map((m: string, i: number) => (
-                            <li key={i}>{m}</li>
-                          ))}
-                        </ul>
-                      ) : <div className="text-xs text-gray-400">No messaging angles available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* GTM Recommendations */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-pink-500" />
-                      <CardTitle className="text-lg">GTM Recommendations</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.gtmRecommendations ? (
-                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.gtmRecommendations}</div>
-                      ) : <div className="text-xs text-gray-400">No recommendations available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Competitive Positioning */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <BarChart2 className="h-5 w-5 text-orange-500" />
-                      <CardTitle className="text-lg">Competitive Positioning</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.competitivePositioning ? (
-                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.competitivePositioning}</div>
-                      ) : <div className="text-xs text-gray-400">No competitive positioning available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Objection Handling */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-red-500" />
-                      <CardTitle className="text-lg">Objection Handling</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {Array.isArray(modalICP.objectionHandling) && modalICP.objectionHandling.length > 0 ? (
-                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                          {modalICP.objectionHandling.map((o: string, i: number) => (
-                            <li key={i}>{o}</li>
-                          ))}
-                        </ul>
-                      ) : <div className="text-xs text-gray-400">No objection handling available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Campaign Ideas */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <ClipboardList className="h-5 w-5 text-cyan-500" />
-                      <CardTitle className="text-lg">Campaign Ideas</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {Array.isArray(modalICP.campaignIdeas) && modalICP.campaignIdeas.length > 0 ? (
-                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                          {modalICP.campaignIdeas.map((c: string, i: number) => (
-                            <li key={i}>{c}</li>
-                          ))}
-                        </ul>
-                      ) : <div className="text-xs text-gray-400">No campaign ideas available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Metrics to Track */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-lime-500" />
-                      <CardTitle className="text-lg">Metrics to Track</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {Array.isArray(modalICP.metricsToTrack) && modalICP.metricsToTrack.length > 0 ? (
-                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                          {modalICP.metricsToTrack.map((m: string, i: number) => (
-                            <li key={i}>{m}</li>
-                          ))}
-                        </ul>
-                      ) : <div className="text-xs text-gray-400">No metrics available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Film Reviews */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <FileText className="h-5 w-5 text-violet-500" />
-                      <CardTitle className="text-lg">Film Reviews</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.filmReviews ? (
-                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.filmReviews}</div>
-                      ) : <div className="text-xs text-gray-400">No film reviews available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Cross-Functional Alignment */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <Users className="h-5 w-5 text-fuchsia-500" />
-                      <CardTitle className="text-lg">Cross-Functional Alignment</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.crossFunctionalAlignment ? (
-                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.crossFunctionalAlignment}</div>
-                      ) : <div className="text-xs text-gray-400">No cross-functional alignment available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Demand Generation Framework */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-amber-500" />
-                      <CardTitle className="text-lg">Demand Generation Framework</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.demandGenFramework ? (
-                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.demandGenFramework}</div>
-                      ) : <div className="text-xs text-gray-400">No demand generation framework available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Iterative Measurement */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <BarChart2 className="h-5 w-5 text-sky-500" />
-                      <CardTitle className="text-lg">Iterative Measurement</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.iterativeMeasurement ? (
-                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.iterativeMeasurement}</div>
-                      ) : <div className="text-xs text-gray-400">No iterative measurement available.</div>}
-                    </CardContent>
-                  </Card>
-                  {/* Training & Enablement */}
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2">
-                      <FileText className="h-5 w-5 text-emerald-500" />
-                      <CardTitle className="text-lg">Training & Enablement</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {modalICP.trainingEnablement ? (
-                        <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.trainingEnablement}</div>
-                      ) : <div className="text-xs text-gray-400">No training & enablement available.</div>}
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-        {/* Company Selector */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Select Target Company</label>
-          <div className="flex flex-wrap gap-2">
-            {availableCompanies.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {availableCompanies.map((company) => (
-                  <Button
-                    key={company.id}
-                    variant={selectedCompany?.id === company.id ? 'default' : 'outline'}
-                    onClick={() => setSelectedCompany(company)}
-                    className="flex items-center gap-2 px-3 py-1 text-sm"
-                    size="sm"
-                  >
-                    <img src={`https://www.google.com/s2/favicons?domain=${company.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
-                    {company.companyName || company.companyUrl}
-                    {selectedCompany?.id === company.id && <CheckCircle className="h-3 w-3 ml-1" />}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">GTM Playbook Generator</h2>
+          <p className="text-muted-foreground">
+            Generate comprehensive go-to-market strategies based on company analysis
+          </p>
         </div>
-
-        {/* GTM Configuration Form */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
-          {/* Playbook Type */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Playbook Type</Label>
-            <Select value={playbookType} onValueChange={setPlaybookType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select playbook type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales">Sales Playbook</SelectItem>
-                <SelectItem value="marketing">Marketing Playbook</SelectItem>
-                <SelectItem value="integrated">Integrated Sales & Marketing</SelectItem>
-                <SelectItem value="account-based">Account-Based Marketing</SelectItem>
-                <SelectItem value="product-led">Product-Led Growth</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Product Stage */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Product Stage</Label>
-            <Select value={productStage} onValueChange={setProductStage}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select product stage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new-product">New Product Launch</SelectItem>
-                <SelectItem value="existing-product">Existing Product</SelectItem>
-                <SelectItem value="product-expansion">Product Feature Expansion</SelectItem>
-                <SelectItem value="market-expansion">Market Expansion</SelectItem>
-                <SelectItem value="rebranding">Product Rebranding</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Channel Expansion */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Channel Strategy</Label>
-            <Select value={channelExpansion} onValueChange={setChannelExpansion}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select channel strategy" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="direct-sales">Direct Sales</SelectItem>
-                <SelectItem value="partner-channel">Partner Channel</SelectItem>
-                <SelectItem value="multi-channel">Multi-Channel</SelectItem>
-                <SelectItem value="digital-first">Digital-First</SelectItem>
-                <SelectItem value="enterprise-sales">Enterprise Sales</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Target Market */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Target Market</Label>
-            <Select value={targetMarket} onValueChange={setTargetMarket}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select target market" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="enterprise">Enterprise (1000+ employees)</SelectItem>
-                <SelectItem value="mid-market">Mid-Market (100-1000 employees)</SelectItem>
-                <SelectItem value="smb">Small Business (1-100 employees)</SelectItem>
-                <SelectItem value="startup">Startups & Scale-ups</SelectItem>
-                <SelectItem value="multi-segment">Multi-Segment</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Sales Cycle */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Expected Sales Cycle</Label>
-            <Select value={salesCycle} onValueChange={setSalesCycle}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select sales cycle length" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="short">Short (0-3 months)</SelectItem>
-                <SelectItem value="medium">Medium (3-6 months)</SelectItem>
-                <SelectItem value="long">Long (6-12 months)</SelectItem>
-                <SelectItem value="complex">Complex (12+ months)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Competitive Position */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Competitive Position</Label>
-            <Select value={competitivePosition} onValueChange={setCompetitivePosition}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select competitive position" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="market-leader">Market Leader</SelectItem>
-                <SelectItem value="challenger">Challenger</SelectItem>
-                <SelectItem value="niche-player">Niche Player</SelectItem>
-                <SelectItem value="disruptor">Disruptor</SelectItem>
-                <SelectItem value="follower">Market Follower</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Primary Goals */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Primary Goals (Select all that apply)</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              'Increase Market Share',
-              'Generate New Leads',
-              'Improve Conversion Rates',
-              'Expand to New Markets',
-              'Increase Deal Size',
-              'Reduce Sales Cycle',
-              'Improve Customer Retention',
-              'Launch New Product',
-              'Competitive Displacement'
-            ].map((goal) => (
-              <div key={goal} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={goal}
-                  checked={!!primaryGoals.includes(goal)}
-                  onCheckedChange={(checked) => handleGoalChange(goal, checked === true)}
-                />
-                <Label htmlFor={goal} className="text-sm">{goal}</Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Marketing Channels */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Preferred Marketing Channels</Label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              'Email Marketing',
-              'Social Media',
-              'Content Marketing',
-              'Paid Advertising',
-              'SEO/SEM',
-              'Events & Webinars',
-              'Partner Marketing',
-              'Direct Mail'
-            ].map((channel) => (
-              <div key={channel} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={channel}
-                  checked={!!marketingChannels.includes(channel)}
-                  onCheckedChange={(checked) => handleChannelChange(channel, checked === true)}
-                />
-                <Label htmlFor={channel} className="text-sm">{channel}</Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Additional Context */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Additional Context (Optional)</Label>
-          <Textarea
-            value={additionalContext}
-            onChange={(e) => setAdditionalContext(e.target.value)}
-            placeholder="Any specific requirements, constraints, or additional context for your GTM strategy..."
-            className="min-h-[80px]"
-          />
-        </div>
-
-        {/* Generate Button */}
-        <Button onClick={startICPWorkflow} disabled={loading} className="w-full h-12 text-base font-medium">
-          {loading ? (
-            <>
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              Generating Enterprise GTM Playbook...
-            </>
-          ) : (
-            <>
-              <Rocket className="h-5 w-5 mr-2" />
-              Generate GTM Playbook
-            </>
-          )}
+        <Button onClick={handleRefreshCompanies} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
         </Button>
+      </div>
 
-        {/* Step/Progress UI */}
-        <div className="text-xs text-gray-500">Step 2 of 5: ICP Generation</div>
-
-        {/* Recent Playbooks */}
-        {recentPlaybooks.length > 0 && (
-          <div className="mt-8">
-            <div className="font-semibold mb-2 text-lg">Recent GTM Playbooks</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recentPlaybooks.map((pb) => {
-                let parsed;
-                try {
-                  parsed = JSON.parse(pb.icpData);
-                } catch {
-                  parsed = { summary: pb.icpData };
-                }
-                return (
-                  <Card key={pb.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardHeader>
-                      <CardTitle className="truncate text-base">{parsed.icp?.companyName || pb.companyUrl || 'GTM Playbook'}</CardTitle>
-                      <div className="text-xs text-gray-500">{new Date(pb.createdAt).toLocaleString()}</div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xs text-gray-700 truncate">{parsed.summary || parsed.gtmRecommendations || 'Open to view details.'}</div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+      {/* Recent Reports with ICP Profiles */}
+      {recentReports.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Recent Company Analysis Reports with ICP Profiles
+            </CardTitle>
+            <CardDescription>
+              Select a company to generate a GTM playbook based on its analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentReports.map((report) => (
+                <Card key={report.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <img 
+                        src={`https://www.google.com/s2/favicons?domain=${report.company_url}`} 
+                        alt="favicon" 
+                        className="w-4 h-4" 
+                      />
+                      <span className="font-medium text-sm">
+                        {report.company_name || report.company_url}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-3">
+                      {new Date(report.created_at).toLocaleDateString()}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => openICPModal(report)}
+                      >
+                        View ICP
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => setSelectedCompany({
+                          id: report.id,
+                          companyName: report.company_name,
+                          companyUrl: report.company_url
+                        })}
+                      >
+                        Use for GTM
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* ICP Result */}
-        {icp && (
-          <div className="space-y-8">
-            {/* Executive Summary Card */}
-            {(icp.gtmRecommendations) && (
-              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                <CardHeader className="flex flex-row items-center gap-3">
-                  <BarChart2 className="h-6 w-6 text-blue-500" />
-                  <CardTitle className="text-xl font-bold">Executive Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-base text-gray-700 whitespace-pre-line">
-                    {icp.gtmRecommendations}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {/* Main Playbook Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* ICP Modal */}
+      <Dialog open={showICPModal} onOpenChange={setShowICPModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>ICP Profile Details</DialogTitle>
+            <DialogDescription>
+              Comprehensive Ideal Customer Profile analysis
+            </DialogDescription>
+          </DialogHeader>
+          {modalICP && (
+            <div className="space-y-6">
               {/* Personas */}
               <Card>
                 <CardHeader className="flex flex-row items-center gap-2">
-                  <Users className="h-5 w-5 text-indigo-500" />
-                  <CardTitle className="text-lg">Target Personas</CardTitle>
+                  <Users className="h-5 w-5 text-blue-500" />
+                  <CardTitle className="text-lg">Buyer Personas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {Array.isArray(icp.personas) && icp.personas.length > 0 ? (
-                    <div className="space-y-2">
-                      {icp.personas.map((persona: any, idx: number) => (
-                        <div key={idx} className="mb-2 p-2 rounded bg-muted/40">
-                          <div className="font-semibold text-sm">{persona.title}{persona.role ? ` (${persona.role})` : ''}</div>
-                          {persona.painPoints && Array.isArray(persona.painPoints) && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              <span className="font-medium">Pain Points:</span>
-                              <ul className="list-disc list-inside ml-4">
-                                {persona.painPoints.map((pp: string, i: number) => (
-                                  <li key={i}>{pp}</li>
+                  {modalICP.personas ? (
+                    <div className="space-y-3">
+                      {modalICP.personas.map((persona: any, index: number) => (
+                        <div key={index} className="border rounded-lg p-3">
+                          <h4 className="font-semibold">{persona.title}</h4>
+                          <p className="text-sm text-gray-600">{persona.role}</p>
+                          {persona.painPoints && (
+                            <div className="mt-2">
+                              <span className="text-xs font-medium text-gray-500">Pain Points:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {persona.painPoints.map((point: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {point}
+                                  </Badge>
                                 ))}
-                              </ul>
-                            </div>
-                          )}
-                          {persona.responsibilities && Array.isArray(persona.responsibilities) && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              <span className="font-medium">Responsibilities:</span>
-                              <ul className="list-disc list-inside ml-4">
-                                {persona.responsibilities.map((r: string, i: number) => (
-                                  <li key={i}>{r}</li>
-                                ))}
-                              </ul>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -982,161 +388,69 @@ const ICPGenerator = () => {
                   ) : <div className="text-xs text-gray-400">No personas available.</div>}
                 </CardContent>
               </Card>
+
               {/* Firmographics */}
               <Card>
                 <CardHeader className="flex flex-row items-center gap-2">
-                  <Target className="h-5 w-5 text-green-500" />
+                  <Building2 className="h-5 w-5 text-green-500" />
                   <CardTitle className="text-lg">Firmographics</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {icp.firmographics && typeof icp.firmographics === 'object' ? (
-                    <div className="grid grid-cols-1 gap-2 text-sm">
-                      {Object.entries(icp.firmographics).map(([key, value]) => (
-                        <div key={key} className="flex items-center gap-2">
-                          <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                          <span>{String(value) || 'N/A'}</span>
-                        </div>
-                      ))}
+                  {modalICP.firmographics ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Industry</span>
+                        <p className="text-sm">{modalICP.firmographics.industry}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Company Size</span>
+                        <p className="text-sm">{modalICP.firmographics.companySize}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Revenue Range</span>
+                        <p className="text-sm">{modalICP.firmographics.revenueRange}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Region</span>
+                        <p className="text-sm">{modalICP.firmographics.region}</p>
+                      </div>
                     </div>
                   ) : <div className="text-xs text-gray-400">No firmographics available.</div>}
                 </CardContent>
               </Card>
+
               {/* Messaging Angles */}
               <Card>
                 <CardHeader className="flex flex-row items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
+                  <MessageSquare className="h-5 w-5 text-purple-500" />
                   <CardTitle className="text-lg">Messaging Angles</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {Array.isArray(icp.messagingAngles) && icp.messagingAngles.length > 0 ? (
-                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                      {icp.messagingAngles.map((m: string, i: number) => (
-                        <li key={i}>{m}</li>
+                  {modalICP.messagingAngles ? (
+                    <div className="flex flex-wrap gap-2">
+                      {modalICP.messagingAngles.map((angle: string, index: number) => (
+                        <Badge key={index} variant="outline">
+                          {angle}
+                        </Badge>
                       ))}
-                    </ul>
+                    </div>
                   ) : <div className="text-xs text-gray-400">No messaging angles available.</div>}
                 </CardContent>
               </Card>
+
               {/* GTM Recommendations */}
               <Card>
                 <CardHeader className="flex flex-row items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-pink-500" />
+                  <Rocket className="h-5 w-5 text-orange-500" />
                   <CardTitle className="text-lg">GTM Recommendations</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {icp.gtmRecommendations ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.gtmRecommendations}</div>
-                  ) : <div className="text-xs text-gray-400">No recommendations available.</div>}
+                  {modalICP.gtmRecommendations ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.gtmRecommendations}</div>
+                  ) : <div className="text-xs text-gray-400">No GTM recommendations available.</div>}
                 </CardContent>
               </Card>
-              {/* Competitive Positioning */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <BarChart2 className="h-5 w-5 text-orange-500" />
-                  <CardTitle className="text-lg">Competitive Positioning</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {icp.competitivePositioning ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.competitivePositioning}</div>
-                  ) : <div className="text-xs text-gray-400">No competitive positioning available.</div>}
-                </CardContent>
-              </Card>
-              {/* Objection Handling */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
-                  <CardTitle className="text-lg">Objection Handling</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {Array.isArray(icp.objectionHandling) && icp.objectionHandling.length > 0 ? (
-                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                      {icp.objectionHandling.map((o: string, i: number) => (
-                        <li key={i}>{o}</li>
-                      ))}
-                    </ul>
-                  ) : <div className="text-xs text-gray-400">No objection handling available.</div>}
-                </CardContent>
-              </Card>
-              {/* Campaign Ideas */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-cyan-500" />
-                  <CardTitle className="text-lg">Campaign Ideas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {Array.isArray(icp.campaignIdeas) && icp.campaignIdeas.length > 0 ? (
-                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                      {icp.campaignIdeas.map((c: string, i: number) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  ) : <div className="text-xs text-gray-400">No campaign ideas available.</div>}
-                </CardContent>
-              </Card>
-              {/* Metrics to Track */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-lime-500" />
-                  <CardTitle className="text-lg">Metrics to Track</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {Array.isArray(icp.metricsToTrack) && icp.metricsToTrack.length > 0 ? (
-                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600">
-                      {icp.metricsToTrack.map((m: string, i: number) => (
-                        <li key={i}>{m}</li>
-                      ))}
-                    </ul>
-                  ) : <div className="text-xs text-gray-400">No metrics available.</div>}
-                </CardContent>
-              </Card>
-              {/* Film Reviews */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <FileText className="h-5 w-5 text-violet-500" />
-                  <CardTitle className="text-lg">Film Reviews</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {icp.filmReviews ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.filmReviews}</div>
-                  ) : <div className="text-xs text-gray-400">No film reviews available.</div>}
-                </CardContent>
-              </Card>
-              {/* Cross-Functional Alignment */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <Users className="h-5 w-5 text-fuchsia-500" />
-                  <CardTitle className="text-lg">Cross-Functional Alignment</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {icp.crossFunctionalAlignment ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.crossFunctionalAlignment}</div>
-                  ) : <div className="text-xs text-gray-400">No cross-functional alignment available.</div>}
-                </CardContent>
-              </Card>
-              {/* Demand Generation Framework */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-amber-500" />
-                  <CardTitle className="text-lg">Demand Generation Framework</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {icp.demandGenFramework ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.demandGenFramework}</div>
-                  ) : <div className="text-xs text-gray-400">No demand generation framework available.</div>}
-                </CardContent>
-              </Card>
-              {/* Iterative Measurement */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <BarChart2 className="h-5 w-5 text-sky-500" />
-                  <CardTitle className="text-lg">Iterative Measurement</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {icp.iterativeMeasurement ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.iterativeMeasurement}</div>
-                  ) : <div className="text-xs text-gray-400">No iterative measurement available.</div>}
-                </CardContent>
-              </Card>
+
               {/* Training & Enablement */}
               <Card>
                 <CardHeader className="flex flex-row items-center gap-2">
@@ -1144,16 +458,370 @@ const ICPGenerator = () => {
                   <CardTitle className="text-lg">Training & Enablement</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {icp.trainingEnablement ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-line">{icp.trainingEnablement}</div>
+                  {modalICP.trainingEnablement ? (
+                    <div className="text-sm text-gray-700 whitespace-pre-line">{modalICP.trainingEnablement}</div>
                   ) : <div className="text-xs text-gray-400">No training & enablement available.</div>}
                 </CardContent>
               </Card>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Company Selector */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Select Target Company</label>
+        <div className="flex flex-wrap gap-2">
+          {availableCompanies.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {availableCompanies.map((company) => (
+                <Button
+                  key={company.id}
+                  variant={selectedCompany?.id === company.id ? 'default' : 'outline'}
+                  onClick={() => setSelectedCompany(company)}
+                  className="flex items-center gap-2 px-3 py-1 text-sm"
+                  size="sm"
+                >
+                  <img src={`https://www.google.com/s2/favicons?domain=${company.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
+                  {company.companyName || company.company_name || company.companyUrl}
+                  {selectedCompany?.id === company.id && <CheckCircle className="h-3 w-3 ml-1" />}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* GTM Configuration Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle>GTM Configuration</CardTitle>
+          <CardDescription>
+            Configure your go-to-market strategy parameters
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Playbook Type */}
+          <div className="space-y-2">
+            <Label>Playbook Type</Label>
+            <Select value={playbookType} onValueChange={setPlaybookType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select playbook type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="enterprise">Enterprise</SelectItem>
+                <SelectItem value="mid-market">Mid-Market</SelectItem>
+                <SelectItem value="startup">Startup</SelectItem>
+                <SelectItem value="scale-up">Scale-Up</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Product Stage */}
+          <div className="space-y-2">
+            <Label>Product Stage</Label>
+            <Select value={productStage} onValueChange={setProductStage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select product stage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mvp">MVP</SelectItem>
+                <SelectItem value="product-market-fit">Product-Market Fit</SelectItem>
+                <SelectItem value="growth">Growth</SelectItem>
+                <SelectItem value="scale">Scale</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Channel Expansion */}
+          <div className="space-y-2">
+            <Label>Channel Expansion</Label>
+            <Select value={channelExpansion} onValueChange={setChannelExpansion}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select channel strategy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="direct-sales">Direct Sales</SelectItem>
+                <SelectItem value="partnerships">Partnerships</SelectItem>
+                <SelectItem value="digital-marketing">Digital Marketing</SelectItem>
+                <SelectItem value="multi-channel">Multi-Channel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Target Market */}
+          <div className="space-y-2">
+            <Label>Target Market</Label>
+            <Select value={targetMarket} onValueChange={setTargetMarket}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select target market" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="domestic">Domestic</SelectItem>
+                <SelectItem value="international">International</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sales Cycle */}
+          <div className="space-y-2">
+            <Label>Sales Cycle</Label>
+            <Select value={salesCycle} onValueChange={setSalesCycle}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select sales cycle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="short">Short (1-3 months)</SelectItem>
+                <SelectItem value="medium">Medium (3-6 months)</SelectItem>
+                <SelectItem value="long">Long (6+ months)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Competitive Position */}
+          <div className="space-y-2">
+            <Label>Competitive Position</Label>
+            <Select value={competitivePosition} onValueChange={setCompetitivePosition}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select competitive position" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="market-leader">Market Leader</SelectItem>
+                <SelectItem value="challenger">Challenger</SelectItem>
+                <SelectItem value="niche">Niche Player</SelectItem>
+                <SelectItem value="new-entrant">New Entrant</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Primary Goals */}
+          <div className="space-y-2">
+            <Label>Primary Goals</Label>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                'Revenue Growth',
+                'Market Share',
+                'Customer Acquisition',
+                'Brand Awareness',
+                'Product Adoption',
+                'Customer Retention'
+              ].map((goal) => (
+                <div key={goal} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={goal}
+                    checked={primaryGoals.includes(goal)}
+                    onCheckedChange={(checked) => handleGoalChange(goal, checked === true)}
+                  />
+                  <Label htmlFor={goal} className="text-sm">{goal}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Marketing Channels */}
+          <div className="space-y-2">
+            <Label>Marketing Channels</Label>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                'Content Marketing',
+                'Social Media',
+                'Email Marketing',
+                'SEO/SEM',
+                'Events/Webinars',
+                'Influencer Marketing',
+                'PR',
+                'Direct Mail'
+              ].map((channel) => (
+                <div key={channel} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={channel}
+                    checked={marketingChannels.includes(channel)}
+                    onCheckedChange={(checked) => handleChannelChange(channel, checked === true)}
+                  />
+                  <Label htmlFor={channel} className="text-sm">{channel}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional Context */}
+          <div className="space-y-2">
+            <Label>Additional Context</Label>
+            <Textarea
+              placeholder="Any additional context, constraints, or specific requirements..."
+              value={additionalContext}
+              onChange={(e) => setAdditionalContext(e.target.value)}
+              rows={4}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Generate Button */}
+      <div className="flex gap-4">
+        <Button 
+          onClick={generateGTMPlaybook} 
+          disabled={!selectedCompany || loading}
+          className="flex-1"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating GTM Playbook...
+            </>
+          ) : (
+            <>
+              <Rocket className="mr-2 h-4 w-4" />
+              Generate GTM Playbook
+            </>
+          )}
+        </Button>
+        {icp && (
+          <Button onClick={saveGTMPlaybook} variant="outline">
+            <FileText className="mr-2 h-4 w-4" />
+            Save Playbook
+          </Button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Generated ICP Display */}
+      {icp && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Generated GTM Playbook
+            </CardTitle>
+            <CardDescription>
+              Comprehensive go-to-market strategy for {selectedCompany?.companyName || selectedCompany?.company_name}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Personas */}
+            {icp.personas && icp.personas.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Buyer Personas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {icp.personas.map((persona, index) => (
+                    <Card key={index}>
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold">{persona.title}</h4>
+                        <p className="text-sm text-muted-foreground">{persona.role}</p>
+                        {persona.painPoints && persona.painPoints.length > 0 && (
+                          <div className="mt-2">
+                            <span className="text-xs font-medium">Pain Points:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {persona.painPoints.map((point, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs">
+                                  {point}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Firmographics */}
+            {icp.firmographics && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Firmographics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Industry</span>
+                    <p>{icp.firmographics.industry}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Company Size</span>
+                    <p>{icp.firmographics.companySize}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
+                    <p>{icp.firmographics.revenueRange}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Region</span>
+                    <p>{icp.firmographics.region}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Messaging Angles */}
+            {icp.messagingAngles && icp.messagingAngles.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Messaging Angles</h3>
+                <div className="flex flex-wrap gap-2">
+                  {icp.messagingAngles.map((angle, index) => (
+                    <Badge key={index} variant="outline">
+                      {angle}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* GTM Recommendations */}
+            {icp.gtmRecommendations && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">GTM Recommendations</h3>
+                <div className="bg-muted p-4 rounded-lg">
+                  <p className="whitespace-pre-line">{icp.gtmRecommendations}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Apollo Search Parameters */}
+            {icp.apolloSearchParams && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Apollo Search Parameters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Employee Count</span>
+                    <p>{icp.apolloSearchParams.employeeCount}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Titles</span>
+                    <div className="flex flex-wrap gap-1">
+                      {icp.apolloSearchParams.titles.map((title, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {title}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Industries</span>
+                    <div className="flex flex-wrap gap-1">
+                      {icp.apolloSearchParams.industries.map((industry, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {industry}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Locations</span>
+                    <div className="flex flex-wrap gap-1">
+                      {icp.apolloSearchParams.locations.map((location, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {location}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

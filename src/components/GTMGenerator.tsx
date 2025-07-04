@@ -46,11 +46,24 @@ const GTMGenerator = () => {
     return { ...item, companyName: name, company_name: name, companyname: name };
   });
 
-  const [icpProfiles, setIcpProfiles] = useState([]);
+  // Use preloaded GTM playbooks for pills or fallback to cache
+  let availablePlaybooks = preloadData?.playbooks || [];
+  if (!availablePlaybooks.length) {
+    availablePlaybooks = getCache('yourwork_gtm', []);
+  }
+  // Normalize playbook names
+  availablePlaybooks = availablePlaybooks.map((item: any) => {
+    const name = item.companyName || item.company_name || item.companyname || 'Untitled Playbook';
+    return { ...item, companyName: name, company_name: name, companyname: name };
+  });
+
+  const [reportsWithICP, setReportsWithICP] = useState([]);
   
   useEffect(() => {
-    let icps = preloadData?.icps || getCache('yourwork_icp', []);
-    setIcpProfiles(icps);
+    let reports = preloadData?.companyAnalyzer || getCache('yourwork_analyze', []);
+    // Filter reports that have ICP profiles
+    const reportsWithICPProfiles = reports.filter((report: any) => report.icp_profile);
+    setReportsWithICP(reportsWithICPProfiles);
   }, [preloadData]);
 
   // GTM strategy form fields
@@ -204,26 +217,55 @@ const GTMGenerator = () => {
   };
 
   const renderICPPills = () => {
-    if (!icpProfiles.length) {
+    if (!reportsWithICP.length) {
       return <p className="text-gray-500 mt-2">No ICPs found. Generate an ICP first.</p>;
     }
 
     return (
       <div className="flex flex-wrap gap-2 mt-2">
-        {icpProfiles.map((icp: any) => (
+        {reportsWithICP.map((report: any) => (
           <button
-            key={icp.id}
+            key={report.id}
             onClick={() => {
-              console.log("Selected ICP:", icp);
-              setSelectedICP(icp);
+              console.log("Selected ICP:", report);
+              setSelectedICP(report);
             }}
             className={`rounded-full px-4 py-1 text-sm border ${
-              selectedICP?.id === icp.id ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+              selectedICP?.id === report.id ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
             }`}
           >
-            {icp.title || icp.name || 'Untitled ICP'}
+            {report.companyName || report.company_name || report.companyname || 'Untitled ICP'}
           </button>
         ))}
+      </div>
+    );
+  };
+
+  const renderGTMPlaybookPills = () => {
+    if (!availablePlaybooks.length) {
+      return <p className="text-gray-500 mt-2">No GTM playbooks found. Generate a playbook first.</p>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2 mt-2">
+        {availablePlaybooks.map((item: any) => {
+          const name = item.companyName || item.company_name || item.companyname || 'Untitled Playbook';
+          return (
+            <Button
+              key={item.id}
+              variant="outline"
+              onClick={() => {
+                console.log("Selected GTM Playbook:", item);
+                // You can add logic here to load the selected playbook
+              }}
+              className="flex items-center gap-2 px-3 py-1 text-sm"
+              size="sm"
+            >
+              <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+              {name}
+            </Button>
+          );
+        })}
       </div>
     );
   };
@@ -319,6 +361,16 @@ const GTMGenerator = () => {
               </Button>
             </div>
             {availableAnalyses.length > 0 && renderCompanyPills()}
+          </div>
+
+          <div className="mb-4">
+            <div className="font-semibold text-base mb-1">Available GTM Playbooks</div>
+            {availablePlaybooks.length > 0 && renderGTMPlaybookPills()}
+          </div>
+
+          <div className="mb-4">
+            <div className="font-semibold text-base mb-1">Select ICP Profile</div>
+            {reportsWithICP.length > 0 && renderICPPills()}
           </div>
 
           {/* GTM Strategy Form Fields */}

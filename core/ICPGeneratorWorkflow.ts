@@ -86,28 +86,42 @@ ${userInput}`;
       
       const llmResponse = await callClaude3(prompt, 2);
       let result;
+      
       try {
         result = JSON.parse(llmResponse);
-        // Validate result against GTMICPSchema
-        const parsed = GTMICPSchema.safeParse(result);
-        if (!parsed.success) {
-          console.error('LLM output failed schema validation:', parsed.error);
-          throw new Error('LLM output does not match canonical schema.');
-        }
-        result = parsed.data;
-      } catch (e) {
-        // Fallback: wrap as summary if not JSON
-        result = { summary: llmResponse };
+      } catch (parseError) {
+        console.error('Failed to parse LLM response:', parseError);
+        throw new Error('Invalid response format from LLM');
       }
-      
-      // For now, we'll just return the result without saving to database
-      // In the future, this should save to Supabase
+
+      // Save to company_analysis_reports with embedded ICP
+      const reportData = {
+        user_id: userId.toString(),
+        company_name: url,
+        company_url: url,
+        company_profile: companyAnalysis,
+        decision_makers: [],
+        pain_points: [],
+        technologies: [],
+        location: '',
+        market_trends: '',
+        competitive_landscape: '',
+        go_to_market_strategy: result.gtmRecommendations || '',
+        research_summary: '',
+        icp_profile: result,
+        llm_output: JSON.stringify(result)
+      };
+
       this.state.status = 'completed';
-      this.state.result = result;
-      return result;
-    } catch (error: any) {
+      this.state.result = {
+        report: reportData,
+        icp_profile: result
+      };
+
+      return this.state.result;
+    } catch (error) {
       this.state.status = 'failed';
-      this.state.error = error.message || 'Unknown error';
+      this.state.error = error instanceof Error ? error.message : 'Unknown error';
       throw error;
     }
   }

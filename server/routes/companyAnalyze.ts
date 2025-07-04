@@ -30,14 +30,14 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/reports', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    // Backfill saved_reports from cache for this user
+    // Backfill company_analysis_reports from cache for this user
     const { getRows } = require('../database/init');
     const cacheEntries = await getRows('SELECT url, comprehensiveData, createdAt FROM cache WHERE userId = ? AND comprehensiveData IS NOT NULL', [userId]);
     for (const entry of cacheEntries) {
       let companyName = null;
       try {
         const data = typeof entry.comprehensiveData === 'string' ? JSON.parse(entry.comprehensiveData) : entry.comprehensiveData;
-        companyName = data.companyName || entry.url;
+        companyName = data.companyName || data.company_name || entry.url;
       } catch (e) {
         companyName = entry.url;
       }

@@ -21,6 +21,7 @@ export default function YourWork() {
   const [gtmError, setGtmError] = useState<string | null>(null);
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
+  const [reports, setReports] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -37,7 +38,7 @@ export default function YourWork() {
       setAnalyzeError(null);
       try {
         const { data, error } = await supabase
-          .from('company_analyzer_outputs')
+          .from('company_analysis_reports')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
@@ -85,6 +86,27 @@ export default function YourWork() {
     fetchGTMPlaybooks();
     return () => { cancelled = true; };
   }, [user?.id]);
+
+  const fetchReports = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: reports, error } = await supabase
+        .from('company_analysis_reports')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching reports:', error);
+        return;
+      }
+
+      setReports(reports || []);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+    }
+  };
 
   if (!user) {
     return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Please log in to view your work.</span></div>;

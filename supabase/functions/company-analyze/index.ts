@@ -217,26 +217,42 @@ serve(async (req) => {
     }
     console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
-    // Only do the real insert
-    const { data: insertData, error: insertError } = await supabaseClient
-      .from('company_analyzer_outputs')
-      .insert([sanitizedAnalysis])
+    // Save to database
+    const { data: savedReport, error: saveError } = await supabaseClient
+      .from('company_analysis_reports')
+      .insert({
+        user_id: user.id,
+        company_name: finalAnalysis.companyName,
+        company_url: normalizedUrl,
+        company_profile: finalAnalysis.companyProfile || {},
+        decision_makers: finalAnalysis.decisionMakers || [],
+        pain_points: finalAnalysis.painPoints || [],
+        technologies: finalAnalysis.technologies || [],
+        location: finalAnalysis.location || '',
+        market_trends: finalAnalysis.marketTrends.join(',') || '',
+        competitive_landscape: finalAnalysis.competitiveLandscape.join(',') || '',
+        go_to_market_strategy: finalAnalysis.goToMarketStrategy || '',
+        research_summary: finalAnalysis.researchSummary || '',
+        icp_profile: finalAnalysis.companyProfile || {},
+        llm_output: JSON.stringify(finalAnalysis)
+      })
       .select()
       .single();
-    if (insertError) {
+
+    if (saveError) {
       console.error('Insert error details:', {
-        code: insertError.code,
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        fullError: insertError
+        code: saveError.code,
+        message: saveError.message,
+        details: saveError.details,
+        hint: saveError.hint,
+        fullError: saveError
       });
       return new Response(
         JSON.stringify({ 
           error: 'Failed to save analysis', 
-          details: insertError.message,
-          code: insertError.code,
-          hint: insertError.hint
+          details: saveError.message,
+          code: saveError.code,
+          hint: saveError.hint
         }),
         {
           status: 500,
@@ -248,13 +264,13 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         output: {
-          ...insertData,
-          companyName: insertData.companyName || insertData.company_name || insertData.companyname || '',
-          company_name: insertData.company_name || insertData.companyName || insertData.companyname || '',
-          companyname: insertData.companyname || insertData.companyName || insertData.company_name || '',
+          ...savedReport,
+          companyName: savedReport.company_name || savedReport.companyname || '',
+          company_name: savedReport.company_name || savedReport.companyName || savedReport.companyname || '',
+          companyname: savedReport.companyname || savedReport.companyName || savedReport.company_name || '',
         },
-        analysis: insertData,
-        outputId: insertData.id || null,
+        analysis: savedReport,
+        outputId: savedReport.id || null,
         cached: false
       }),
       {
