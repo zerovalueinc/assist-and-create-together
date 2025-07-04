@@ -263,16 +263,9 @@ const CompanyAnalyzer = () => {
           {/* Details */}
           {analysis && selectedReportId && typeof analysis === 'object' ? (
             (() => {
-              // --- Normalization Layer for New Schema ---
-              let llm = analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : analysis;
-              llm.ibp = llm.ibp || {};
-              llm.icp = llm.icp || {};
-              llm.goToMarketInsights = llm.goToMarketInsights || '';
-              llm.marketTrends = Array.isArray(llm.marketTrends) ? llm.marketTrends : [];
-              llm.competitiveLandscape = Array.isArray(llm.competitiveLandscape) ? llm.competitiveLandscape : [];
-              llm.decisionMakers = Array.isArray(llm.decisionMakers) ? llm.decisionMakers : [];
-              llm.researchSummary = llm.researchSummary || '';
-              // --- End Normalization Layer ---
+              // --- Use llm_output as the single source of truth ---
+              let llm = analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : {};
+              // --- End llm_output normalization ---
 
               const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
               if (!name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
@@ -285,16 +278,16 @@ const CompanyAnalyzer = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><span className="text-sm font-medium text-muted-foreground">Industry</span><p className="text-sm">{llm.ibp.industry || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Segment</span><p className="text-sm">{llm.ibp.segment || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{llm.ibp.companySize || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Revenue Range</span><p className="text-sm">{llm.ibp.revenueRange || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Geography</span><p className="text-sm">{Array.isArray(llm.ibp.geography) ? llm.ibp.geography.join(', ') : (llm.ibp.geography || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Business Model</span><p className="text-sm">{llm.ibp.businessModel || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Sales Motion</span><p className="text-sm">{llm.ibp.salesMotion || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Go-To-Market Model</span><p className="text-sm">{llm.ibp.goToMarketModel || 'N/A'}</p></div>
-                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.ibp.techStack) ? llm.ibp.techStack.join(', ') : (llm.ibp.techStack || 'N/A')}</p></div>
-                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Fit Signals</span><p className="text-sm">{Array.isArray(llm.ibp.fitSignals) ? llm.ibp.fitSignals.join(', ') : (llm.ibp.fitSignals || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Industry</span><p className="text-sm">{llm.ibp?.industry || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Segment</span><p className="text-sm">{llm.ibp?.segment || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{llm.ibp?.companySize || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Revenue Range</span><p className="text-sm">{llm.ibp?.revenueRange || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Geography</span><p className="text-sm">{Array.isArray(llm.ibp?.geography) ? llm.ibp.geography.join(', ') : (llm.ibp?.geography || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Business Model</span><p className="text-sm">{llm.ibp?.businessModel || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Sales Motion</span><p className="text-sm">{llm.ibp?.salesMotion || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Go-To-Market Model</span><p className="text-sm">{llm.ibp?.goToMarketModel || 'N/A'}</p></div>
+                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.ibp?.techStack) ? llm.ibp.techStack.join(', ') : (llm.ibp?.techStack || 'N/A')}</p></div>
+                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Fit Signals</span><p className="text-sm">{Array.isArray(llm.ibp?.fitSignals) ? llm.ibp.fitSignals.join(', ') : (llm.ibp?.fitSignals || 'N/A')}</p></div>
                       </div>
                     </CardContent>
                   </Card>
@@ -306,18 +299,18 @@ const CompanyAnalyzer = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><span className="text-sm font-medium text-muted-foreground">Buyer Titles</span><p className="text-sm">{Array.isArray(llm.icp.buyerTitles) ? llm.icp.buyerTitles.join(', ') : (llm.icp.buyerTitles || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Department</span><p className="text-sm">{llm.icp.department || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Seniority Level</span><p className="text-sm">{llm.icp.seniorityLevel || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Key Responsibilities</span><p className="text-sm">{Array.isArray(llm.icp.keyResponsibilities) ? llm.icp.keyResponsibilities.join(', ') : (llm.icp.keyResponsibilities || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span><p className="text-sm">{Array.isArray(llm.icp.painPoints) ? llm.icp.painPoints.join(', ') : (llm.icp.painPoints || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Buying Triggers</span><p className="text-sm">{Array.isArray(llm.icp.buyingTriggers) ? llm.icp.buyingTriggers.join(', ') : (llm.icp.buyingTriggers || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">KPIs</span><p className="text-sm">{Array.isArray(llm.icp.KPIs) ? llm.icp.KPIs.join(', ') : (llm.icp.KPIs || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.icp.techStack) ? llm.icp.techStack.join(', ') : (llm.icp.techStack || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Decision Process</span><p className="text-sm">{llm.icp.decisionProcess || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Common Objections</span><p className="text-sm">{Array.isArray(llm.icp.commonObjections) ? llm.icp.commonObjections.join(', ') : (llm.icp.commonObjections || 'N/A')}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Budget Range</span><p className="text-sm">{llm.icp.budgetRange || 'N/A'}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Emotional Drivers</span><p className="text-sm">{Array.isArray(llm.icp.emotionalDrivers) ? llm.icp.emotionalDrivers.join(', ') : (llm.icp.emotionalDrivers || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Buyer Titles</span><p className="text-sm">{Array.isArray(llm.icp?.buyerTitles) ? llm.icp.buyerTitles.join(', ') : (llm.icp?.buyerTitles || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Department</span><p className="text-sm">{llm.icp?.department || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Seniority Level</span><p className="text-sm">{llm.icp?.seniorityLevel || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Key Responsibilities</span><p className="text-sm">{Array.isArray(llm.icp?.keyResponsibilities) ? llm.icp.keyResponsibilities.join(', ') : (llm.icp?.keyResponsibilities || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span><p className="text-sm">{Array.isArray(llm.icp?.painPoints) ? llm.icp.painPoints.join(', ') : (llm.icp?.painPoints || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Buying Triggers</span><p className="text-sm">{Array.isArray(llm.icp?.buyingTriggers) ? llm.icp.buyingTriggers.join(', ') : (llm.icp?.buyingTriggers || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">KPIs</span><p className="text-sm">{Array.isArray(llm.icp?.KPIs) ? llm.icp.KPIs.join(', ') : (llm.icp?.KPIs || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.icp?.techStack) ? llm.icp.techStack.join(', ') : (llm.icp?.techStack || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Decision Process</span><p className="text-sm">{llm.icp?.decisionProcess || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Common Objections</span><p className="text-sm">{Array.isArray(llm.icp?.commonObjections) ? llm.icp.commonObjections.join(', ') : (llm.icp?.commonObjections || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Budget Range</span><p className="text-sm">{llm.icp?.budgetRange || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Emotional Drivers</span><p className="text-sm">{Array.isArray(llm.icp?.emotionalDrivers) ? llm.icp.emotionalDrivers.join(', ') : (llm.icp?.emotionalDrivers || 'N/A')}</p></div>
                       </div>
                     </CardContent>
                   </Card>
