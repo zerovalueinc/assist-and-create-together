@@ -121,18 +121,18 @@ Respond with a single valid JSON object:
     try {
       result = JSON.parse(content);
     } catch (e) {
-      // Fallback to minimal object if not valid JSON
-      result = {};
+      // If not valid JSON, throw an error so the edge function can handle/log it
+      throw new Error('LLM output is not valid JSON: ' + content);
     }
-    // --- Robust post-processing to ensure all fields exist and are correct type ---
-    result.ibp = typeof result.ibp === 'object' && result.ibp !== null ? result.ibp : {};
-    result.icp = typeof result.icp === 'object' && result.icp !== null ? result.icp : {};
-    result.goToMarketInsights = typeof result.goToMarketInsights === 'string' ? result.goToMarketInsights : '';
-    result.marketTrends = Array.isArray(result.marketTrends) ? result.marketTrends : [];
-    result.competitiveLandscape = Array.isArray(result.competitiveLandscape) ? result.competitiveLandscape : [];
-    result.decisionMakers = Array.isArray(result.decisionMakers) ? result.decisionMakers : [];
-    result.researchSummary = typeof result.researchSummary === 'string' ? result.researchSummary : '';
-    // --- End post-processing ---
+    // --- Ensure all required top-level keys exist ---
+    if (!result.ibp) result.ibp = {};
+    if (!result.icp) result.icp = {};
+    if (!result.goToMarketInsights) result.goToMarketInsights = '';
+    if (!result.marketTrends) result.marketTrends = [];
+    if (!result.competitiveLandscape) result.competitiveLandscape = [];
+    if (!result.decisionMakers) result.decisionMakers = [];
+    if (!result.researchSummary) result.researchSummary = '';
+    // --- End strict output enforcement ---
     return result;
   }
 } 
