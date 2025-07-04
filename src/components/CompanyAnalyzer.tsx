@@ -182,9 +182,32 @@ const CompanyAnalyzer = () => {
           isCached: false,
           timestamp: new Date().toISOString()
         });
-        // Prepend new report to reports and update pills/inline
-        setReports(prev => [data.output, ...prev]);
-        setSelectedReportId(data.output.id || null);
+        
+        // Fetch the actual saved record from the database to ensure proper structure
+        try {
+          const { data: savedRecord, error: fetchError } = await supabase
+            .from('company_analyzer_outputs')
+            .select('*')
+            .eq('id', data.output.id)
+            .single();
+          
+          if (fetchError) {
+            console.error('Error fetching saved record:', fetchError);
+            // Fallback to response data
+            setReports(prev => [data.output, ...prev]);
+          } else {
+            console.log('Fetched saved record:', savedRecord);
+            // Use the actual saved record for UI
+            setReports(prev => [savedRecord, ...prev]);
+            setSelectedReportId(savedRecord.id);
+          }
+        } catch (fetchError) {
+          console.error('Error fetching saved record:', fetchError);
+          // Fallback to response data
+          setReports(prev => [data.output, ...prev]);
+          setSelectedReportId(data.output.id || null);
+        }
+        
         // Refresh the DataPreloadProvider to update all components
         refreshData();
         toast({
