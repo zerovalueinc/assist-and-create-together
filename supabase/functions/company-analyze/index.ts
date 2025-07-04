@@ -181,11 +181,11 @@ serve(async (req) => {
     let finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
     console.log('Analysis generated for:', finalAnalysis.companyName);
 
-    // REMOVE ALL SANITIZATION/NORMALIZATION. Insert only the raw LLM output.
+    // ABSOLUTE MINIMAL: Only save the raw LLM output to llm_output
     const insertPayload = {
       user_id: user.id,
       website: normalizedUrl,
-      llm_output: finalAnalysis, // Direct, untouched LLM output
+      llm_output: finalAnalysis, // EXACT raw LLM agent output
       created_at: new Date().toISOString(),
       companyName: finalAnalysis.companyName || '', // Only if required by schema
     };
