@@ -63,7 +63,7 @@ const CompanyAnalyzer = () => {
       setAnalysis(null);
       setSelectedReportId(null);
     }
-    const { error } = await supabase.from('company_analyzer_outputs_unrestricted').delete().eq('id', id);
+    const { error } = await supabase.from('company_analyzer_outputs').delete().eq('id', id);
     if (error) {
       toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
       setReports(prevReports); // Rollback UI
