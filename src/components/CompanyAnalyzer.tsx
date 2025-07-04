@@ -32,6 +32,30 @@ function toArray(val: any): string[] {
   return [];
 }
 
+// Normalization function for LLM output
+function normalizeLLMOutput(llm: any) {
+  if (!llm) return {};
+  // If already in the expected format, return as is
+  if (llm.icp || llm.ibp) return llm;
+  // If using the new icp_analysis format, map fields
+  if (llm.icp_analysis) {
+    return {
+      icp: {
+        painPoints: llm.icp_analysis.pain_points,
+        buyerPersonas: llm.icp_analysis.buyer_personas,
+        buyingTriggers: llm.icp_analysis.buying_triggers,
+        valuePropositions: llm.icp_analysis.value_propositions,
+        techStack: llm.icp_analysis.tech_stack_alignment,
+        apolloSearchParameters: llm.icp_analysis.apollo_search_parameters,
+        targetingRecommendations: llm.icp_analysis.targeting_recommendations,
+        targetCompanyCharacteristics: llm.icp_analysis.target_company_characteristics,
+      },
+      // Add other mappings as needed
+    };
+  }
+  return llm;
+}
+
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
@@ -265,6 +289,7 @@ const CompanyAnalyzer = () => {
             (() => {
               // --- Use llm_output as the single source of truth ---
               let llm = analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : {};
+              llm = normalizeLLMOutput(llm);
               // --- End llm_output normalization ---
 
               const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
