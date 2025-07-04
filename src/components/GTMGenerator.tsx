@@ -29,15 +29,8 @@ const GTMGenerator = () => {
   const session = useSession();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
-  const [companyReports, setCompanyReports] = useState<any[]>([]);
-  const [reportsLoading, setReportsLoading] = useState(false);
-  const [reportsError, setReportsError] = useState<string | null>(null);
-
-  // Get workspaceId from the first available company report, or from selectedCompany
-  const workspaceId = selectedCompany?.workspace_id || (companyReports.length > 0 ? companyReports[0].workspace_id : undefined);
-
-  // Debug logging
-  console.log("preloadData", preloadData);
+  const [reports, setReports] = useState<any[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   // Use preloaded analyses for pills or fallback to cache
   let availableAnalyses = preloadData?.companyAnalyzer || [];
@@ -80,31 +73,21 @@ const GTMGenerator = () => {
   const [additionalContext, setAdditionalContext] = useState('');
 
   useEffect(() => {
-    // Show cached reports instantly
-    const cachedReports = getCache<any[]>('gtm_company_reports', []);
-    if (cachedReports.length > 0) setCompanyReports(cachedReports);
-    if (!user || !workspaceId) return;
-    setReportsLoading(true);
-    setReportsError(null);
-    const fetchReports = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('company_analyzer_outputs')
-          .select('*')
-          .eq('workspace_id', workspaceId)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setCompanyReports(data || []);
-        setCache('gtm_company_reports', data || []);
-      } catch (err: any) {
-        setReportsError(err.message || 'Failed to fetch company analysis reports.');
-        console.error('Failed to fetch company analysis reports:', err);
-      } finally {
-        setReportsLoading(false);
-      }
-    };
-    fetchReports();
-  }, [user, workspaceId]);
+    if (!user?.id) return;
+    supabase
+      .from('company_analyzer_outputs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) {
+          setReports(data);
+          if (data.length > 0) {
+            setSelectedReportId(data[0].id);
+          }
+        }
+      });
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -127,10 +110,6 @@ const GTMGenerator = () => {
       return;
     }
 
-    if (!workspaceId) {
-      throw new Error('Workspace not found. This is a system error.');
-    }
-
     setLoading(true);
     setGtmPlaybook(null);
 
@@ -150,7 +129,7 @@ const GTMGenerator = () => {
         useExistingAnalysis,
         analysisId: selectedAnalysisId,
         icpId: selectedICP?.id,
-        workspace_id: workspaceId,
+        workspace_id: selectedCompany?.workspace_id,
         gtmFormAnswers,
         selectedCompany,
       };
@@ -172,7 +151,7 @@ const GTMGenerator = () => {
       } else {
         // Use direct edge function call
         const result = await invokeEdgeFunction('gtm-generate', requestBody, {
-          workspace_id: workspaceId,
+          workspace_id: selectedCompany?.workspace_id,
           access_token: session.access_token,
         });
         data = result.data;
@@ -209,35 +188,31 @@ const GTMGenerator = () => {
   };
 
   const renderCompanyPills = () => {
-    if (reportsLoading) {
-      return <p className="text-gray-500 mt-2">Loading companies...</p>;
-    }
-    if (reportsError) {
-      return <p className="text-red-500 mt-2">{reportsError}</p>;
-    }
-    if (!companyReports.length) {
+    if (!reports.length) {
       return <p className="text-gray-500 mt-2">No companies analyzed yet. Use Company Analyzer first.</p>;
     }
     return (
       <div className="flex flex-wrap gap-2 mb-4">
-        {companyReports.map((item: any) => {
-          const name = item.companyName || item.company_name || item.companyname || 'Untitled';
+        {reports.map((report) => {
+          const name = report.companyName || report.company_name || report.companyname || 'Untitled';
+          const faviconUrl = `https://www.google.com/s2/favicons?domain=${report.companyUrl || report.url || report.company_url || ''}`;
           return (
             <Button
-              key={item.id}
-              variant={selectedCompany?.id === item.id ? 'default' : 'outline'}
+              key={report.id}
+              variant={selectedReportId === report.id ? 'default' : 'outline'}
               onClick={() => {
-                setSelectedCompany({ ...item, companyName: name, company_name: name, companyname: name });
-                setSelectedAnalysisId(item.id);
-                setUrl(item.companyUrl || item.url || '');
+                setSelectedReportId(report.id);
+                setSelectedCompany(report);
+                setSelectedAnalysisId(report.id);
+                setUrl(report.companyUrl || report.url || '');
                 setUseExistingAnalysis(true);
               }}
               className="flex items-center gap-2 px-3 py-1 text-sm"
               size="sm"
             >
-              <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+              <img src={faviconUrl} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
               {name}
-              {selectedCompany?.id === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
+              {selectedReportId === report.id && <CheckCircle className="h-3 w-3 ml-1" />}
             </Button>
           );
         })}
