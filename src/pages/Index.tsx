@@ -218,7 +218,9 @@ const Index = () => {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-slate-900 leading-tight">PersonaOps Command Center</h1>
+              <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+                Welcome back, {user.id} ({user.user_metadata?.fullName || user.user_metadata?.firstName || user.user_metadata?.lastName || user.email})
+              </h1>
               <TabsList className="bg-white border shadow-sm h-12" style={{ alignSelf: 'center' }}>
                 <TabsTrigger value="overview" className="flex items-center space-x-2 tab-morph">
                   <BarChart3 className="h-4 w-4" />
