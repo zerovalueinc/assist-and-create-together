@@ -281,7 +281,7 @@ const CompanyAnalyzer = () => {
                         </div>
                         <div>
                           <span className="text-sm font-medium text-muted-foreground">Website</span>
-                          <p className="text-sm">{analysis.company_url || llm.companyUrl || 'N/A'}</p>
+                          <p className="text-sm">{analysis.company_url || llm.website || 'N/A'}</p>
                         </div>
                         <div>
                           <span className="text-sm font-medium text-muted-foreground">Location</span>
@@ -289,343 +289,117 @@ const CompanyAnalyzer = () => {
                         </div>
                         <div>
                           <span className="text-sm font-medium text-muted-foreground">Industry</span>
-                          <p className="text-sm">{llm.industry || llm.company_profile?.industry || 'N/A'}</p>
+                          <p className="text-sm">{llm.industry || llm.companyProfile?.industry || llm.company_profile?.industry || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Company Size</span>
+                          <p className="text-sm">{llm.companyProfile?.companySize || llm.company_profile?.companySize || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
+                          <p className="text-sm">{llm.companyProfile?.revenueRange || llm.company_profile?.revenueRange || 'N/A'}</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Decision Makers */}
-                  {analysis.decision_makers && analysis.decision_makers.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Decision Makers
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                          {analysis.decision_makers.map((maker: string, index: number) => (
-                            <Badge key={index} variant="secondary">
-                              {maker}
-                            </Badge>
+                  {/* Technologies */}
+                  {llm.technologies && llm.technologies.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Cpu className="h-5 w-5" />
+                          Technologies
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {llm.technologies.map((tech: string, i: number) => (
+                            <Badge key={i} variant="outline">{tech}</Badge>
                           ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Decision Makers */}
+                  {llm.decisionMakers && llm.decisionMakers.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Decision Makers</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="list-disc pl-5">
+                          {llm.decisionMakers.map((dm: string, i: number) => <li key={i}>{dm}</li>)}
+                        </ul>
+                      </CardContent>
+                    </Card>
                   )}
 
                   {/* Pain Points */}
-                  {analysis.pain_points && analysis.pain_points.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5" />
-                        Pain Points
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                          {analysis.pain_points.map((point: string, index: number) => (
-                            <Badge key={index} variant="destructive">
-                              {point}
-                            </Badge>
-                          ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  )}
-
-                  {/* Technologies */}
-                  {analysis.technologies && analysis.technologies.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                          <Cpu className="h-5 w-5" />
-                          Technologies
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                          {analysis.technologies.map((tech: string, index: number) => (
-                            <Badge key={index} variant="outline">
-                              {tech}
-                            </Badge>
-                          ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {llm.painPoints && llm.painPoints.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Pain Points</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="list-disc pl-5">
+                          {llm.painPoints.map((pp: string, i: number) => <li key={i}>{pp}</li>)}
+                        </ul>
+                      </CardContent>
+                    </Card>
                   )}
 
                   {/* Market Trends */}
-                  {analysis.market_trends && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                          Market Trends
-                      </CardTitle>
-                    </CardHeader>
+                  {llm.marketTrends && llm.marketTrends.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Market Trends</CardTitle>
+                      </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-muted-foreground">{analysis.market_trends}</p>
+                        <ul className="list-disc pl-5">
+                          {llm.marketTrends.map((mt: string, i: number) => <li key={i}>{mt}</li>)}
+                        </ul>
                       </CardContent>
                     </Card>
                   )}
 
                   {/* Competitive Landscape */}
-                  {analysis.competitive_landscape && (
+                  {llm.competitiveLandscape && llm.competitiveLandscape.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <BarChart2 className="h-5 w-5" />
-                          Competitive Landscape
-                        </CardTitle>
+                        <CardTitle>Competitive Landscape</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-muted-foreground">{analysis.competitive_landscape}</p>
-                    </CardContent>
-                  </Card>
-                  )}
-
-                  {/* Go-to-Market Strategy */}
-                  {analysis.go_to_market_strategy && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                          <Rocket className="h-5 w-5" />
-                        Go-to-Market Strategy
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">{analysis.go_to_market_strategy}</p>
-                    </CardContent>
-                  </Card>
-                  )}
-
-                  {/* Research Summary */}
-                  {analysis.research_summary && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <FileText className="h-5 w-5" />
-                          Research Summary
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">{analysis.research_summary}</p>
+                        <ul className="list-disc pl-5">
+                          {llm.competitiveLandscape.map((cl: string, i: number) => <li key={i}>{cl}</li>)}
+                        </ul>
                       </CardContent>
                     </Card>
                   )}
 
-                  {/* ICP Profile */}
-                  {analysis.icp_profile && (
-                  <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Target className="h-5 w-5" />
-                          ICP Profile
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-6">
-                          {/* Personas */}
-                          {analysis.icp_profile.personas && analysis.icp_profile.personas.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Buyer Personas</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {analysis.icp_profile.personas.map((persona: any, index: number) => (
-                                  <Card key={index}>
-                                    <CardContent className="p-4">
-                                      <h4 className="font-semibold">{persona.title}</h4>
-                                      <p className="text-sm text-muted-foreground">{persona.role}</p>
-                                      {persona.painPoints && persona.painPoints.length > 0 && (
-                                        <div className="mt-2">
-                                          <span className="text-xs font-medium">Pain Points:</span>
-                                          <div className="flex flex-wrap gap-1 mt-1">
-                                            {persona.painPoints.map((point: string, i: number) => (
-                                              <Badge key={i} variant="secondary" className="text-xs">
-                                                {point}
-                                              </Badge>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                      {persona.responsibilities && persona.responsibilities.length > 0 && (
-                                        <div className="mt-2">
-                                          <span className="text-xs font-medium">Responsibilities:</span>
-                                          <div className="flex flex-wrap gap-1 mt-1">
-                                            {persona.responsibilities.map((resp: string, i: number) => (
-                                              <Badge key={i} variant="outline" className="text-xs">
-                                                {resp}
-                                              </Badge>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </CardContent>
-                                  </Card>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                  {/* Go-to-Market Strategy */}
+                  {llm.goToMarketStrategy && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Go-to-Market Strategy</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p>{llm.goToMarketStrategy}</p>
+                      </CardContent>
+                    </Card>
+                  )}
 
-                          {/* Firmographics */}
-                          {analysis.icp_profile.firmographics && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Firmographics</h3>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Industry</span>
-                                  <p>{analysis.icp_profile.firmographics.industry}</p>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Company Size</span>
-                                  <p>{analysis.icp_profile.firmographics.companySize}</p>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
-                                  <p>{analysis.icp_profile.firmographics.revenueRange}</p>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Region</span>
-                                  <p>{analysis.icp_profile.firmographics.region}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Messaging Angles */}
-                          {analysis.icp_profile.messagingAngles && analysis.icp_profile.messagingAngles.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Messaging Angles</h3>
-                              <div className="flex flex-wrap gap-2">
-                                {analysis.icp_profile.messagingAngles.map((angle: string, index: number) => (
-                                  <Badge key={index} variant="outline">
-                                    {angle}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* GTM Recommendations */}
-                          {analysis.icp_profile.gtmRecommendations && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">GTM Recommendations</h3>
-                              <div className="bg-muted p-4 rounded-lg">
-                                <p className="whitespace-pre-line">{analysis.icp_profile.gtmRecommendations}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Competitive Positioning */}
-                          {analysis.icp_profile.competitivePositioning && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Competitive Positioning</h3>
-                              <div className="bg-muted p-4 rounded-lg">
-                                <p className="whitespace-pre-line">{analysis.icp_profile.competitivePositioning}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Objection Handling */}
-                          {analysis.icp_profile.objectionHandling && analysis.icp_profile.objectionHandling.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Objection Handling</h3>
-                              <div className="space-y-2">
-                                {analysis.icp_profile.objectionHandling.map((obj: string, i: number) => (
-                                  <div key={i} className="bg-orange-50 border-l-4 border-orange-400 p-2 rounded">
-                                    <p className="text-sm text-orange-800">{obj}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Campaign Ideas */}
-                          {analysis.icp_profile.campaignIdeas && analysis.icp_profile.campaignIdeas.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Campaign Ideas</h3>
-                              <div className="flex flex-wrap gap-2">
-                                {analysis.icp_profile.campaignIdeas.map((idea: string, i: number) => (
-                                  <Badge key={i} variant="secondary">
-                                    {idea}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Metrics to Track */}
-                          {analysis.icp_profile.metricsToTrack && analysis.icp_profile.metricsToTrack.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Metrics to Track</h3>
-                              <div className="flex flex-wrap gap-2">
-                                {analysis.icp_profile.metricsToTrack.map((metric: string, i: number) => (
-                                  <Badge key={i} variant="outline">
-                                    {metric}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Training & Enablement */}
-                          {analysis.icp_profile.trainingEnablement && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Training & Enablement</h3>
-                              <div className="bg-muted p-4 rounded-lg">
-                                <p className="whitespace-pre-line">{analysis.icp_profile.trainingEnablement}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Apollo Search Parameters */}
-                          {analysis.icp_profile.apolloSearchParams && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3">Apollo Search Parameters</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Employee Count</span>
-                                  <p>{analysis.icp_profile.apolloSearchParams.employeeCount}</p>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Titles</span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {analysis.icp_profile.apolloSearchParams.titles?.map((title: string, index: number) => (
-                                      <Badge key={index} variant="secondary" className="text-xs">
-                                        {title}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Industries</span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {analysis.icp_profile.apolloSearchParams.industries?.map((industry: string, index: number) => (
-                                      <Badge key={index} variant="secondary" className="text-xs">
-                                        {industry}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium text-muted-foreground">Locations</span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {analysis.icp_profile.apolloSearchParams.locations?.map((location: string, index: number) => (
-                                      <Badge key={index} variant="secondary" className="text-xs">
-                                        {location}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                    </CardContent>
-                  </Card>
+                  {/* Research Summary */}
+                  {llm.researchSummary && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Research Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p>{llm.researchSummary}</p>
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
               );
