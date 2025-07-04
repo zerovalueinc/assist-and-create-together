@@ -82,6 +82,7 @@ const CompanyAnalyzer = () => {
   const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [currentStep, setCurrentStep] = useState<string>('');
   const [researchSteps, setResearchSteps] = useState<any[]>([]);
   const [stepsLoading, setStepsLoading] = useState(false);
   const [expandedStepIndexes, setExpandedStepIndexes] = useState<number[]>([]);
@@ -169,6 +170,25 @@ const CompanyAnalyzer = () => {
     const normalizedUrl = normalizeUrl(url);
     setAnalysis(null);
     setIsAnalyzing(true);
+    setCurrentStep('Company Overview...');
+    
+    // Simulate step progression (since we can't get real-time updates from the backend)
+    const stepProgression = [
+      { step: 'Company Overview...', delay: 2000 },
+      { step: 'Market Intelligence...', delay: 4000 },
+      { step: 'Tech Stack Analysis...', delay: 6000 },
+      { step: 'Sales & GTM Research...', delay: 8000 },
+      { step: 'Finalizing Report...', delay: 10000 }
+    ];
+    
+    let currentStepIndex = 0;
+    const stepInterval = setInterval(() => {
+      if (currentStepIndex < stepProgression.length - 1) {
+        currentStepIndex++;
+        setCurrentStep(stepProgression[currentStepIndex].step);
+      }
+    }, 2000);
+    
     try {
       console.log('=== Starting Company Analysis ===');
       console.log('URL:', normalizedUrl);
@@ -212,6 +232,8 @@ const CompanyAnalyzer = () => {
             console.warn('[WARN] data.output is an empty array.');
             toast({ title: 'Analysis Error', description: 'No report returned from analysis.', variant: 'destructive' });
             setIsAnalyzing(false);
+            setCurrentStep('');
+            clearInterval(stepInterval);
             return;
           }
         }
@@ -262,6 +284,8 @@ const CompanyAnalyzer = () => {
       });
     } finally {
       setIsAnalyzing(false);
+      setCurrentStep('');
+      clearInterval(stepInterval);
     }
   };
 
@@ -325,7 +349,7 @@ const CompanyAnalyzer = () => {
               {isAnalyzing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  {currentStep || 'Analyzing...'}
                 </>
               ) : user ? (
                 <>
