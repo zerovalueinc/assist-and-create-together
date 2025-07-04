@@ -44,31 +44,70 @@ async function callLLM(prompt: string, systemPrompt = 'You are an expert B2B res
   }
 }
 
-// Agent 1: Company Overview
+// Agent 1: Company Overview & Key Facts
 async function agentCompanyOverview(url: string) {
-  const prompt = `Research the company at this URL: ${url}.
-Return a JSON object with: company_name, summary, industry, headquarters, founded, company_type, company_size, revenue_range, funding.`;
+  const prompt = `You are an expert B2B company analyst. For the company at ${url}, return a JSON object with:
+- company_name
+- website
+- overview
+- company_size
+- employees_global
+- employees_key_regions
+- revenue
+- industry_segments
+- funding_status
+- key_contacts (array of {name, title, linkedin})
+`;
   return await callLLM(prompt);
 }
 
-// Agent 2: Market/Competitive Intelligence
+// Agent 2: Products, Positioning, and Market
 async function agentMarketIntelligence(url: string, prev: any) {
-  const prompt = `Given this company data: ${JSON.stringify(prev)}\nResearch the market and competitive landscape for the company at ${url}.
-Return a JSON object with: main_products, target_market, competitors, market_trends, positioning, value_proposition.`;
+  const prompt = `You are a product/market analyst. For the company at ${url}, return a JSON object with:
+- core_product_suite
+- key_modules (array: {module, problem_solved, target_user})
+- unique_selling_points
+- market_positioning
+- value_proposition_by_segment (SMB, MM, Enterprise)
+- key_differentiators (tech, service, integrations, pricing)
+- main_products
+- target_market
+- competitors (by segment)
+- market_trends
+`;
   return await callLLM(prompt);
 }
 
-// Agent 3: Technology/Features/Stack
+// Agent 3: ICP, Buying Process, Personas
 async function agentTechStack(url: string, prev: any) {
-  const prompt = `Given this company and market data: ${JSON.stringify(prev)}\nResearch the technology stack, key features, platform compatibility, and integrations for the company at ${url}.
-Return a JSON object with: key_features, platform_compatibility, technology_stack, integration_capabilities.`;
+  const prompt = `You are an ICP and sales process expert. For the company at ${url}, return a JSON object with:
+- icp_demographics (industry, size, revenue, region, tech_stack)
+- firmographics
+- pain_points
+- kpis_targeted
+- buying_committee_personas (array: {role, responsibilities})
+- buying_process (trigger_events, influencer_mapping, buying_cycles, content_sought)
+- red_flags
+- anti_personas
+`;
   return await callLLM(prompt);
 }
 
-// Agent 4: Sales/Go-to-Market/Opportunity/Final Synthesis
+// Agent 4: Features, Ecosystem, Clients, Competitors, GTM, Matrix, Action Steps
 async function agentSalesGTM(url: string, prev: any) {
-  const prompt = `Given this full company, market, and technology data: ${JSON.stringify(prev)}\nSynthesize actionable sales, go-to-market, and opportunity insights for the company at ${url}.
-Return a JSON object with: notable_clients, social_media (linkedin, twitter, facebook), research_summary, sales_opportunities, gtm_recommendations.`;
+  const prompt = `You are a GTM and competitive intelligence expert. For the company at ${url}, return a JSON object with:
+- key_features
+- integrations (ERPs, CRMs, payment gateways, tech partners)
+- api_openness
+- enterprise_readiness (security, scalability, support)
+- client_logos (array: {logo_url, category, outcome})
+- competitors (by segment, feature_comparison, threats, partners)
+- gtm_messaging (objection_handlers, talking_points_by_role, content_preferences)
+- icp_fit_matrix (table: attribute, ideal, acceptable, exclude)
+- action_steps (lead_scoring, review_plan, loss_win_analysis)
+- social_media (linkedin, twitter, facebook)
+- research_summary
+`;
   return await callLLM(prompt);
 }
 
@@ -205,32 +244,55 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   }
   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
-  // Merge all results into a single object matching frontend schema
+  // Merge all results into a single object matching proposed.md structure
   const merged = {
-    company_name: overview.company_name || 'N/A',
-    summary: overview.summary || 'N/A',
-    industry: overview.industry || 'N/A',
-    headquarters: overview.headquarters || 'N/A',
-    founded: overview.founded || 'N/A',
-    company_type: overview.company_type || 'N/A',
-    company_size: overview.company_size || 'N/A',
-    revenue_range: overview.revenue_range || 'N/A',
-    funding: overview.funding || 'N/A',
-    main_products: market.main_products || 'N/A',
-    target_market: market.target_market || 'N/A',
-    competitors: market.competitors || 'N/A',
-    market_trends: market.market_trends || 'N/A',
-    positioning: market.positioning || 'N/A',
-    value_proposition: market.value_proposition || 'N/A',
-    key_features: tech.key_features || 'N/A',
-    platform_compatibility: tech.platform_compatibility || 'N/A',
-    technology_stack: tech.technology_stack || 'N/A',
-    integration_capabilities: tech.integration_capabilities || 'N/A',
-    notable_clients: sales.notable_clients || 'N/A',
-    social_media: sales.social_media || { linkedin: 'N/A', twitter: 'N/A', facebook: 'N/A' },
-    research_summary: sales.research_summary || 'N/A',
-    sales_opportunities: sales.sales_opportunities || 'N/A',
-    gtm_recommendations: sales.gtm_recommendations || 'N/A',
+    company_overview: {
+      company_name: overview.company_name || 'N/A',
+      website: overview.website || 'N/A',
+      overview: overview.overview || 'N/A',
+      company_size: overview.company_size || 'N/A',
+      employees_global: overview.employees_global || 'N/A',
+      employees_key_regions: overview.employees_key_regions || 'N/A',
+      revenue: overview.revenue || 'N/A',
+      industry_segments: overview.industry_segments || 'N/A',
+      funding_status: overview.funding_status || 'N/A',
+      key_contacts: overview.key_contacts || [],
+    },
+    products_positioning: {
+      core_product_suite: market.core_product_suite || 'N/A',
+      key_modules: market.key_modules || [],
+      unique_selling_points: market.unique_selling_points || 'N/A',
+      market_positioning: market.market_positioning || 'N/A',
+      value_proposition_by_segment: market.value_proposition_by_segment || {},
+      key_differentiators: market.key_differentiators || [],
+      main_products: market.main_products || 'N/A',
+      target_market: market.target_market || 'N/A',
+      competitors: market.competitors || [],
+      market_trends: market.market_trends || [],
+    },
+    icp_and_buying: {
+      icp_demographics: tech.icp_demographics || {},
+      firmographics: tech.firmographics || {},
+      pain_points: tech.pain_points || [],
+      kpis_targeted: tech.kpis_targeted || [],
+      buying_committee_personas: tech.buying_committee_personas || [],
+      buying_process: tech.buying_process || {},
+      red_flags: tech.red_flags || [],
+      anti_personas: tech.anti_personas || [],
+    },
+    features_ecosystem_gtm: {
+      key_features: sales.key_features || [],
+      integrations: sales.integrations || [],
+      api_openness: sales.api_openness || 'N/A',
+      enterprise_readiness: sales.enterprise_readiness || {},
+      client_logos: sales.client_logos || [],
+      competitors: sales.competitors || [],
+      gtm_messaging: sales.gtm_messaging || {},
+      icp_fit_matrix: sales.icp_fit_matrix || [],
+      action_steps: sales.action_steps || {},
+      social_media: sales.social_media || { linkedin: 'N/A', twitter: 'N/A', facebook: 'N/A' },
+      research_summary: sales.research_summary || 'N/A',
+    }
   };
   console.log('[Pipeline] FINAL MERGED RESULT:', JSON.stringify(merged));
   return { overview, market, tech, sales, merged };

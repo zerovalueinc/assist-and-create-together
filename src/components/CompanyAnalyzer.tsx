@@ -171,24 +171,14 @@ const CompanyAnalyzer = () => {
     setAnalysis(null);
     setIsAnalyzing(true);
     setCurrentStep('Company Overview...');
-    
-    // Simulate step progression (since we can't get real-time updates from the backend)
-    const stepProgression = [
-      { step: 'Company Overview...', delay: 2000 },
-      { step: 'Market Intelligence...', delay: 4000 },
-      { step: 'Tech Stack Analysis...', delay: 6000 },
-      { step: 'Sales & GTM Research...', delay: 8000 },
-      { step: 'Finalizing Report...', delay: 10000 }
-    ];
-    
-    let currentStepIndex = 0;
-    const stepInterval = setInterval(() => {
-      if (currentStepIndex < stepProgression.length - 1) {
-        currentStepIndex++;
-        setCurrentStep(stepProgression[currentStepIndex].step);
-      }
-    }, 2000);
-    
+
+    // Realistic step progression based on backend logs
+    const stepTimeouts: NodeJS.Timeout[] = [];
+    stepTimeouts.push(setTimeout(() => setCurrentStep('Market Intelligence...'), 4000)); // after 4s
+    stepTimeouts.push(setTimeout(() => setCurrentStep('Tech Stack Analysis...'), 13000)); // after 13s
+    stepTimeouts.push(setTimeout(() => setCurrentStep('Sales & GTM Research...'), 33000)); // after 33s
+    stepTimeouts.push(setTimeout(() => setCurrentStep('Finalizing Report...'), 45000)); // after 45s
+
     try {
       console.log('=== Starting Company Analysis ===');
       console.log('URL:', normalizedUrl);
@@ -233,7 +223,7 @@ const CompanyAnalyzer = () => {
             toast({ title: 'Analysis Error', description: 'No report returned from analysis.', variant: 'destructive' });
             setIsAnalyzing(false);
             setCurrentStep('');
-            clearInterval(stepInterval);
+            stepTimeouts.forEach(clearTimeout);
             return;
           }
         }
@@ -285,7 +275,7 @@ const CompanyAnalyzer = () => {
     } finally {
       setIsAnalyzing(false);
       setCurrentStep('');
-      clearInterval(stepInterval);
+      stepTimeouts.forEach(clearTimeout);
     }
   };
 
@@ -375,273 +365,249 @@ const CompanyAnalyzer = () => {
           {/* Details */}
           {analysis && selectedReportId && typeof analysis === 'object' ? (
             (() => {
-              // --- Use llm_output as the single source of truth ---
-              let llm = analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : {};
-              llm = normalizeLLMOutput(llm);
-              // --- End llm_output normalization ---
-
-              const name = llm.company_name || llm.companyName || llm.companyname || 'Untitled';
-              if (!name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
+              let merged = analysis && analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : null;
+              if (!merged) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
+              const { company_overview, products_positioning, icp_and_buying, features_ecosystem_gtm } = merged;
               return (
                 <div className="space-y-6">
-                  {/* Company Overview Card */}
+                  {/* Company Overview */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        Company Overview
-                      </CardTitle>
+                      <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" />Company Overview</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Basic Info */}
                         <div className="space-y-4">
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Company Name</span>
-                            <p className="text-lg font-semibold">{renderField(llm.company_name)}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Summary</span>
-                            <p className="text-sm">{renderField(llm.summary)}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Industry</span>
-                            <p className="text-sm">{renderField(llm.industry)}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Headquarters</span>
-                            <p className="text-sm">{renderField(llm.headquarters)}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Founded</span>
-                            <p className="text-sm">{renderField(llm.founded)}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Company Type</span>
-                            <p className="text-sm">{renderField(llm.company_type)}</p>
-                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Company Name</span><p className="text-lg font-semibold">{renderField(company_overview?.company_name)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Website</span><p className="text-sm">{renderField(company_overview?.website)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Overview</span><p className="text-sm">{renderField(company_overview?.overview)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{renderField(company_overview?.company_size)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Employees (Global)</span><p className="text-sm">{renderField(company_overview?.employees_global)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Employees (Key Regions)</span><p className="text-sm">{renderField(company_overview?.employees_key_regions)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Revenue</span><p className="text-sm">{renderField(company_overview?.revenue)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Industry Segments</span><p className="text-sm">{renderField(company_overview?.industry_segments)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Funding Status</span><p className="text-sm">{renderField(company_overview?.funding_status)}</p></div>
                         </div>
-                        
-                        {/* Size & Financial */}
                         <div className="space-y-4">
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Company Size</span>
-                            <p className="text-sm">{renderField(llm.company_size?.employees_range)} ({renderField(llm.company_size?.employee_count)} employees)</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
-                            <p className="text-sm">{renderField(llm.revenue_range)}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Funding</span>
-                            <p className="text-sm">{renderField(llm.funding?.total_raised)}</p>
-                            {llm.funding?.latest_round && (
-                              <p className="text-xs text-muted-foreground">
-                                Latest: {llm.funding.latest_round.amount} ({llm.funding.latest_round.round_type}, {llm.funding.latest_round.year})
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Products & Market */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Rocket className="h-5 w-5" />
-                        Products & Market
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Main Products</span>
-                          <div className="mt-2">
-                            {llm.main_products && llm.main_products.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {llm.main_products.map((product: string, i: number) => (
-                                  <Badge key={i} variant="secondary" className="text-xs">
-                                    {product}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No data available</span>
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Target Market</span>
-                          <div className="mt-2">
-                            {llm.target_market && llm.target_market.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {llm.target_market.map((market: string, i: number) => (
-                                  <Badge key={i} variant="outline" className="text-xs">
-                                    {market}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No data available</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Key Features & Platforms */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Cpu className="h-5 w-5" />
-                        Key Features & Platforms
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Key Features</span>
-                          <div className="mt-2">
-                            {llm.key_features && llm.key_features.length > 0 ? (
+                          <div><span className="text-sm font-medium text-muted-foreground">Key Contacts</span>
+                            {Array.isArray(company_overview?.key_contacts) && company_overview.key_contacts.length > 0 ? (
                               <ul className="list-disc pl-5 text-sm space-y-1">
-                                {llm.key_features.map((feature: string, i: number) => (
-                                  <li key={i}>{feature}</li>
+                                {company_overview.key_contacts.map((c, i) => (
+                                  <li key={i}>{c.name} ({c.title}) {c.linkedin && <a href={c.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">LinkedIn</a>}</li>
                                 ))}
                               </ul>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No data available</span>
-                            )}
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
                           </div>
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Platform Compatibility</span>
-                          <div className="mt-2">
-                            {llm.platform_compatibility && llm.platform_compatibility.length > 0 ? (
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Products & Positioning */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Rocket className="h-5 w-5" />Products & Positioning</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">Core Product Suite</span><p className="text-sm">{renderField(products_positioning?.core_product_suite)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Unique Selling Points</span><p className="text-sm">{renderField(products_positioning?.unique_selling_points)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Market Positioning</span><p className="text-sm">{renderField(products_positioning?.market_positioning)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Main Products</span><p className="text-sm">{renderField(products_positioning?.main_products)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Target Market</span><p className="text-sm">{renderField(products_positioning?.target_market)}</p></div>
+                        </div>
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">Key Modules</span>
+                            {Array.isArray(products_positioning?.key_modules) && products_positioning.key_modules.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {products_positioning.key_modules.map((m, i) => (
+                                  <li key={i}>{m.module} – {m.problem_solved} (for {m.target_user})</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Value Proposition by Segment</span>
+                            {products_positioning?.value_proposition_by_segment && typeof products_positioning.value_proposition_by_segment === 'object' ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {Object.entries(products_positioning.value_proposition_by_segment).map(([seg, val], i) => (
+                                  <li key={i}><b>{seg}:</b> {val}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Key Differentiators</span>
+                            {Array.isArray(products_positioning?.key_differentiators) && products_positioning.key_differentiators.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
-                                {llm.platform_compatibility.map((platform: string, i: number) => (
-                                  <Badge key={i} variant="secondary" className="text-xs">
-                                    {platform}
-                                  </Badge>
+                                {products_positioning.key_differentiators.map((d, i) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">{d}</Badge>
                                 ))}
                               </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No data available</span>
-                            )}
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Competitors</span>
+                            {Array.isArray(products_positioning?.competitors) && products_positioning.competitors.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {products_positioning.competitors.map((c, i) => (
+                                  <li key={i}>{renderField(c)}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Market Trends</span>
+                            {Array.isArray(products_positioning?.market_trends) && products_positioning.market_trends.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {products_positioning.market_trends.map((t, i) => (
+                                  <li key={i}>{t}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Notable Clients */}
+                  {/* ICP & Buying Process */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Notable Clients
-                      </CardTitle>
+                      <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" />ICP & Buying Process</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {Array.isArray(llm.notable_clients) && llm.notable_clients.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {llm.notable_clients.map((client: string, i: number) => (
-                            <Badge key={i} variant="outline">
-                              {client}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">{typeof llm.notable_clients === 'string' ? llm.notable_clients : 'No data available'}</span>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Social Media */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                        Social Media & Research Summary
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {llm.social_media && (
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Social Media</span>
-                            <div className="mt-2 flex gap-4">
-                              {llm.social_media.linkedin && (
-                                <a href={`https://linkedin.com/company/${llm.social_media.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                                  LinkedIn
-                                </a>
-                              )}
-                              {llm.social_media.twitter && (
-                                <a href={`https://twitter.com/${llm.social_media.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                                  Twitter
-                                </a>
-                              )}
-                              {llm.social_media.facebook && (
-                                <a href={`https://facebook.com/${llm.social_media.facebook}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                                  Facebook
-                                </a>
-                              )}
-                            </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">ICP Demographics</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(icp_and_buying?.icp_demographics, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Firmographics</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(icp_and_buying?.firmographics, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span>
+                            {Array.isArray(icp_and_buying?.pain_points) && icp_and_buying.pain_points.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {icp_and_buying.pain_points.map((p, i) => (
+                                  <li key={i}>{p}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
                           </div>
-                        )}
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Research Summary</span>
-                          <p className="text-sm mt-2">{renderField(llm.research_summary)}</p>
+                          <div><span className="text-sm font-medium text-muted-foreground">KPIs Targeted</span>
+                            {Array.isArray(icp_and_buying?.kpis_targeted) && icp_and_buying.kpis_targeted.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {icp_and_buying.kpis_targeted.map((k, i) => (
+                                  <li key={i}>{k}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">Buying Committee Personas</span>
+                            {Array.isArray(icp_and_buying?.buying_committee_personas) && icp_and_buying.buying_committee_personas.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {icp_and_buying.buying_committee_personas.map((p, i) => (
+                                  <li key={i}>{p.role}: {p.responsibilities}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Buying Process</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(icp_and_buying?.buying_process, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Red Flags</span>
+                            {Array.isArray(icp_and_buying?.red_flags) && icp_and_buying.red_flags.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {icp_and_buying.red_flags.map((r, i) => (
+                                  <li key={i}>{r}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Anti-Personas</span>
+                            {Array.isArray(icp_and_buying?.anti_personas) && icp_and_buying.anti_personas.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {icp_and_buying.anti_personas.map((a, i) => (
+                                  <li key={i}>{a}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Research Steps (Audit Trail) Card */}
-                  {researchSteps.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <FileText className="h-5 w-5" />
-                          Research Steps (Audit Trail)
-                        </CardTitle>
-                        <CardDescription>
-                          Step-by-step outputs from each agent in the research pipeline.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {stepsLoading ? (
-                          <div className="text-center text-muted-foreground py-4">Loading steps...</div>
-                        ) : (
-                          <div className="space-y-4">
-                            {researchSteps.map((step, idx) => {
-                              const isExpanded = expandedStepIndexes.includes(idx);
-                              const output = typeof step.step_output === 'string' ? step.step_output : JSON.stringify(step.step_output, null, 2);
-                              const truncated = output.length > 300 && !isExpanded ? output.slice(0, 300) + '...' : output;
-                              return (
-                                <div key={step.id || idx} className="border rounded p-3 bg-muted/50">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <span className="font-semibold">{step.step_name}</span>
-                                      <span className="ml-2 text-xs text-muted-foreground">{new Date(step.created_at).toLocaleString()}</span>
-                                    </div>
-                                    {output.length > 300 && (
-                                      <Button size="sm" variant="ghost" onClick={() => setExpandedStepIndexes(isExpanded ? expandedStepIndexes.filter(i => i !== idx) : [...expandedStepIndexes, idx])}>
-                                        {isExpanded ? 'Collapse' : 'Expand'}
-                                      </Button>
-                                    )}
+                  {/* Features, Ecosystem, GTM, Clients, Matrix, Action Steps */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Cpu className="h-5 w-5" />Features, Ecosystem, GTM & More</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">Key Features</span>
+                            {Array.isArray(features_ecosystem_gtm?.key_features) && features_ecosystem_gtm.key_features.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {features_ecosystem_gtm.key_features.map((f, i) => (
+                                  <li key={i}>{f}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Integrations</span>
+                            {Array.isArray(features_ecosystem_gtm?.integrations) && features_ecosystem_gtm.integrations.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {features_ecosystem_gtm.integrations.map((i, idx) => (
+                                  <li key={idx}>{renderField(i)}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">API Openness</span><p className="text-sm">{renderField(features_ecosystem_gtm?.api_openness)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Enterprise Readiness</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.enterprise_readiness, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Client Logos</span>
+                            {Array.isArray(features_ecosystem_gtm?.client_logos) && features_ecosystem_gtm.client_logos.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {features_ecosystem_gtm.client_logos.map((c, i) => (
+                                  <div key={i} className="flex flex-col items-center">
+                                    {c.logo_url && <img src={c.logo_url} alt={c.category} className="w-10 h-10 object-contain" />}
+                                    <span className="text-xs mt-1">{c.category}</span>
+                                    {c.outcome && <span className="text-xs text-muted-foreground">{c.outcome}</span>}
                                   </div>
-                                  <pre className="mt-2 text-xs whitespace-pre-wrap break-all">{truncated}</pre>
-                                </div>
-                              );
-                            })}
+                                ))}
+                              </div>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
+                        </div>
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">Competitors</span>
+                            {Array.isArray(features_ecosystem_gtm?.competitors) && features_ecosystem_gtm.competitors.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {features_ecosystem_gtm.competitors.map((c, i) => (
+                                  <li key={i}>{renderField(c)}</li>
+                                ))}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">GTM Messaging</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.gtm_messaging, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">ICP Fit Matrix</span>
+                            {Array.isArray(features_ecosystem_gtm?.icp_fit_matrix) && features_ecosystem_gtm.icp_fit_matrix.length > 0 ? (
+                              <table className="min-w-full text-xs border mt-2">
+                                <thead><tr><th className="border px-2 py-1">Attribute</th><th className="border px-2 py-1">Ideal</th><th className="border px-2 py-1">Acceptable</th><th className="border px-2 py-1">Exclude</th></tr></thead>
+                                <tbody>
+                                  {features_ecosystem_gtm.icp_fit_matrix.map((row, i) => (
+                                    <tr key={i}>
+                                      <td className="border px-2 py-1">{row.attribute}</td>
+                                      <td className="border px-2 py-1">{row.ideal}</td>
+                                      <td className="border px-2 py-1">{row.acceptable}</td>
+                                      <td className="border px-2 py-1">{row.exclude}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Action Steps</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.action_steps, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Social Media</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.social_media, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Research Summary</span><p className="text-sm mt-2">{renderField(features_ecosystem_gtm?.research_summary)}</p></div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               );
             })()
