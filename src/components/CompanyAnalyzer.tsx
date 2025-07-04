@@ -301,132 +301,222 @@ const CompanyAnalyzer = () => {
               llm = normalizeLLMOutput(llm);
               // --- End llm_output normalization ---
 
-              const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
+              const name = llm.company_name || llm.companyName || llm.companyname || 'Untitled';
               if (!name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
               return (
                 <div className="space-y-6">
-                  {/* IBP Card */}
+                  {/* Company Overview Card */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Ideal Business Profile (IBP)</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building className="h-5 w-5" />
+                        Company Overview
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><span className="text-sm font-medium text-muted-foreground">Industry</span><p className="text-sm">{renderField(llm.ibp?.industry)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Segment</span><p className="text-sm">{renderField(llm.ibp?.segment)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{renderField(llm.ibp?.companySize)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Revenue Range</span><p className="text-sm">{renderField(llm.ibp?.revenueRange)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Geography</span><p className="text-sm">{renderField(llm.ibp?.geography)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Business Model</span><p className="text-sm">{renderField(llm.ibp?.businessModel)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Sales Motion</span><p className="text-sm">{renderField(llm.ibp?.salesMotion)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Go-To-Market Model</span><p className="text-sm">{renderField(llm.ibp?.goToMarketModel)}</p></div>
-                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{renderField(llm.ibp?.techStack)}</p></div>
-                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Fit Signals</span><p className="text-sm">{renderField(llm.ibp?.fitSignals)}</p></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Basic Info */}
+                        <div className="space-y-4">
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Company Name</span>
+                            <p className="text-lg font-semibold">{renderField(llm.company_name)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Summary</span>
+                            <p className="text-sm">{renderField(llm.summary)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Industry</span>
+                            <p className="text-sm">{renderField(llm.industry)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Headquarters</span>
+                            <p className="text-sm">{renderField(llm.headquarters)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Founded</span>
+                            <p className="text-sm">{renderField(llm.founded)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Company Type</span>
+                            <p className="text-sm">{renderField(llm.company_type)}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Size & Financial */}
+                        <div className="space-y-4">
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Company Size</span>
+                            <p className="text-sm">{renderField(llm.company_size?.employees_range)} ({renderField(llm.company_size?.employee_count)} employees)</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
+                            <p className="text-sm">{renderField(llm.revenue_range)}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Funding</span>
+                            <p className="text-sm">{renderField(llm.funding?.total_raised)}</p>
+                            {llm.funding?.latest_round && (
+                              <p className="text-xs text-muted-foreground">
+                                Latest: {llm.funding.latest_round.amount} ({llm.funding.latest_round.round_type}, {llm.funding.latest_round.year})
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* ICP Card */}
+                  {/* Products & Market */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Ideal Customer Profile (ICP)</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Rocket className="h-5 w-5" />
+                        Products & Market
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><span className="text-sm font-medium text-muted-foreground">Buyer Titles</span><p className="text-sm">{renderField(llm.icp?.buyerTitles)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Department</span><p className="text-sm">{renderField(llm.icp?.department)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Seniority Level</span><p className="text-sm">{renderField(llm.icp?.seniorityLevel)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Key Responsibilities</span><p className="text-sm">{renderField(llm.icp?.keyResponsibilities)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span><p className="text-sm">{renderField(llm.icp?.painPoints)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Buying Triggers</span><p className="text-sm">{renderField(llm.icp?.buyingTriggers)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">KPIs</span><p className="text-sm">{renderField(llm.icp?.KPIs)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{renderField(llm.icp?.techStack)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Decision Process</span><p className="text-sm">{renderField(llm.icp?.decisionProcess)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Common Objections</span><p className="text-sm">{renderField(llm.icp?.commonObjections)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Budget Range</span><p className="text-sm">{renderField(llm.icp?.budgetRange)}</p></div>
-                        <div><span className="text-sm font-medium text-muted-foreground">Emotional Drivers</span><p className="text-sm">{renderField(llm.icp?.emotionalDrivers)}</p></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Main Products</span>
+                          <div className="mt-2">
+                            {llm.main_products && llm.main_products.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {llm.main_products.map((product: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {product}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Target Market</span>
+                          <div className="mt-2">
+                            {llm.target_market && llm.target_market.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {llm.target_market.map((market: string, i: number) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {market}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* GTM Insights Card */}
+                  {/* Key Features & Platforms */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Go-To-Market Insights</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Cpu className="h-5 w-5" />
+                        Key Features & Platforms
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p>{renderField(llm.goToMarketInsights)}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Key Features</span>
+                          <div className="mt-2">
+                            {llm.key_features && llm.key_features.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {llm.key_features.map((feature: string, i: number) => (
+                                  <li key={i}>{feature}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Platform Compatibility</span>
+                          <div className="mt-2">
+                            {llm.platform_compatibility && llm.platform_compatibility.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {llm.platform_compatibility.map((platform: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {platform}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No data available</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  {/* Market Trends Card */}
+                  {/* Notable Clients */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Market Trends</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Notable Clients
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {(llm.marketTrends && llm.marketTrends.length > 0) ? (
-                        <ul className="list-disc pl-5">{llm.marketTrends.map((mt: string, i: number) => <li key={i}>{mt}</li>)}</ul>
-                      ) : (
-                        <span className="text-sm">No data available</span>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Competitive Landscape Card */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Competitive Landscape</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {(llm.competitiveLandscape && llm.competitiveLandscape.length > 0) ? (
-                        <ul className="list-disc pl-5">{llm.competitiveLandscape.map((cl: string, i: number) => <li key={i}>{cl}</li>)}</ul>
-                      ) : (
-                        <span className="text-sm">No data available</span>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Decision Makers Card */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Decision Makers</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {(llm.decisionMakers && llm.decisionMakers.length > 0) ? (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-sm">
-                            <thead>
-                              <tr>
-                                <th className="text-left font-medium pr-4">Name</th>
-                                <th className="text-left font-medium pr-4">Title</th>
-                                <th className="text-left font-medium">LinkedIn</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {llm.decisionMakers.map((dm: any, i: number) => (
-                                <tr key={i} className="border-t">
-                                  <td className="pr-4">{renderField(dm.name)}</td>
-                                  <td className="pr-4">{renderField(dm.title)}</td>
-                                  <td>{dm.linkedin ? <a href={dm.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">LinkedIn</a> : 'N/A'}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                      {llm.notable_clients && llm.notable_clients.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {llm.notable_clients.map((client: string, i: number) => (
+                            <Badge key={i} variant="outline">
+                              {client}
+                            </Badge>
+                          ))}
                         </div>
                       ) : (
-                        <span className="text-sm">No data available</span>
+                        <span className="text-sm text-muted-foreground">No data available</span>
                       )}
                     </CardContent>
                   </Card>
 
-                  {/* Research Summary Card */}
+                  {/* Social Media */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Research Summary</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Social Media & Research Summary
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p>{renderField(llm.researchSummary)}</p>
+                      <div className="space-y-4">
+                        {llm.social_media && (
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Social Media</span>
+                            <div className="mt-2 flex gap-4">
+                              {llm.social_media.linkedin && (
+                                <a href={`https://linkedin.com/company/${llm.social_media.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                  LinkedIn
+                                </a>
+                              )}
+                              {llm.social_media.twitter && (
+                                <a href={`https://twitter.com/${llm.social_media.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                  Twitter
+                                </a>
+                              )}
+                              {llm.social_media.facebook && (
+                                <a href={`https://facebook.com/${llm.social_media.facebook}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                  Facebook
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Research Summary</span>
+                          <p className="text-sm mt-2">{renderField(llm.research_summary)}</p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
