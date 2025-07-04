@@ -219,7 +219,7 @@ const Index = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold text-slate-900 leading-tight">
-                Welcome back, {user.id} ({user.user_metadata?.fullName || user.user_metadata?.firstName || user.user_metadata?.lastName || user.email})
+                Welcome back, {user.user_metadata?.firstName || user.user_metadata?.first_name || user.email}
               </h1>
               <TabsList className="bg-white border shadow-sm h-12" style={{ alignSelf: 'center' }}>
                 <TabsTrigger value="overview" className="flex items-center space-x-2 tab-morph">
