@@ -221,11 +221,11 @@ serve(async (req) => {
     let research_summary = finalAnalysis.icp_analysis?.research_summary || '';
     let company_name = extractDomain(normalizedUrl) || 'unknown';
     let website = normalizedUrl || 'unknown';
-    // Only assign explicit, snake_case keys for the insert payload
+    // Build insert payload with exact, current schema keys
     const insertPayload = {
       user_id: user.id,
-      website,
-      llm_output: finalAnalysis, // Save the raw, structured output ONLY here
+      company_url: website, // renamed from website
+      llm_output: finalAnalysis,
       created_at: new Date().toISOString(),
       company_name,
       company_profile,
@@ -238,9 +238,9 @@ serve(async (req) => {
       go_to_market_strategy,
       research_summary,
     };
-    console.log('[Edge Function] RAW INSERT PAYLOAD:', JSON.stringify(insertPayload));
+    // Insert into the correct table: company_analysis_reports
     const { data: savedReport, error: saveError } = await supabaseClient
-      .from('company_analyzer_outputs')
+      .from('company_analysis_reports')
       .insert([insertPayload])
       .select();
     if (saveError) {
