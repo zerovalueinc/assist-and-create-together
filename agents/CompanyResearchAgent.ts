@@ -1,8 +1,18 @@
 // @ts-ignore: Deno runtime provides Deno.env in edge functions
 // PersonaOps Sequential Multi-Agent Company Research Pipeline
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 declare const Deno: any;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+// Helper to get Supabase client
+function getSupabaseClient() {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Supabase env vars not set');
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
 
 // Helper to call the LLM with a prompt
 async function callLLM(prompt: string, systemPrompt = 'You are an expert B2B research analyst. Always return valid JSON.') {
@@ -62,22 +72,51 @@ Return a JSON object with: notable_clients, social_media (linkedin, twitter, fac
   return await callLLM(prompt);
 }
 
-// Orchestrator: Run all agents in sequence, merging outputs
-export async function runFullCompanyResearchPipeline(url: string): Promise<any> {
+// Orchestrator: Run all agents in sequence, merging outputs, and save each step
+export async function runFullCompanyResearchPipeline(url: string, user_id: string): Promise<any> {
+  const supabase = getSupabaseClient();
+  // Step 1: Company Overview
   console.log('[Pipeline] Agent 1: Company Overview starting...');
   const overview = await agentCompanyOverview(url);
+  await supabase.from('company_research_steps').insert({
+    user_id,
+    company_url: url,
+    step_name: 'company_overview',
+    step_output: overview
+  });
   console.log('[Pipeline] Agent 1 result:', JSON.stringify(overview));
 
+  // Step 2: Market/Competitive Intelligence
   console.log('[Pipeline] Agent 2: Market/Competitive Intelligence starting...');
   const market = await agentMarketIntelligence(url, overview);
+  await supabase.from('company_research_steps').insert({
+    user_id,
+    company_url: url,
+    step_name: 'market_intelligence',
+    step_output: market
+  });
   console.log('[Pipeline] Agent 2 result:', JSON.stringify(market));
 
+  // Step 3: Technology/Features/Stack
   console.log('[Pipeline] Agent 3: Technology/Features/Stack starting...');
   const tech = await agentTechStack(url, { ...overview, ...market });
+  await supabase.from('company_research_steps').insert({
+    user_id,
+    company_url: url,
+    step_name: 'tech_stack',
+    step_output: tech
+  });
   console.log('[Pipeline] Agent 3 result:', JSON.stringify(tech));
 
+  // Step 4: Sales/Go-to-Market/Final Synthesis
   console.log('[Pipeline] Agent 4: Sales/Go-to-Market/Final Synthesis starting...');
   const sales = await agentSalesGTM(url, { ...overview, ...market, ...tech });
+  await supabase.from('company_research_steps').insert({
+    user_id,
+    company_url: url,
+    step_name: 'sales_gtm',
+    step_output: sales
+  });
   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
   // Merge all results into a single object matching frontend schema

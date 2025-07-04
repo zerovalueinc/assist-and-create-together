@@ -46,7 +46,7 @@ serve(async (req) => {
     let llm_output;
     try {
       // Run the full multi-agent pipeline in memory and get all agent results
-      const pipelineResults = await runFullCompanyResearchPipeline(companyUrl);
+      const pipelineResults = await runFullCompanyResearchPipeline(companyUrl, user.id);
       console.log('[Edge] Agent 1 (overview):', JSON.stringify(pipelineResults.overview));
       console.log('[Edge] Agent 2 (market):', JSON.stringify(pipelineResults.market));
       console.log('[Edge] Agent 3 (tech):', JSON.stringify(pipelineResults.tech));
