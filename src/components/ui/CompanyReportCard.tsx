@@ -42,7 +42,7 @@ export function CompanyReportCard({ report, selected, onClick }: CompanyReportCa
   // Only show favicon if domain exists
   return (
     <Button
-      variant={selected ? 'default' : 'outline'}
+      variant="outline"
       onClick={onClick}
       className="flex items-center gap-2 px-3 py-1 text-sm"
       size="sm"

@@ -172,3 +172,27 @@ npm run dev
 ---
 
 **PersonaOps is the foundation for next-gen AI sales intelligence.**
+
+## 🚩 Save State: FULLY WORKING (Pills + LLM Save)
+
+**Tag:** `save-state-working-pills-llm`
+
+This tag marks the last known good, fully functional baseline for both backend and frontend.
+
+- **Backend (Edge Function + Agent):**
+  - Commit: `5c65766`
+  - Message: `feat: clean Intel LLM backend with robust JSON output and OpenRouter integration (#12)`
+  - ✅ LLM research is saved to Supabase as JSONB, robust, minimal, and production-ready.
+
+- **Frontend (Pills, CompanyAnalyzer, GTM Tab):**
+  - Commit: `da76f46`
+  - Message: `feat: optimize company overview cards and fix company pills logic (#14)`
+  - ✅ Pills display on login, after analysis, and in both Intel and GTM tabs. New reports appear immediately.
+
+**How to restore this state:**
+
+```
+git checkout save-state-working-pills-llm
+```
+
+Or reference the tag in GitHub for deployment, debugging, or rollback.
