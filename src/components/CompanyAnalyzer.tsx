@@ -263,130 +263,110 @@ const CompanyAnalyzer = () => {
           {/* Details */}
           {analysis && selectedReportId && typeof analysis === 'object' ? (
             (() => {
-              const llm = analysis.llm_output ? JSON.parse(analysis.llm_output) : analysis;
+              // --- Normalization Layer for New Schema ---
+              let llm = analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : analysis;
+              llm.ibp = llm.ibp || {};
+              llm.icp = llm.icp || {};
+              llm.goToMarketInsights = llm.goToMarketInsights || '';
+              llm.marketTrends = Array.isArray(llm.marketTrends) ? llm.marketTrends : [];
+              llm.competitiveLandscape = Array.isArray(llm.competitiveLandscape) ? llm.competitiveLandscape : [];
+              llm.decisionMakers = Array.isArray(llm.decisionMakers) ? llm.decisionMakers : [];
+              llm.researchSummary = llm.researchSummary || '';
+              // --- End Normalization Layer ---
+
               const name = llm.companyName || llm.company_name || llm.companyname || 'Untitled';
               if (!name) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
               return (
                 <div className="space-y-6">
-                  {/* Company Overview */}
+                  {/* IBP Card */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        Company Overview
-                      </CardTitle>
+                      <CardTitle>Ideal Business Profile (IBP)</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Company Name</span>
-                          <p className="text-lg font-semibold">{name}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Website</span>
-                          <p className="text-sm">{llm.website || 'N/A'}</p>
-                        </div>
-                        <div className="md:col-span-2">
-                          <span className="text-sm font-medium text-muted-foreground">Description</span>
-                          <p className="text-sm">{llm.companyProfile?.description || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Industry</span>
-                          <p className="text-sm">{llm.companyProfile?.industry || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Segment</span>
-                          <p className="text-sm">{llm.companyProfile?.segment || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Company Size</span>
-                          <p className="text-sm">{llm.companyProfile?.companySize || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
-                          <p className="text-sm">{llm.companyProfile?.revenueRange || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Location</span>
-                          <p className="text-sm">{llm.companyProfile?.location || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Business Model</span>
-                          <p className="text-sm">{llm.companyProfile?.businessModel || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Founding Year</span>
-                          <p className="text-sm">{llm.companyProfile?.foundingYear || 'N/A'}</p>
-                        </div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Industry</span><p className="text-sm">{llm.ibp.industry || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Segment</span><p className="text-sm">{llm.ibp.segment || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{llm.ibp.companySize || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Revenue Range</span><p className="text-sm">{llm.ibp.revenueRange || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Geography</span><p className="text-sm">{Array.isArray(llm.ibp.geography) ? llm.ibp.geography.join(', ') : (llm.ibp.geography || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Business Model</span><p className="text-sm">{llm.ibp.businessModel || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Sales Motion</span><p className="text-sm">{llm.ibp.salesMotion || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Go-To-Market Model</span><p className="text-sm">{llm.ibp.goToMarketModel || 'N/A'}</p></div>
+                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.ibp.techStack) ? llm.ibp.techStack.join(', ') : (llm.ibp.techStack || 'N/A')}</p></div>
+                        <div className="md:col-span-2"><span className="text-sm font-medium text-muted-foreground">Fit Signals</span><p className="text-sm">{Array.isArray(llm.ibp.fitSignals) ? llm.ibp.fitSignals.join(', ') : (llm.ibp.fitSignals || 'N/A')}</p></div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Funding */}
-                  {llm.funding && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <BarChart2 className="h-5 w-5" />
-                          Funding
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Total Raised</span>
-                            <p className="text-sm">{llm.funding.totalRaised || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Last Round</span>
-                            <p className="text-sm">{llm.funding.lastRound || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Last Round Date</span>
-                            <p className="text-sm">{llm.funding.lastRoundDate || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Investors</span>
-                            <div className="flex flex-wrap gap-2">
-                              {(llm.funding.investors && llm.funding.investors.length > 0) ? llm.funding.investors.map((inv: string, i: number) => (
-                                <Badge key={i} variant="outline">{inv}</Badge>
-                              )) : <span className="text-sm">N/A</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {/* ICP Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Ideal Customer Profile (ICP)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><span className="text-sm font-medium text-muted-foreground">Buyer Titles</span><p className="text-sm">{Array.isArray(llm.icp.buyerTitles) ? llm.icp.buyerTitles.join(', ') : (llm.icp.buyerTitles || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Department</span><p className="text-sm">{llm.icp.department || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Seniority Level</span><p className="text-sm">{llm.icp.seniorityLevel || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Key Responsibilities</span><p className="text-sm">{Array.isArray(llm.icp.keyResponsibilities) ? llm.icp.keyResponsibilities.join(', ') : (llm.icp.keyResponsibilities || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span><p className="text-sm">{Array.isArray(llm.icp.painPoints) ? llm.icp.painPoints.join(', ') : (llm.icp.painPoints || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Buying Triggers</span><p className="text-sm">{Array.isArray(llm.icp.buyingTriggers) ? llm.icp.buyingTriggers.join(', ') : (llm.icp.buyingTriggers || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">KPIs</span><p className="text-sm">{Array.isArray(llm.icp.KPIs) ? llm.icp.KPIs.join(', ') : (llm.icp.KPIs || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Tech Stack</span><p className="text-sm">{Array.isArray(llm.icp.techStack) ? llm.icp.techStack.join(', ') : (llm.icp.techStack || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Decision Process</span><p className="text-sm">{llm.icp.decisionProcess || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Common Objections</span><p className="text-sm">{Array.isArray(llm.icp.commonObjections) ? llm.icp.commonObjections.join(', ') : (llm.icp.commonObjections || 'N/A')}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Budget Range</span><p className="text-sm">{llm.icp.budgetRange || 'N/A'}</p></div>
+                        <div><span className="text-sm font-medium text-muted-foreground">Emotional Drivers</span><p className="text-sm">{Array.isArray(llm.icp.emotionalDrivers) ? llm.icp.emotionalDrivers.join(', ') : (llm.icp.emotionalDrivers || 'N/A')}</p></div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                  {/* Technologies */}
-                  {llm.technologies && llm.technologies.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Cpu className="h-5 w-5" />
-                          Technologies
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {llm.technologies.map((tech: string, i: number) => (
-                            <Badge key={i} variant="outline">{tech}</Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {/* GTM Insights Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Go-To-Market Insights</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>{llm.goToMarketInsights || 'No data available'}</p>
+                    </CardContent>
+                  </Card>
 
-                  {/* Decision Makers */}
-                  {llm.decisionMakers && llm.decisionMakers.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Users className="h-5 w-5" />
-                          Decision Makers
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                  {/* Market Trends Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Market Trends</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {(llm.marketTrends && llm.marketTrends.length > 0) ? (
+                        <ul className="list-disc pl-5">{llm.marketTrends.map((mt: string, i: number) => <li key={i}>{mt}</li>)}</ul>
+                      ) : (
+                        <span className="text-sm">No data available</span>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Competitive Landscape Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Competitive Landscape</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {(llm.competitiveLandscape && llm.competitiveLandscape.length > 0) ? (
+                        <ul className="list-disc pl-5">{llm.competitiveLandscape.map((cl: string, i: number) => <li key={i}>{cl}</li>)}</ul>
+                      ) : (
+                        <span className="text-sm">No data available</span>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Decision Makers Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Decision Makers</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {(llm.decisionMakers && llm.decisionMakers.length > 0) ? (
                         <div className="overflow-x-auto">
                           <table className="min-w-full text-sm">
                             <thead>
@@ -407,104 +387,21 @@ const CompanyAnalyzer = () => {
                             </tbody>
                           </table>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                      ) : (
+                        <span className="text-sm">No data available</span>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                  {/* Pain Points */}
-                  {llm.painPoints && llm.painPoints.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Pain Points</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="list-disc pl-5">
-                          {llm.painPoints.map((pp: string, i: number) => <li key={i}>{pp}</li>)}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Market Trends */}
-                  {llm.marketTrends && llm.marketTrends.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Market Trends</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="list-disc pl-5">
-                          {llm.marketTrends.map((mt: string, i: number) => <li key={i}>{mt}</li>)}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Competitive Landscape */}
-                  {llm.competitiveLandscape && llm.competitiveLandscape.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5" />
-                          Competitive Landscape
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {llm.competitiveLandscape.map((cl: any, i: number) => (
-                            <div key={i} className="border rounded p-2">
-                              <div className="font-semibold">{cl.name || 'N/A'}</div>
-                              <div className="text-sm text-muted-foreground">{cl.description || 'N/A'}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Go-to-Market Strategy */}
-                  {llm.goToMarketStrategy && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Go-to-Market Strategy</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p>{llm.goToMarketStrategy}</p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Research Summary */}
-                  {llm.researchSummary && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Research Summary</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p>{llm.researchSummary}</p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* ICP Profile (Full ICP Document) */}
-                  {(() => {
-                    // Try to get icp_profile from analysis or llm
-                    let icpProfile = null;
-                    if (analysis.icp_profile) {
-                      try {
-                        icpProfile = typeof analysis.icp_profile === 'string' ? JSON.parse(analysis.icp_profile) : analysis.icp_profile;
-                      } catch {}
-                    } else if (llm.icp_profile) {
-                      try {
-                        icpProfile = typeof llm.icp_profile === 'string' ? JSON.parse(llm.icp_profile) : llm.icp_profile;
-                      } catch {}
-                    }
-                    return icpProfile ? (
-                      <div>
-                        <h3 className="text-xl font-bold mt-8 mb-2">Ideal Customer Profile (ICP)</h3>
-                        <ICPProfileDisplay icpProfile={icpProfile} />
-                      </div>
-                    ) : null;
-                  })()}
+                  {/* Research Summary Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Research Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>{llm.researchSummary || 'No data available'}</p>
+                    </CardContent>
+                  </Card>
                 </div>
               );
             })()

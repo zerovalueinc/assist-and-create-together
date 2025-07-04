@@ -27,91 +27,73 @@ export class LLMCompanyAnalyzer {
     this.apiKey = apiKey || (typeof Deno !== 'undefined' ? Deno.env.get('OPENROUTER_API_KEY') : '');
   }
 
-  async analyzeCompany(url: string): Promise<CompanyAnalysisResult> {
-    // Build the new, detailed prompt for the LLM
+  async analyzeCompany(url: string): Promise<any> {
+    // New GTM strategist prompt
     const prompt = `
-You are a senior B2B SaaS market analyst agent. Given the company website URL: ${url}, conduct a deep, structured 5-part research synthesis optimized for sales and marketing intelligence.
+You are a senior GTM strategist and sales expert.
 
-Perform the following five research phases:
+A company has just submitted their website: ${url}
 
-### 1. Company Intelligence
-- Extract:
-  - companyName
-  - description (1-2 sentences)
-  - industry
-  - segment (SMB, Mid-Market, Enterprise)
-  - estimated companySize (number of employees)
-  - estimated revenueRange
-  - location (HQ city and country)
-  - businessModel (ex: subscription SaaS, product-led growth, usage-based pricing)
-  - foundingYear
+Your job is to analyze their business, offering, and positioning — and based on that, determine:
 
-### 2. Key Decision Makers
-- Identify major buyer personas:
-  - Full names, titles, and LinkedIn URLs of key decision makers (focus on roles like CEO, CMO, CTO, VP Sales, VP Product, Head of Engineering)
-  - Buying committee overview (what roles likely influence or make purchase decisions)
+---
 
-### 3. Technology Stack and Innovation
-- List known or inferred core technologies (website tech stack, CRM, analytics, infrastructure)
-- Highlight product innovation or integrations (APIs, AI use, platform capabilities)
-- Funding history (rounds raised, investors, date if available)
-- Use builtWith, Crunchbase, and site scraping for inference
+### 🔷 PART 1: Ideal Business Profile (IBP)
+What *type of companies* should they be selling to?
 
-### 4. Market Context and Competitive Analysis
-- Identify:
-  - Key market trends and opportunities in their sector
-  - Common challenges companies like them face (relevant "painPoints")
-  - Primary competitors with brief comparative positioning
-  - Related or alternative providers (include indirect competition)
+Return a JSON object with:
 
-### 5. Strategic Synthesis for GTM
-- Generate a tailored goToMarketStrategy:
-  - Highlight how to position your product/service value proposition
-  - Suggest potential messaging angles based on their needs, tech maturity, and market stage
-  - Recommend outreach strategies (cold email persona focus, timing, channels)
+- industry (e.g. SaaS, Fintech, Healthcare)
+- segment (SMB, Mid-Market, Enterprise)
+- companySize (e.g. 11–50, 200–500)
+- revenueRange (e.g. <$5M, $10M–$100M)
+- geography (target regions)
+- businessModel (e.g. B2B SaaS, PLG, Marketplace)
+- salesMotion (e.g. sales-led, product-led, outbound-led)
+- goToMarketModel (e.g. outbound-heavy, inbound-driven, ABM)
+- techStack (typical tools their ideal customers use)
+- fitSignals (array of traits: e.g. "Hiring SDRs", "Raised Series A", etc.)
 
-Package your response in JSON format. Use real data when accessible; fallback to accurate inference when needed.
+---
 
-### JSON Output Structure
-Return only this JSON object:
+### 🔷 PART 2: Ideal Customer Profile (ICP)
+What *roles/people inside those companies* should they target for outbound or partnerships?
 
+Return a JSON object with:
+
+- buyerTitles (array: e.g. "VP Sales", "Head of RevOps")
+- department (e.g. Sales, Marketing, Partnerships)
+- seniorityLevel (Manager, Director+, VP+)
+- keyResponsibilities (what they do daily)
+- painPoints (what problems they care about)
+- buyingTriggers (e.g. hiring SDRs, team growth, pipeline problems)
+- KPIs (e.g. SQLs, reply rates, revenue)
+- techStack (common tools used by these buyers)
+- decisionProcess (how they choose tools/partners)
+- commonObjections (array)
+- budgetRange (estimate of what they'd pay for a tool like this)
+- emotionalDrivers (e.g. "wants to scale without hiring", "wants faster pipeline")
+
+---
+
+### 🔷 PART 3: GTM Summary
+Return a high-level GTM recommendation with:
+
+- goToMarketInsights (summary string)
+- marketTrends (array)
+- competitiveLandscape (array)
+- decisionMakers (array of { name, title, linkedin })
+- researchSummary (string)
+
+Respond with a single valid JSON object:
 {
-  "companyName": "",
-  "companyProfile": {
-    "description": "",
-    "industry": "",
-    "segment": "",
-    "companySize": "",
-    "revenueRange": "",
-    "location": "",
-    "businessModel": "",
-    "foundingYear": ""
-  },
-  "website": "",
-  "technologies": [],
-  "funding": {
-    "totalRaised": "",
-    "investors": [],
-    "lastRound": "",
-    "lastRoundDate": ""
-  },
-  "decisionMakers": [
-    {
-      "name": "",
-      "title": "",
-      "linkedin": ""
-    }
-  ],
-  "painPoints": [],
-  "marketTrends": [],
-  "competitiveLandscape": [
-    {
-      "name": "",
-      "description": ""
-    }
-  ],
-  "goToMarketStrategy": "",
-  "researchSummary": ""
+  ibp: { ... },
+  icp: { ... },
+  goToMarketInsights: "...",
+  marketTrends: [...],
+  competitiveLandscape: [...],
+  decisionMakers: [...],
+  researchSummary: "..."
 }
 `;
 
@@ -134,27 +116,29 @@ Return only this JSON object:
 
     const data = await response.json();
     const content = data.choices[0].message.content || '';
-    
-    // Try to parse the LLM's response as JSON
-    let result: CompanyAnalysisResult;
+    let result: any;
     try {
       result = JSON.parse(content);
     } catch (e) {
-      // If not valid JSON, fallback to a minimal object
+      // Fallback to minimal object if not valid JSON
       result = {
-        companyName: url,
-        companyProfile: { description: '', industry: '', segment: '', companySize: '', revenueRange: '', location: '', businessModel: '', foundingYear: '' },
-        website: url,
-        technologies: [],
-        funding: { totalRaised: '', investors: [], lastRound: '', lastRoundDate: '' },
-        decisionMakers: [],
-        painPoints: [],
+        ibp: {},
+        icp: {},
+        goToMarketInsights: '',
         marketTrends: [],
         competitiveLandscape: [],
-        goToMarketStrategy: '',
+        decisionMakers: [],
         researchSummary: content,
       };
     }
+    // Ensure all fields exist for frontend mapping
+    result.ibp = result.ibp || {};
+    result.icp = result.icp || {};
+    result.goToMarketInsights = result.goToMarketInsights || '';
+    result.marketTrends = Array.isArray(result.marketTrends) ? result.marketTrends : [];
+    result.competitiveLandscape = Array.isArray(result.competitiveLandscape) ? result.competitiveLandscape : [];
+    result.decisionMakers = Array.isArray(result.decisionMakers) ? result.decisionMakers : [];
+    result.researchSummary = result.researchSummary || '';
     return result;
   }
 } 
