@@ -493,7 +493,7 @@ const CompanyAnalyzer = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {llm.notable_clients && llm.notable_clients.length > 0 ? (
+                      {Array.isArray(llm.notable_clients) && llm.notable_clients.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {llm.notable_clients.map((client: string, i: number) => (
                             <Badge key={i} variant="outline">
@@ -502,7 +502,7 @@ const CompanyAnalyzer = () => {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">No data available</span>
+                        <span className="text-sm text-muted-foreground">{typeof llm.notable_clients === 'string' ? llm.notable_clients : 'No data available'}</span>
                       )}
                     </CardContent>
                   </Card>
