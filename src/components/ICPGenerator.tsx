@@ -70,11 +70,11 @@ const ICPGenerator = () => {
   const [icp, setICP] = useState<GTMICPSchema | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { research, workspaceId } = useCompany();
+  const { research } = useCompany();
   const user = useUser();
   const session = useSession();
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const { data: preloadData } = useDataPreload();
+  const { data: preloadData, retry: refreshData } = useDataPreload();
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [recentICPs, setRecentICPs] = useState<any[]>([]);
   const [recentPlaybooks, setRecentPlaybooks] = useState<any[]>([]);
@@ -90,6 +90,15 @@ const ICPGenerator = () => {
     availableCompanies = getCache('yourwork_analyze', []);
   }
 
+  // Add a refresh function for company analyses
+  const handleRefreshCompanies = () => {
+    refreshData();
+    toast({
+      title: "Refreshing",
+      description: "Updating available company analyses...",
+    });
+  };
+
   // Fetch recent/generated ICPs
   const hasFetchedICPs = useRef(false);
   useEffect(() => {
@@ -100,12 +109,11 @@ const ICPGenerator = () => {
     hasFetchedICPs.current = true;
     let cancelled = false;
     const fetchICPs = async () => {
-      if (!user?.id || !workspaceId) return;
+      if (!user?.id) return;
       try {
         const { data, error } = await supabase
           .from('icps')
           .select('*')
-          .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: false });
         if (!cancelled) {
           if (error) throw error;
@@ -124,12 +132,12 @@ const ICPGenerator = () => {
     };
     fetchICPs();
     return () => { cancelled = true; };
-  }, [user, workspaceId]);
+  }, [user]);
 
   // Fetch recent/generated GTM Playbooks (ICPs are part of playbooks now)
   const hasFetchedPlaybooks = useRef(false);
   useEffect(() => {
-    if (!user?.id || !workspaceId) return;
+    if (!user?.id) return;
     // Show cached playbooks instantly
     const cachedPlaybooks = getCache<any[]>('icp_playbooks', []);
     if (cachedPlaybooks.length > 0) setRecentPlaybooks(cachedPlaybooks);
@@ -142,7 +150,6 @@ const ICPGenerator = () => {
         const { data, error } = await supabase
           .from('gtm_playbooks')
           .select('*')
-          .eq('workspace_id', workspaceId)
           .order('created_at', { ascending: false });
         if (!cancelled) {
           if (error) throw error;
@@ -161,7 +168,7 @@ const ICPGenerator = () => {
     };
     fetchPlaybooks();
     return () => { cancelled = true; };
-  }, [user, workspaceId]);
+  }, [user]);
 
   // Auto-load saved playbooks
   useEffect(() => {

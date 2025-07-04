@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Target, Users, TrendingUp, MessageSquare, BookOpen, BarChart, Lightbulb, CheckCircle } from "lucide-react";
+import { Loader2, Target, Users, TrendingUp, MessageSquare, BookOpen, BarChart, Lightbulb, CheckCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
@@ -28,7 +28,7 @@ const GTMGenerator = () => {
   const user = useUser();
   const session = useSession();
   const hasFetched = useRef(false);
-  const { data: preloadData, loading: preloadLoading } = useDataPreload();
+  const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
   // Use workspaceId from selectedCompany if available
   const workspaceId = selectedCompany?.workspace_id || '';
 
@@ -54,6 +54,15 @@ const GTMGenerator = () => {
   const [salesCycle, setSalesCycle] = useState('');
   const [primaryGoals, setPrimaryGoals] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
+
+  // Add a refresh button for company analyses
+  const handleRefreshAnalyses = () => {
+    refreshData();
+    toast({
+      title: "Refreshing",
+      description: "Updating available company analyses...",
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -280,7 +289,27 @@ const GTMGenerator = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <div className="font-semibold text-base mb-1">Select Target Company</div>
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-semibold text-base">Select Target Company</div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefreshAnalyses}
+                disabled={preloadLoading}
+              >
+                {preloadLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </>
+                )}
+              </Button>
+            </div>
             {availableAnalyses.length > 0 && renderCompanyPills()}
           </div>
 

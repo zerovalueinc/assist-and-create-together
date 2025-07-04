@@ -35,7 +35,7 @@ const CompanyAnalyzer = () => {
   const { setResearch } = useCompany();
   const user = useUser();
   const session = useSession();
-  const { data: preloadData, loading: preloadLoading } = useDataPreload();
+  const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
 
   // Use preloaded reports or fallback to cache
   let initialReports = preloadData?.companyAnalyzer || [];
@@ -139,6 +139,8 @@ const CompanyAnalyzer = () => {
         // Prepend new report to reports and update pills/inline
         setReports(prev => [data.output, ...prev]);
         setSelectedReportId(data.output.id || null);
+        // Refresh the DataPreloadProvider to update all components
+        refreshData();
         toast({
           title: "Analysis Complete",
           description: `Successfully analyzed ${data.output.company_name || data.output.companyName}`,
