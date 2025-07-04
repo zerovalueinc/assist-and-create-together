@@ -110,12 +110,6 @@ serve(async (req) => {
 
     console.log(`Starting GTM playbook generation for: ${gtmRequest.websiteUrl}`);
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '');
     console.log('Auth header present:', !!authHeader);
@@ -124,7 +118,12 @@ serve(async (req) => {
       throw new Error('Authorization header required');
     }
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader);
+    // Create temporary client for auth
+    const tempSupabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+    const { data: { user }, error: userError } = await tempSupabaseClient.auth.getUser(authHeader);
     
     if (userError) {
       console.error('User auth error:', userError);
@@ -136,6 +135,19 @@ serve(async (req) => {
     }
 
     console.log('User authenticated:', user.id);
+
+    // Initialize Supabase client with JWT for RLS
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${authHeader}`,
+          },
+        },
+      }
+    );
 
     let existingAnalysis = null;
     

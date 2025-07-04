@@ -48,8 +48,6 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -63,7 +61,10 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    // Create temporary client for auth
+    const tempSupabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { user }, error: userError } = await tempSupabase.auth.getUser(token);
     
     if (userError || !user) {
       return new Response(
@@ -74,6 +75,15 @@ serve(async (req) => {
         }
       );
     }
+
+    // Create main client with JWT for RLS
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
 
     const requestBody = await req.json() as PipelineRequest;
     const { action, pipelineId, config } = requestBody;
