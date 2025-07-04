@@ -284,27 +284,79 @@ const CompanyAnalyzer = () => {
                         </div>
                         <div>
                           <span className="text-sm font-medium text-muted-foreground">Website</span>
-                          <p className="text-sm">{analysis.company_url || llm.website || 'N/A'}</p>
+                          <p className="text-sm">{llm.website || 'N/A'}</p>
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Location</span>
-                          <p className="text-sm">{analysis.location || llm.location || 'N/A'}</p>
+                        <div className="md:col-span-2">
+                          <span className="text-sm font-medium text-muted-foreground">Description</span>
+                          <p className="text-sm">{llm.companyProfile?.description || 'N/A'}</p>
                         </div>
                         <div>
                           <span className="text-sm font-medium text-muted-foreground">Industry</span>
-                          <p className="text-sm">{llm.industry || llm.companyProfile?.industry || llm.company_profile?.industry || 'N/A'}</p>
+                          <p className="text-sm">{llm.companyProfile?.industry || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Segment</span>
+                          <p className="text-sm">{llm.companyProfile?.segment || 'N/A'}</p>
                         </div>
                         <div>
                           <span className="text-sm font-medium text-muted-foreground">Company Size</span>
-                          <p className="text-sm">{llm.companyProfile?.companySize || llm.company_profile?.companySize || 'N/A'}</p>
+                          <p className="text-sm">{llm.companyProfile?.companySize || 'N/A'}</p>
                         </div>
                         <div>
                           <span className="text-sm font-medium text-muted-foreground">Revenue Range</span>
-                          <p className="text-sm">{llm.companyProfile?.revenueRange || llm.company_profile?.revenueRange || 'N/A'}</p>
+                          <p className="text-sm">{llm.companyProfile?.revenueRange || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Location</span>
+                          <p className="text-sm">{llm.companyProfile?.location || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Business Model</span>
+                          <p className="text-sm">{llm.companyProfile?.businessModel || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Founding Year</span>
+                          <p className="text-sm">{llm.companyProfile?.foundingYear || 'N/A'}</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Funding */}
+                  {llm.funding && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart2 className="h-5 w-5" />
+                          Funding
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Total Raised</span>
+                            <p className="text-sm">{llm.funding.totalRaised || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Last Round</span>
+                            <p className="text-sm">{llm.funding.lastRound || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Last Round Date</span>
+                            <p className="text-sm">{llm.funding.lastRoundDate || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Investors</span>
+                            <div className="flex flex-wrap gap-2">
+                              {(llm.funding.investors && llm.funding.investors.length > 0) ? llm.funding.investors.map((inv: string, i: number) => (
+                                <Badge key={i} variant="outline">{inv}</Badge>
+                              )) : <span className="text-sm">N/A</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Technologies */}
                   {llm.technologies && llm.technologies.length > 0 && (
@@ -329,12 +381,32 @@ const CompanyAnalyzer = () => {
                   {llm.decisionMakers && llm.decisionMakers.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle>Decision Makers</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Decision Makers
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <ul className="list-disc pl-5">
-                          {llm.decisionMakers.map((dm: string, i: number) => <li key={i}>{dm}</li>)}
-                        </ul>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr>
+                                <th className="text-left font-medium pr-4">Name</th>
+                                <th className="text-left font-medium pr-4">Title</th>
+                                <th className="text-left font-medium">LinkedIn</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {llm.decisionMakers.map((dm: any, i: number) => (
+                                <tr key={i} className="border-t">
+                                  <td className="pr-4">{dm.name || 'N/A'}</td>
+                                  <td className="pr-4">{dm.title || 'N/A'}</td>
+                                  <td>{dm.linkedin ? <a href={dm.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">LinkedIn</a> : 'N/A'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </CardContent>
                     </Card>
                   )}
@@ -371,12 +443,20 @@ const CompanyAnalyzer = () => {
                   {llm.competitiveLandscape && llm.competitiveLandscape.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle>Competitive Landscape</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" />
+                          Competitive Landscape
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <ul className="list-disc pl-5">
-                          {llm.competitiveLandscape.map((cl: string, i: number) => <li key={i}>{cl}</li>)}
-                        </ul>
+                        <div className="space-y-2">
+                          {llm.competitiveLandscape.map((cl: any, i: number) => (
+                            <div key={i} className="border rounded p-2">
+                              <div className="font-semibold">{cl.name || 'N/A'}</div>
+                              <div className="text-sm text-muted-foreground">{cl.description || 'N/A'}</div>
+                            </div>
+                          ))}
+                        </div>
                       </CardContent>
                     </Card>
                   )}
