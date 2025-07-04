@@ -190,12 +190,25 @@ serve(async (req) => {
       throw new Error('LLM analysis failed: No data returned from agent');
     }
 
+    // Helper to extract domain from URL
+    function extractDomain(url: string): string {
+      try {
+        const cleanUrl = url.startsWith('http') ? url : `https://${url}`;
+        const urlObj = new URL(cleanUrl);
+        const hostname = urlObj.hostname.replace('www.', '');
+        const parts = hostname.split('.');
+        return parts.length > 1 ? parts[0] : hostname;
+      } catch {
+        const cleaned = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+        return cleaned.split('.')[0] || url;
+      }
+    }
     const insertPayload = {
       user_id: user.id,
       website: normalizedUrl,
       llm_output: finalAnalysis, // Save the raw, structured output
       created_at: new Date().toISOString(),
-      companyname: finalAnalysis.companyName || finalAnalysis.companyname || '', // Satisfy NOT NULL constraint
+      companyname: finalAnalysis.companyName || finalAnalysis.companyname || extractDomain(normalizedUrl),
     };
     console.log('[Edge Function] RAW INSERT PAYLOAD:', JSON.stringify(insertPayload));
     const { data: savedReport, error: saveError } = await supabaseClient
@@ -250,21 +263,6 @@ serve(async (req) => {
     );
   }
 });
-
-function extractDomain(url: string): string {
-  try {
-    const cleanUrl = url.startsWith('http') ? url : `https://${url}`;
-    const urlObj = new URL(cleanUrl);
-    const hostname = urlObj.hostname.replace('www.', '');
-    const parts = hostname.split('.');
-    // Return the main domain name (e.g., "google" from "google.com")
-    return parts.length > 1 ? parts[0] : hostname;
-  } catch {
-    // Fallback for invalid URLs
-    const cleaned = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-    return cleaned.split('.')[0] || url;
-  }
-}
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
