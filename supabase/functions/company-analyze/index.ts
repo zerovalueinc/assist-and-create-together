@@ -2,10 +2,6 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { LLMCompanyAnalyzer } from '../../../agents/LLMCompanyAnalyzer.ts';
-import { analyzeWithBestModel, type AnalysisTask } from '../../../agents/analysisAgent.ts';
-
-// @ts-ignore: Deno runtime provides Deno.env in edge functions
-declare const Deno: any;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,6 +91,8 @@ serve(async (req) => {
       );
     }
 
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
@@ -112,14 +110,6 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     console.log('Extracted token length:', token.length);
-
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
@@ -155,7 +145,7 @@ serve(async (req) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - THIRTY_DAYS_MS).toISOString();
     const { data: recentReport, error: recentError } = await supabaseClient
-      .from('company_analyzer_outputs')
+      .from('company_analyzer_outputs_unrestricted')
       .select('*')
       .eq('user_id', user.id)
       .eq('website', normalizedUrl)
@@ -179,109 +169,117 @@ serve(async (req) => {
       );
     }
 
-    // Use the full research logic with your improved prompt
-    const task: AnalysisTask = {
-      type: 'icp_generation',
-      data: { url: normalizedUrl }
+    // Use normalizedUrl for analysis and saving
+    const analyzer = new LLMCompanyAnalyzer();
+    const finalAnalysis = await analyzer.analyzeCompany(normalizedUrl);
+    console.log('Analysis generated for:', finalAnalysis.companyName);
+
+    // Sanitize and validate before insert
+    function safeString(val: any): string {
+      return typeof val === 'string' ? val : '';
+    }
+    function toArray(val: any): string[] {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+      return [];
+    }
+    function safeCompanyProfile(profile: any) {
+      return {
+        industry: safeString(profile?.industry),
+        companySize: safeString(profile?.companySize),
+        revenueRange: safeString(profile?.revenueRange),
+      };
+    }
+    const sanitizedAnalysis = {
+      schemaVersion: 1,
+      companyName: safeString(finalAnalysis.companyName),
+      companyProfile: safeCompanyProfile(finalAnalysis.companyProfile),
+      decisionMakers: toArray(finalAnalysis.decisionMakers),
+      painPoints: toArray(finalAnalysis.painPoints),
+      technologies: toArray(finalAnalysis.technologies),
+      location: safeString(finalAnalysis.location),
+      marketTrends: toArray(finalAnalysis.marketTrends),
+      competitiveLandscape: toArray(finalAnalysis.competitiveLandscape),
+      goToMarketStrategy: safeString(finalAnalysis.goToMarketStrategy),
+      researchSummary: safeString(finalAnalysis.researchSummary),
+      website: safeString(finalAnalysis.website),
     };
-    const analysisResult = await analyzeWithBestModel(task);
-    const finalAnalysis = analysisResult.data;
-    if (!finalAnalysis) {
-      throw new Error('LLM analysis failed: No data returned from agent');
-    }
+    console.log('Sanitized analysis for insert:', JSON.stringify(sanitizedAnalysis));
 
-    // Helper to extract domain from URL
-    function extractDomain(url: string): string {
-      try {
-        const cleanUrl = url.startsWith('http') ? url : `https://${url}`;
-        const urlObj = new URL(cleanUrl);
-        const hostname = urlObj.hostname.replace('www.', '');
-        const parts = hostname.split('.');
-        return parts.length > 1 ? parts[0] : hostname;
-      } catch {
-        const cleaned = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-        return cleaned.split('.')[0] || url;
-      }
-    }
-
-    // Map LLM output to top-level columns (snake_case only, with strict defaults)
-    let company_profile = finalAnalysis.icp_analysis?.target_company_characteristics || {};
-    let decision_makers = Array.isArray(finalAnalysis.icp_analysis?.buyer_personas)
-      ? finalAnalysis.icp_analysis.buyer_personas.flatMap(bp => [
-          ...(bp.primary_decision_maker?.titles || []),
-          ...(bp.secondary_influencer?.titles || []),
-        ])
-      : [];
-    let pain_points = finalAnalysis.icp_analysis?.pain_points || [];
-    let technologies = finalAnalysis.icp_analysis?.tech_stack_alignment?.current_tools || [];
-    let location = finalAnalysis.icp_analysis?.location || '';
-    let market_trends = finalAnalysis.icp_analysis?.market_trends || [];
-    let competitive_landscape = finalAnalysis.icp_analysis?.competitive_landscape || [];
-    let go_to_market_strategy = finalAnalysis.icp_analysis?.go_to_market_strategy || '';
-    let research_summary = finalAnalysis.icp_analysis?.research_summary || '';
-    let company_name = extractDomain(normalizedUrl) || 'unknown';
-    let website = normalizedUrl || 'unknown';
-    // Build insert payload with all-lowercase column names to match Supabase
-    const insertPayload = {
+    // Prepare insert object for new table
+    const outputInsert = {
       user_id: user.id,
-      website,
-      llm_output: finalAnalysis,
+      company_name: sanitizedAnalysis.companyName,
+      industry: sanitizedAnalysis.companyProfile.industry,
+      company_size: sanitizedAnalysis.companyProfile.companySize,
+      revenue_range: sanitizedAnalysis.companyProfile.revenueRange,
+      decision_makers: JSON.stringify(sanitizedAnalysis.decisionMakers),
+      pain_points: JSON.stringify(sanitizedAnalysis.painPoints),
+      technologies: JSON.stringify(sanitizedAnalysis.technologies),
+      location: sanitizedAnalysis.location,
+      market_trends: JSON.stringify(sanitizedAnalysis.marketTrends),
+      competitive_landscape: JSON.stringify(sanitizedAnalysis.competitiveLandscape),
+      go_to_market_strategy: sanitizedAnalysis.goToMarketStrategy,
+      research_summary: sanitizedAnalysis.researchSummary,
+      website: normalizedUrl,
       created_at: new Date().toISOString(),
-      companyname: company_name,
-      companyprofile: company_profile,
-      decisionmakers: decision_makers,
-      painpoints: pain_points,
-      technologies,
-      location,
-      markettrends: market_trends,
-      competitivelandscape: competitive_landscape,
-      gotomarketstrategy: go_to_market_strategy,
-      researchsummary: research_summary,
+      llm_output: JSON.stringify(sanitizedAnalysis)
     };
-    // Insert into the actual table: company_analyzer_outputs
-    const { data: savedReport, error: saveError } = await supabaseClient
-      .from('company_analyzer_outputs')
-      .insert([insertPayload])
-      .select();
-    if (saveError) {
-      console.error('[Edge Function] Supabase insert error:', saveError);
-      return new Response(JSON.stringify({ error: 'Failed to save analysis', details: saveError }), { status: 500 });
-    }
-    return new Response(
-      JSON.stringify({
-        success: true,
-        output: {
-          ...savedReport,
-          ibp: savedReport.ibp || {},
-          icp: savedReport.icp || {},
-          go_to_market_insights: savedReport.go_to_market_insights || '',
-          market_trends: savedReport.market_trends || [],
-          competitive_landscape: savedReport.competitive_landscape || [],
-          decision_makers: savedReport.decision_makers || [],
-          research_summary: savedReport.research_summary || '',
-        },
-        analysis: savedReport,
-        outputId: savedReport.id || null,
-        cached: false
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.log('Company Analyzer output insert object:', JSON.stringify(outputInsert));
+
+    // Insert into unrestricted table ONLY
+    try {
+      const { data: output, error: outputError } = await supabaseClient
+        .from('company_analyzer_outputs_unrestricted')
+        .insert(outputInsert)
+        .select()
+        .single();
+
+      if (outputError) {
+        console.error('Error saving Company Analyzer output:', outputError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to save Company Analyzer output', details: outputError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          output,
+          analysis: sanitizedAnalysis,
+          outputId: output?.id || null
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          analysis: sanitizedAnalysis,
+          outputId: null,
+          warning: 'Analysis completed but not saved to database'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
   } catch (error) {
     console.error('=== CRITICAL ERROR ===');
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
     console.error('Error details:', error);
-    console.error('Error type:', typeof error);
-    console.error('Error constructor:', error.constructor.name);
     
     return new Response(
       JSON.stringify({
         error: 'Company analysis failed',
         details: error.message,
-        stack: error.stack,
         timestamp: new Date().toISOString()
       }),
       {
@@ -291,6 +289,21 @@ serve(async (req) => {
     );
   }
 });
+
+function extractDomain(url: string): string {
+  try {
+    const cleanUrl = url.startsWith('http') ? url : `https://${url}`;
+    const urlObj = new URL(cleanUrl);
+    const hostname = urlObj.hostname.replace('www.', '');
+    const parts = hostname.split('.');
+    // Return the main domain name (e.g., "google" from "google.com")
+    return parts.length > 1 ? parts[0] : hostname;
+  } catch {
+    // Fallback for invalid URLs
+    const cleaned = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    return cleaned.split('.')[0] || url;
+  }
+}
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
