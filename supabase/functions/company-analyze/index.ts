@@ -205,29 +205,29 @@ serve(async (req) => {
     }
 
     // Map LLM output to top-level columns
-    let companyProfile = null;
-    let decisionMakers = [];
-    let painPoints = [];
+    let company_profile = null;
+    let decision_makers = [];
+    let pain_points = [];
     let technologies = [];
     let location = null;
-    let marketTrends = [];
-    let competitiveLandscape = [];
-    let goToMarketStrategy = null;
-    let researchSummary = null;
+    let market_trends = [];
+    let competitive_landscape = [];
+    let go_to_market_strategy = null;
+    let research_summary = null;
 
     if (finalAnalysis.icp_analysis) {
-      // Example: companyProfile could be built from target_company_characteristics
-      companyProfile = finalAnalysis.icp_analysis.target_company_characteristics || null;
-      // decisionMakers: flatten all titles from buyer_personas
+      // Example: company_profile could be built from target_company_characteristics
+      company_profile = finalAnalysis.icp_analysis.target_company_characteristics || null;
+      // decision_makers: flatten all titles from buyer_personas
       if (Array.isArray(finalAnalysis.icp_analysis.buyer_personas)) {
-        decisionMakers = finalAnalysis.icp_analysis.buyer_personas.flatMap(bp => [
+        decision_makers = finalAnalysis.icp_analysis.buyer_personas.flatMap(bp => [
           ...(bp.primary_decision_maker?.titles || []),
           ...(bp.secondary_influencer?.titles || []),
         ]);
       }
-      painPoints = finalAnalysis.icp_analysis.pain_points || [];
+      pain_points = finalAnalysis.icp_analysis.pain_points || [];
       technologies = finalAnalysis.icp_analysis.tech_stack_alignment?.current_tools || [];
-      // location, marketTrends, competitiveLandscape, goToMarketStrategy, researchSummary: not present in icp_analysis, leave null/empty
+      // location, market_trends, competitive_landscape, go_to_market_strategy, research_summary: not present in icp_analysis, leave null/empty
     }
 
     const insertPayload = {
@@ -235,16 +235,16 @@ serve(async (req) => {
       website: normalizedUrl,
       llm_output: finalAnalysis, // Save the raw, structured output
       created_at: new Date().toISOString(),
-      companyname: extractDomain(normalizedUrl),
-      companyProfile,
-      decisionMakers,
-      painPoints,
+      company_name: extractDomain(normalizedUrl),
+      company_profile,
+      decision_makers,
+      pain_points,
       technologies,
       location,
-      marketTrends,
-      competitiveLandscape,
-      goToMarketStrategy,
-      researchSummary,
+      market_trends,
+      competitive_landscape,
+      go_to_market_strategy,
+      research_summary,
     };
     console.log('[Edge Function] RAW INSERT PAYLOAD:', JSON.stringify(insertPayload));
     const { data: savedReport, error: saveError } = await supabaseClient
