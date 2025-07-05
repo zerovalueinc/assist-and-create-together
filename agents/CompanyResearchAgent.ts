@@ -2,24 +2,25 @@
 // PersonaOps Sequential Multi-Agent Company Research Pipeline
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 declare const Deno: any;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Helper to get Supabase client (fallback for standalone usage)
 function getSupabaseClient() {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Supabase env vars not set');
-  return createClient(supabaseUrl, supabaseAnonKey);
+  const supabaseUrl = typeof Deno !== 'undefined' ? Deno.env.get('SUPABASE_URL') : process.env.SUPABASE_URL;
+  const supabaseKey = typeof Deno !== 'undefined' ? Deno.env.get('SUPABASE_ANON_KEY') : process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) throw new Error('Supabase credentials not configured');
+  return createClient(supabaseUrl, supabaseKey);
 }
 
 // Helper to call the LLM with a prompt
-async function callLLM(prompt: string, systemPrompt = 'You are an expert B2B research analyst. Always return valid JSON.') {
-  const apiKey = typeof Deno !== 'undefined' ? Deno.env.get('OPENROUTER_API_KEY') : undefined;
+async function callLLM(prompt: string, systemPrompt = 'You are an expert B2B research analyst with deep knowledge of SaaS companies, market intelligence, and sales strategies. Always return valid JSON with comprehensive, detailed information. Never return empty or placeholder values.') {
+  const apiKey = typeof Deno !== 'undefined' ? Deno.env.get('OPENROUTER_API_KEY') : process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OpenRouter API key not configured');
+  
   const response = await fetch(OPENROUTER_API_URL, {
     method: 'POST',
     headers: {
@@ -32,85 +33,224 @@ async function callLLM(prompt: string, systemPrompt = 'You are an expert B2B res
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 2000,
-      temperature: 0.3
+      max_tokens: 4000,
+      temperature: 0.2
     }),
   });
+  
   if (!response.ok) throw new Error(`LLM error: ${response.status}`);
   const data = await response.json();
   const llmText = data.choices?.[0]?.message?.content || '';
+  
   try {
     return JSON.parse(llmText);
   } catch (e) {
+    console.error('LLM output parsing failed:', llmText);
     throw new Error('LLM output was not valid JSON: ' + llmText);
   }
 }
 
 // Agent 1: Company Overview & Key Facts
 async function agentCompanyOverview(url: string) {
-  const prompt = `You are an expert B2B company analyst. For the company at ${url}, return a JSON object with:
-- company_name
-- website
-- overview
-- company_size
-- employees_global
-- employees_key_regions
-- revenue
-- industry_segments
-- funding_status
-- key_contacts (array of {name, title, linkedin})
-`;
-  return await callLLM(prompt);
+  const systemPrompt = `You are an expert B2B company analyst specializing in SaaS and technology companies. You have deep knowledge of company research, financial analysis, and market intelligence. Always provide comprehensive, accurate information based on available data. Never return placeholder or generic values.`;
+
+  const prompt = `Analyze the company at ${url} and provide comprehensive company overview information. Research their website, social media, news articles, and public information to gather detailed insights.
+
+Return a detailed JSON object with the following structure:
+
+{
+  "company_name": "Exact company name",
+  "website": "Full website URL",
+  "overview": "Detailed 2-3 sentence description of what the company does, their main value proposition, and target market",
+  "company_size": "Employee count range (e.g., '50-200 employees', '500-1000 employees')",
+  "founded": "Year founded (e.g., '2018', '2020')",
+  "industry": "Primary industry or vertical (e.g., 'SaaS', 'E-commerce', 'Marketing Technology')",
+  "headquarters": "City, State/Country (e.g., 'San Francisco, CA', 'New York, NY')",
+  "revenue_range": "Estimated annual revenue range (e.g., '$10M-$50M', '$100M+')",
+  "company_type": "Business type (e.g., 'Private', 'Public', 'Subsidiary')",
+  "funding_status": "Funding stage if known (e.g., 'Series A', 'Series B', 'Bootstrapped', 'Acquired')",
+  "summary": "Comprehensive 3-4 sentence summary including business model, key products, target customers, and competitive advantages"
 }
 
-// Agent 2: Products, Positioning, and Market
+IMPORTANT: 
+- Research thoroughly and provide specific, accurate information
+- If exact information is not available, provide reasonable estimates based on company size, industry, and market position
+- Never return "Unknown" or placeholder values
+- Include specific details about their products, target market, and business model
+- Base your analysis on actual company information, not generic descriptions`;
+
+  return await callLLM(prompt, systemPrompt);
+}
+
+// Agent 2: Products, Positioning, and Market Intelligence
 async function agentMarketIntelligence(url: string, prev: any) {
-  const prompt = `You are a product/market analyst. For the company at ${url}, return a JSON object with:
-- core_product_suite
-- key_modules (array: {module, problem_solved, target_user})
-- unique_selling_points
-- market_positioning
-- value_proposition_by_segment (SMB, MM, Enterprise)
-- key_differentiators (tech, service, integrations, pricing)
-- main_products
-- target_market
-- competitors (by segment)
-- market_trends
-`;
-  return await callLLM(prompt);
+  const systemPrompt = `You are a senior product and market intelligence analyst with expertise in SaaS product analysis, competitive intelligence, and market positioning. You understand product-market fit, competitive landscapes, and market trends deeply. Provide detailed, actionable insights.`;
+
+  const prompt = `Based on the company at ${url} and previous analysis: ${JSON.stringify(prev)}, provide comprehensive market intelligence and product analysis.
+
+Return a detailed JSON object with the following structure:
+
+{
+  "main_products": ["List of 3-5 main products or product lines with specific names"],
+  "target_market": {
+    "primary": "Primary target market segment (e.g., 'SMB', 'Enterprise', 'Mid-market')",
+    "size_range": "Target company size range (e.g., '10-500 employees', '500+ employees')",
+    "industry_focus": ["List of 3-5 primary industries they target"]
+  },
+  "direct_competitors": ["List of 5-8 direct competitors with specific company names"],
+  "key_differentiators": ["List of 4-6 key competitive advantages or unique selling points"],
+  "market_trends": ["List of 4-6 relevant market trends affecting this space"],
+  "core_product_suite": "Detailed description of their main product offering",
+  "key_modules": [
+    {
+      "module": "Specific module/feature name",
+      "problem_solved": "What problem this solves",
+      "target_user": "Who uses this feature"
+    }
+  ],
+  "unique_selling_points": ["List of 3-5 unique features or capabilities"],
+  "market_positioning": "How they position themselves in the market (e.g., 'Enterprise-grade', 'Easy-to-use', 'Most comprehensive')",
+  "value_proposition_by_segment": {
+    "SMB": "Value prop for small businesses",
+    "Mid-market": "Value prop for mid-market",
+    "Enterprise": "Value prop for enterprise"
+  }
 }
 
-// Agent 3: ICP, Buying Process, Personas
+IMPORTANT:
+- Research their actual products, features, and market positioning
+- Identify real competitors in their space
+- Understand their target market segments and value propositions
+- Include specific product names and features
+- Analyze their competitive advantages and market trends
+- Base analysis on actual company information and market research`;
+
+  return await callLLM(prompt, systemPrompt);
+}
+
+// Agent 3: ICP, Buying Process, and Buyer Personas
 async function agentTechStack(url: string, prev: any) {
-  const prompt = `You are an ICP and sales process expert. For the company at ${url}, return a JSON object with:
-- icp_demographics (industry, size, revenue, region, tech_stack)
-- firmographics
-- pain_points
-- kpis_targeted
-- buying_committee_personas (array: {role, responsibilities})
-- buying_process (trigger_events, influencer_mapping, buying_cycles, content_sought)
-- red_flags
-- anti_personas
-`;
-  return await callLLM(prompt);
+  const systemPrompt = `You are an expert in Ideal Customer Profile (ICP) development, buyer persona analysis, and sales process optimization. You understand customer segmentation, buying behaviors, and sales enablement strategies. Provide detailed, actionable insights for sales and marketing teams.`;
+
+  const prompt = `Based on the company at ${url} and previous analysis: ${JSON.stringify(prev)}, develop comprehensive ICP and buyer persona information.
+
+Return a detailed JSON object with the following structure:
+
+{
+  "icp": {
+    "company_characteristics": ["List of 4-6 key company characteristics of ideal customers"],
+    "technology_profile": ["List of 4-6 technology characteristics and preferences"]
+  },
+  "buyer_personas": [
+    {
+      "title": "Specific job title (e.g., 'VP of Marketing', 'CTO', 'Operations Manager')",
+      "demographics": ["List of 3-4 demographic characteristics"],
+      "pain_points": ["List of 4-6 specific pain points this persona faces"],
+      "success_metrics": ["List of 3-4 key success metrics they care about"]
+    }
+  ],
+  "firmographics": {
+    "industry": ["List of target industries"],
+    "size": "Target company size range",
+    "revenue": "Target revenue range",
+    "geography": ["List of target regions/countries"]
+  },
+  "pain_points": ["List of 6-8 common pain points their solution addresses"],
+  "kpis_targeted": ["List of 5-7 key performance indicators their customers track"],
+  "buying_process": {
+    "trigger_events": ["List of 4-6 events that trigger buying decisions"],
+    "influencer_mapping": ["List of key decision makers and influencers"],
+    "buying_cycles": "Typical buying cycle length and stages",
+    "content_sought": ["List of content types prospects look for"]
+  },
+  "red_flags": ["List of 4-6 characteristics that indicate poor fit"],
+  "anti_personas": ["List of 3-4 personas that are NOT good fits"]
 }
 
-// Agent 4: Features, Ecosystem, Clients, Competitors, GTM, Matrix, Action Steps
+IMPORTANT:
+- Develop realistic, detailed buyer personas based on their product and market
+- Include specific job titles, pain points, and success metrics
+- Understand their target customer characteristics and buying process
+- Identify key decision makers and influencers in the buying process
+- Include both positive (ICP) and negative (anti-personas) customer profiles
+- Base analysis on their actual product offering and target market`;
+
+  return await callLLM(prompt, systemPrompt);
+}
+
+// Agent 4: Sales GTM Strategy, Technology Stack, and Competitive Intelligence
 async function agentSalesGTM(url: string, prev: any) {
-  const prompt = `You are a GTM and competitive intelligence expert. For the company at ${url}, return a JSON object with:
-- key_features
-- integrations (ERPs, CRMs, payment gateways, tech partners)
-- api_openness
-- enterprise_readiness (security, scalability, support)
-- client_logos (array: {logo_url, category, outcome})
-- competitors (by segment, feature_comparison, threats, partners)
-- gtm_messaging (objection_handlers, talking_points_by_role, content_preferences)
-- icp_fit_matrix (table: attribute, ideal, acceptable, exclude)
-- action_steps (lead_scoring, review_plan, loss_win_analysis)
-- social_media (linkedin, twitter, facebook)
-- research_summary
-`;
-  return await callLLM(prompt);
+  const systemPrompt = `You are a senior sales and go-to-market strategist with expertise in B2B sales processes, technology stack analysis, and competitive intelligence. You understand sales enablement, technology architecture, and competitive positioning. Provide detailed, actionable insights for sales and technical teams.`;
+
+  const prompt = `Based on the company at ${url} and previous analysis: ${JSON.stringify(prev)}, provide comprehensive sales GTM strategy and technology stack analysis.
+
+Return a detailed JSON object with the following structure:
+
+{
+  "sales_opportunities": [
+    {
+      "segment": "Specific customer segment (e.g., 'High-growth SaaS companies', 'Enterprise retailers')",
+      "approach": "Recommended sales approach (e.g., 'Direct sales', 'Channel partners', 'Self-service')",
+      "rationale": "Why this segment and approach makes sense"
+    }
+  ],
+  "gtm_recommendations": {
+    "vertical_specific_solutions": ["List of 3-4 vertical markets to target"],
+    "partner_ecosystem": ["List of 4-6 partner types to engage"],
+    "content_marketing": ["List of 4-6 content types to create"],
+    "sales_enablement": ["List of 4-6 sales enablement tools/processes"]
+  },
+  "metrics": [
+    {
+      "label": "Specific metric name (e.g., 'Customer Acquisition Cost', 'Lifetime Value')",
+      "value": "Typical value or range for this metric"
+    }
+  ],
+  "backend_technologies": ["List of 4-6 backend technologies they likely use"],
+  "frontend_technologies": ["List of 4-6 frontend technologies they likely use"],
+  "infrastructure": ["List of 4-6 infrastructure and deployment technologies"],
+  "key_platform_features": ["List of 5-7 key technical features of their platform"],
+  "integration_capabilities": ["List of 4-6 integration capabilities and APIs"],
+  "platform_compatibility": ["List of 4-6 platform compatibility features"],
+  "key_features": {
+    "backend": ["List of 3-4 key backend features"],
+    "frontend": ["List of 3-4 key frontend features"]
+  },
+  "integrations": ["List of 6-8 key integrations they offer"],
+  "api_openness": {
+    "api_offerings": ["List of 3-4 API offerings"],
+    "developer_resources": "Description of developer resources available",
+    "documentation_quality": "Assessment of API documentation quality"
+  },
+  "enterprise_readiness": {
+    "security": ["List of 4-6 security features and certifications"],
+    "scalability": ["List of 3-4 scalability features"],
+    "support": ["List of 3-4 support and service offerings"]
+  },
+  "client_logos": [
+    {
+      "logo_url": "URL or description of client logo",
+      "category": "Client category or industry",
+      "outcome": "Business outcome achieved"
+    }
+  ],
+  "social_media": {
+    "linkedin": "LinkedIn profile URL or handle",
+    "twitter": "Twitter handle or profile",
+    "facebook": "Facebook page or profile"
+  }
+}
+
+IMPORTANT:
+- Analyze their actual technology stack and architecture
+- Develop realistic sales opportunities and GTM strategies
+- Include specific metrics and KPIs relevant to their business
+- Identify key integrations and technology partnerships
+- Understand their enterprise readiness and security posture
+- Base analysis on actual company capabilities and market position
+- Include specific client examples and social media presence`;
+
+  return await callLLM(prompt, systemPrompt);
 }
 
 // Helper to get the first non-empty value from a list of possible keys
@@ -333,67 +473,48 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   console.log('[DEBUG] Agent Output - tech:', JSON.stringify(tech));
   console.log('[DEBUG] Agent Output - sales:', JSON.stringify(sales));
 
-  // Merge all results into a single object matching the new modular frontend structure, with robust normalization
+  // Merge all results into canonical structure matching reportstructure.json
   const merged = {
-    executiveSummary: {
-      companyName: getFirst(overview, ['company_name', 'companyName', 'name', 'company_overview.company_name']),
-      industry: getFirst(overview, ['industry', 'industry_segments', 'industryClassification', 'company_overview.industry_segments']),
-      summary: getFirst(overview, ['overview', 'summary', 'description', 'company_overview.overview']),
+    company_overview: {
+      company_name: getFirst(overview, ['company_name', 'name']),
+      company_size: getFirst(overview, ['company_size', 'size']),
+      founded: getFirst(overview, ['founded', 'foundedYear']),
+      industry: getFirst(overview, ['industry', 'industry_segments']),
+      headquarters: getFirst(overview, ['headquarters', 'location']),
+      revenue_range: getFirst(overview, ['revenue_range', 'revenue']),
+      company_type: getFirst(overview, ['company_type', 'type']),
+      funding_status: getFirst(overview, ['funding_status', 'funding']),
+      summary: getFirst(overview, ['summary', 'overview']),
+      website: getFirst(overview, ['website', 'url']),
+      notable_clients: Array.isArray(sales.client_logos) ? sales.client_logos.map(c => c.category || c.logo_url || c.name || c.company || '') : [],
+      social_media: sales.social_media || overview.social_media || {}
     },
-    companyOverview: {
-      size: getFirst(overview, ['company_size', 'size', 'employeeCount', 'employeeRange', 'employees_global', 'company_overview.company_size']),
-      founded: getFirst(overview, ['founded', 'foundedYear', 'founding_year', 'foundingYear']),
-      industry: getFirst(overview, ['industry', 'industry_segments', 'industryClassification', 'company_overview.industry_segments']),
-      headquarters: getFirst(overview, ['headquarters', 'location', 'address', 'hq', 'company_overview.headquarters']),
-      revenue: getFirst(overview, ['revenue', 'revenue_range', 'estimatedAnnualRevenue', 'company_overview.revenue']),
-      type: getFirst(overview, ['company_type', 'type', 'businessModel', 'company_overview.company_type']),
-      funding: getFirst(overview, ['funding_status', 'funding', 'fundingStage', 'company_overview.funding_status']),
-      website: getFirst(overview, ['website', 'websiteUrl', 'company_url', 'url', 'company_overview.website']),
-      notableClients: Array.isArray(sales.client_logos)
-        ? sales.client_logos.map(c => c.category || c.logo_url || c.name || c.company || '')
-        : (overview.notable_clients || []),
-      socialMedia: sales.social_media || overview.social_media || { linkedin: '', twitter: '', facebook: '' },
+    market_intelligence: {
+      main_products: getFirstArray(market, ['main_products', 'products']),
+      target_market: getFirstObject(market, ['target_market', 'customer_segments']),
+      direct_competitors: getFirstArray(market, ['direct_competitors', 'competitors']),
+      key_differentiators: getFirstArray(market, ['key_differentiators', 'unique_selling_points']),
+      market_trends: getFirstArray(market, ['market_trends', 'trends'])
     },
-    marketIntelligence: {
-      mainProducts: getFirstArray(market, ['main_products', 'core_product_suite', 'productOfferings', 'products', 'products_positioning.main_products']),
-      targetMarket: getFirstObject(market, ['target_market', 'customerSegments', 'targetMarketSegments', 'market_positioning', 'value_proposition_by_segment', 'products_positioning.target_market']),
-      directCompetitors: (typeof market.competitors === 'object')
-        ? Object.values(market.competitors).flat()
-        : getFirstArray(market, ['direct_competitors', 'competitors', 'competitiveLandscape', 'directCompetitors', 'products_positioning.competitors']),
-      keyDifferentiators: getFirstArray(market, ['key_differentiators', 'differentiators', 'unique_selling_points', 'keyDifferentiators', 'products_positioning.key_differentiators']),
-      marketTrends: getFirstArray(market, ['market_trends', 'marketTrends', 'trends', 'products_positioning.market_trends']),
+    icp_ibp_framework: {
+      icp: getFirstObject(tech, ['icp', 'ideal_customer_profile']),
+      buyer_personas: getFirstArray(tech, ['buyer_personas', 'buying_committee_personas'])
     },
-    icpIbps: {
-      icp: getFirstObject(tech, ['icp_demographics', 'icp', 'idealCustomerProfile', 'firmographics', 'icp_and_buying.icp_demographics']),
-      buyerPersonas: Array.isArray(tech.buying_committee_personas)
-        ? tech.buying_committee_personas.map(p => ({
-            title: getFirst(p, ['title', 'role']),
-            demographics: getFirstArray(p, ['demographics', 'demographic', 'attributes']),
-            pain_points: getFirstArray(p, ['pain_points', 'painPoints', 'painpoints']),
-            success_metrics: getFirstArray(p, ['success_metrics', 'successMetrics', 'kpis', 'KPIs']),
-          }))
-        : getFirstArray(tech, ['personas', 'buyer_personas', 'keyPersonas', 'icp_and_buying.buying_committee_personas']),
+    sales_gtm_strategy: {
+      sales_opportunities: getFirstArray(sales, ['sales_opportunities', 'opportunities']),
+      gtm_recommendations: getFirstObject(sales, ['gtm_recommendations', 'go_to_market_strategy']),
+      metrics: getFirstArray(sales, ['metrics', 'kpis'])
     },
-    salesGtmStrategy: {
-      salesOpportunities: Array.isArray(sales.action_steps?.lead_scoring)
-        ? sales.action_steps.lead_scoring
-        : getFirstArray(sales, ['sales_opportunities', 'opportunities', 'leadScoring', 'opportunityData', 'features_ecosystem_gtm.action_steps.lead_scoring']),
-      gtmRecommendations: getFirstObject(sales, ['gtm_messaging', 'gtmRecommendations', 'goToMarketStrategy', 'go_to_market_strategy', 'features_ecosystem_gtm.gtm_messaging']),
-      metrics: Array.isArray(tech.kpis_targeted)
-        ? tech.kpis_targeted.map(kpi => ({ label: kpi, value: '' }))
-        : getFirstArray(tech, ['metrics', 'metricsToTrack', 'kpis', 'KPIs', 'icp_and_buying.kpis_targeted']),
-    },
-    technologyStack: {
-      backendTechnologies: getFirstArray(sales, ['backend_technologies', 'backend', 'backendTech', 'techStackComponents', 'features_ecosystem_gtm.backend_technologies']),
-      frontendTechnologies: getFirstArray(sales, ['frontend_technologies', 'frontend', 'frontendTech', 'features_ecosystem_gtm.frontend_technologies']),
-      infrastructure: getFirstArray(sales, ['infrastructure', 'tech_stack', 'infrastructureTech', 'features_ecosystem_gtm.infrastructure']),
-      keyPlatformFeatures: getFirstArray(sales, ['key_platform_features', 'features', 'uniqueSellingPropositions', 'features_ecosystem_gtm.key_features']),
-      integrationCapabilities: Array.isArray(sales.integrations)
-        ? sales.integrations
-        : (typeof sales.integrations === 'object' ? Object.values(sales.integrations).flat() : getFirstArray(sales, ['integration_capabilities', 'integrations', 'features_ecosystem_gtm.integrations'])),
-      platformCompatibility: getFirstArray(sales, ['platform_compatibility', 'enterprise_readiness', 'compatibility', 'features_ecosystem_gtm.enterprise_readiness']),
+    technology_stack: {
+      backend_technologies: getFirstArray(sales, ['backend_technologies', 'backend']),
+      frontend_technologies: getFirstArray(sales, ['frontend_technologies', 'frontend']),
+      infrastructure: getFirstArray(sales, ['infrastructure', 'tech_stack']),
+      key_platform_features: getFirstArray(sales, ['key_platform_features', 'features']),
+      integration_capabilities: getFirstArray(sales, ['integration_capabilities', 'integrations']),
+      platform_compatibility: getFirstArray(sales, ['platform_compatibility', 'compatibility'])
     }
   };
+
   // Sanitize to canonical report structure
   const canonical = sanitizeToCanonicalReport(merged);
   console.log('[Pipeline] FINAL CANONICAL RESULT:', JSON.stringify(canonical));
