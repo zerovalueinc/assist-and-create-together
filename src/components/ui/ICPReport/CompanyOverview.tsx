@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderValue } from './ReportWrapper';
 
 interface CompanyOverviewProps {
   data: any;
@@ -6,19 +7,21 @@ interface CompanyOverviewProps {
 
 export default function CompanyOverview({ data }: CompanyOverviewProps) {
   const company = {
-    name: data.company_name || data.companyName || data.name || 'Unknown',
-    size: data.company_size || data.size || 'Unknown',
-    founded: data.founded || data.founding_year || 'Unknown',
+    name: data.name || data.company_name || data.companyName || 'Unknown',
+    size: data.size || 'Unknown',
+    founded: data.founded || 'Unknown',
     industry: data.industry || 'Unknown',
-    headquarters: data.headquarters || data.location || data.address || 'Unknown',
-    revenue: data.revenue_range || data.revenue || 'Unknown',
-    type: data.company_type || data.type || 'Unknown',
-    funding: data.funding_status || data.funding || 'Unknown',
-    website: data.website || data.company_url || data.url || ''
+    headquarters: data.headquarters || 'Unknown',
+    revenue: data.revenue || 'Unknown',
+    type: data.type || 'Unknown',
+    funding: data.funding || 'Unknown',
+    website: data.website || ''
   };
 
-  const hasNotableClients = data.notable_clients && Array.isArray(data.notable_clients) && data.notable_clients.length > 0;
-  const hasSocialMedia = data.social_media && Object.keys(data.social_media).length > 0;
+  const hasNotableClients = data.notableClients && Array.isArray(data.notableClients) && data.notableClients.length > 0;
+  const hasSocialMedia = data.socialMedia && Object.keys(data.socialMedia).length > 0;
+  const hasKeyContacts = data.keyContacts && data.keyContacts.length > 0;
+  const hasEmployeesKeyRegions = data.employeesKeyRegions && data.employeesKeyRegions.length > 0;
 
   return (
     <section className="space-y-6 p-6 bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -31,19 +34,20 @@ export default function CompanyOverview({ data }: CompanyOverviewProps) {
         <div className="space-y-3">
           <h3 className="font-semibold text-lg text-gray-800">Company Details</h3>
           <div className="space-y-2">
-            <div><strong>Size:</strong> {company.size}</div>
-            <div><strong>Founded:</strong> {company.founded}</div>
-            <div><strong>Industry:</strong> {company.industry}</div>
-            <div><strong>Headquarters:</strong> {company.headquarters}</div>
+            <div><strong>Size:</strong> {renderValue(company.size)}</div>
+            <div><strong>Founded:</strong> {renderValue(company.founded)}</div>
+            <div><strong>Industry:</strong> {renderValue(company.industry)}</div>
+            <div><strong>Headquarters:</strong> {renderValue(company.headquarters)}</div>
+            {hasEmployeesKeyRegions && <div><strong>Employees by Region:</strong> {renderValue(data.employeesKeyRegions)}</div>}
           </div>
         </div>
         
         <div className="space-y-3">
           <h3 className="font-semibold text-lg text-gray-800">Business Details</h3>
           <div className="space-y-2">
-            <div><strong>Revenue:</strong> {company.revenue}</div>
-            <div><strong>Type:</strong> {company.type}</div>
-            <div><strong>Funding:</strong> {company.funding}</div>
+            <div><strong>Revenue:</strong> {renderValue(company.revenue)}</div>
+            <div><strong>Type:</strong> {renderValue(company.type)}</div>
+            <div><strong>Funding:</strong> {renderValue(company.funding)}</div>
             {company.website && (
               <div>
                 <strong>Website:</strong> 
@@ -60,13 +64,15 @@ export default function CompanyOverview({ data }: CompanyOverviewProps) {
       {hasNotableClients && (
         <div className="space-y-3">
           <h3 className="font-semibold text-lg text-gray-800">Notable Clients</h3>
-          <div className="flex flex-wrap gap-2">
-            {data.notable_clients.map((client: any, idx: number) => (
-              <span key={idx} className="inline-block bg-orange-50 text-orange-800 px-3 py-1 rounded-full text-sm font-medium border border-orange-200">
-                {typeof client === 'string' ? client : (client.name || client.company || 'Unknown Client')}
-              </span>
-            ))}
-          </div>
+          <div>{renderValue(data.notableClients)}</div>
+        </div>
+      )}
+
+      {/* Key Contacts */}
+      {hasKeyContacts && (
+        <div className="space-y-3">
+          <h3 className="font-semibold text-lg text-gray-800">Key Contacts</h3>
+          <div>{renderValue(data.keyContacts)}</div>
         </div>
       )}
 
@@ -74,23 +80,7 @@ export default function CompanyOverview({ data }: CompanyOverviewProps) {
       {hasSocialMedia && (
         <div className="space-y-3">
           <h3 className="font-semibold text-lg text-gray-800">Social Media</h3>
-          <div className="flex gap-4">
-            {data.social_media.twitter && (
-              <a href={data.social_media.twitter} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                Twitter
-              </a>
-            )}
-            {data.social_media.linkedin && (
-              <a href={data.social_media.linkedin} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                LinkedIn
-              </a>
-            )}
-            {data.social_media.facebook && (
-              <a href={data.social_media.facebook} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                Facebook
-              </a>
-            )}
-          </div>
+          <div>{renderValue(data.socialMedia)}</div>
         </div>
       )}
     </section>
