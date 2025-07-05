@@ -10,7 +10,7 @@ import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
-import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
+import { capitalizeFirstLetter, getCache, setCache, normalizeReportSection } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '../lib/supabase/edgeClient';
@@ -709,23 +709,37 @@ const CompanyAnalyzer = () => {
                               </div>
                             )}
                             {/* Integration Capabilities */}
-                            {merged.integration_capabilities && Object.keys(merged.integration_capabilities).length > 0 && (
+                            {merged.integration_capabilities && (
                               <div className="tech-category mb-6">
                                 <div className="subsection-title font-semibold text-lg mb-2">Integration Capabilities</div>
                                 <ul className="list-disc pl-5">
-                                  {Object.values(merged.integration_capabilities).map((cap, i) => (
-                                    <li key={i}>{renderValue(cap)}</li>
+                                  {normalizeReportSection(merged.integration_capabilities).map((item, i) => (
+                                    <li key={i}>
+                                      {item.label ? <strong>{capitalizeFirstLetter(item.label)}: </strong> : null}
+                                      {Array.isArray(item.value)
+                                        ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
+                                        : typeof item.value === 'string' && item.value.startsWith('{')
+                                          ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
+                                          : item.value}
+                                    </li>
                                   ))}
                                 </ul>
                               </div>
                             )}
                             {/* Platform Compatibility */}
-                            {merged.platform_compatibility && Object.keys(merged.platform_compatibility).length > 0 && (
+                            {merged.platform_compatibility && (
                               <div className="tech-category mb-6">
                                 <div className="subsection-title font-semibold text-lg mb-2">Platform Compatibility</div>
                                 <ul className="list-disc pl-5">
-                                  {Object.entries(merged.platform_compatibility).map(([k, v], i) => (
-                                    <li key={i}><strong>{k}:</strong> {renderValue(v)}</li>
+                                  {normalizeReportSection(merged.platform_compatibility).map((item, i) => (
+                                    <li key={i}>
+                                      {item.label ? <strong>{capitalizeFirstLetter(item.label)}: </strong> : null}
+                                      {Array.isArray(item.value)
+                                        ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
+                                        : typeof item.value === 'string' && item.value.startsWith('{')
+                                          ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
+                                          : item.value}
+                                    </li>
                                   ))}
                                 </ul>
                               </div>
