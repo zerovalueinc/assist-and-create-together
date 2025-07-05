@@ -304,14 +304,14 @@ const CompanyAnalyzer = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-2xl font-bold">
+            <Search className="h-6 w-6 text-primary" />
             Company Analysis
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-base">
             Enter a company URL to generate comprehensive business intelligence using our 5-phase research process
           </CardDescription>
         </CardHeader>
@@ -361,14 +361,14 @@ const CompanyAnalyzer = () => {
       {reports.length === 0 ? (
         <div className="text-center text-muted-foreground py-8">No company analysis reports found. Run an analysis first.</div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Details */}
           {analysis && selectedReportId && typeof analysis === 'object' ? (
             (() => {
               let merged = analysis && analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : null;
               if (!merged) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
 
-              // --- Company Overview Card ---
+              // --- Company Overview ---
               const companyOverviewFields = [
                 ['Company Name', merged.company_name],
                 ['Company Type', merged.company_type],
@@ -378,135 +378,221 @@ const CompanyAnalyzer = () => {
                 ['Revenue Range', merged.revenue_range],
                 ['Industry', merged.industry],
                 ['Summary', merged.summary],
-                ['Funding Status', merged.funding?.status],
-                ['Total Raised', merged.funding?.total_raised],
-                ['Notable Rounds', merged.funding?.notable_rounds],
+                ['Funding', merged.funding],
               ];
 
-              // --- Market Intelligence Card ---
-              const competitors = merged.competitors || {};
-              const positioning = merged.positioning || {};
-              const valueProp = merged.value_proposition || {};
-              const targetMarket = merged.target_market || {};
+              // --- Competitors ---
+              const competitors = Array.isArray(merged.competitors) ? merged.competitors : [];
 
-              // --- Sales GTM Card ---
+              // --- Key Features, Tech Stack, Platform, Integrations ---
+              const keyFeatures = merged.key_features || {};
+              const techStack = merged.technology_stack || {};
+              const platformCompat = merged.platform_compatibility || {};
+              const integrationCaps = merged.integration_capabilities || {};
+
+              // --- Market Intelligence ---
+              const positioning = merged.positioning || {};
+              const marketTrends = merged.market_trends || [];
+              const targetMarket = merged.target_market || {};
+              const valueProp = merged.value_proposition || {};
+              const mainProducts = merged.main_products || [];
+
+              // --- Sales GTM ---
               const socialMedia = merged.social_media || {};
               const notableClients = merged.notable_clients || [];
               const researchSummary = merged.research_summary || {};
               const gtmRecs = merged.gtm_recommendations || [];
               const salesOpps = merged.sales_opportunities || [];
 
-              // --- Tech Stack Card ---
-              const keyFeatures = merged.key_features || {};
-              const techStack = merged.technology_stack || {};
-              const platformCompat = merged.platform_compatibility || {};
-              const integrationCaps = merged.integration_capabilities || {};
+              // --- Helper: Render badge ---
+              const Badge = ({ children, color = 'secondary' }) => (
+                <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold bg-${color}-100 text-${color}-800 mr-2 mb-1`}>{children}</span>
+              );
+
+              // --- Helper: Render list ---
+              const RenderList = ({ items }) => (
+                <ul className="list-disc pl-5 space-y-1">
+                  {items.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              );
+
+              // --- Helper: Render object as key-value list ---
+              const RenderObjList = ({ obj }) => (
+                <ul className="space-y-1">
+                  {Object.entries(obj).map(([k, v], i) => (
+                    <li key={i}><span className="font-medium text-muted-foreground">{String(k)}:</span> {Array.isArray(v) ? v.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ') : (v === undefined || v === null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)))}</li>
+                  ))}
+                </ul>
+              );
+
+              // --- Helper: Render competitors as table ---
+              const RenderCompetitors = ({ competitors }) => (
+                <table className="min-w-full text-xs border mt-2">
+                  <thead><tr><th className="border px-2 py-1">Name</th><th className="border px-2 py-1">Focus</th></tr></thead>
+                  <tbody>
+                    {competitors.map((c, i) => (
+                      <tr key={i} className="odd:bg-muted">
+                        <td className="border px-2 py-1 font-semibold">{c.name}</td>
+                        <td className="border px-2 py-1">{c.focus}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+
+              // --- Helper: Render social media as icons ---
+              const RenderSocialMedia = ({ social }) => (
+                <div className="flex gap-4 items-center">
+                  {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" title="Twitter"><svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557a9.93 9.93 0 0 1-2.828.775A4.932 4.932 0 0 0 23.337 3.1a9.864 9.864 0 0 1-3.127 1.195A4.916 4.916 0 0 0 16.616 3c-2.72 0-4.924 2.206-4.924 4.924 0 .386.044.763.127 1.124C7.728 8.807 4.1 6.884 1.671 3.965c-.423.724-.666 1.562-.666 2.475 0 1.708.87 3.216 2.188 4.099a4.904 4.904 0 0 1-2.229-.616c-.054 2.281 1.581 4.415 3.949 4.89a4.936 4.936 0 0 1-2.224.084c.627 1.956 2.444 3.377 4.6 3.417A9.867 9.867 0 0 1 0 21.543a13.94 13.94 0 0 0 7.548 2.212c9.057 0 14.009-7.514 14.009-14.009 0-.213-.005-.425-.014-.636A10.012 10.012 0 0 0 24 4.557z"/></svg></a>}
+                  {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" title="Facebook"><svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35C.595 0 0 .592 0 1.326v21.348C0 23.406.595 24 1.326 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.797.143v3.24l-1.918.001c-1.504 0-1.797.715-1.797 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116C23.406 24 24 23.406 24 22.674V1.326C24 .592 23.406 0 22.675 0"/></svg></a>}
+                  {social.linkedin && <a href={social.linkedin} target="_blank" rel="noopener noreferrer" title="LinkedIn"><svg className="w-5 h-5 text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.327-.027-3.037-1.849-3.037-1.851 0-2.132 1.445-2.132 2.939v5.667H9.358V9h3.414v1.561h.049c.476-.899 1.637-1.849 3.37-1.849 3.602 0 4.267 2.369 4.267 5.455v6.285zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .771 0 1.723v20.549C0 23.229.792 24 1.771 24h20.451C23.2 24 24 23.229 24 22.271V1.723C24 .771 23.2 0 22.225 0z"/></svg></a>}
+                </div>
+              );
+
+              // --- Helper: Render badge list ---
+              const RenderBadgeList = ({ items }) => (
+                <div className="flex flex-wrap gap-2">
+                  {items.map((item, i) => <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{String(item)}</span>)}
+                </div>
+              );
+
+              // --- Helper: Render multi-column badge list ---
+              const RenderMultiColObj = ({ obj }) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(obj).map(([k, v], i) => (
+                    <div key={i}>
+                      <span className="font-medium text-muted-foreground">{String(k)}</span>
+                      {Array.isArray(v)
+                        ? <RenderBadgeList items={v.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item))} />
+                        : <div className="text-sm mt-1">{v === undefined || v === null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v))}</div>}
+                    </div>
+                  ))}
+                </div>
+              );
+
+              // --- Helper: Render sales opportunities ---
+              const RenderSalesOpps = ({ opps }) => (
+                <ul className="list-disc pl-5 space-y-1">
+                  {opps.map((op, i) => (
+                    <li key={i}><span className="font-semibold">{op.segment}:</span> {op.approach} <span className="text-muted-foreground text-xs">{op.rationale}</span></li>
+                  ))}
+                </ul>
+              );
+
+              // --- Helper: Render GTM Recommendations ---
+              const RenderGTMRecs = ({ recs }) => (
+                <div className="space-y-2">
+                  {recs.map((rec, i) => (
+                    <div key={i} className="border rounded p-2 bg-muted">
+                      {Object.entries(rec).map(([k, v], j) => (
+                        <div key={j}><span className="font-medium text-muted-foreground">{k.replace(/_/g, ' ')}:</span> {Array.isArray(v) ? <RenderList items={v} /> : v}</div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              );
+
+              // --- Helper: Render research summary ---
+              const RenderResearchSummary = ({ summary }) => (
+                <div className="space-y-1">
+                  {Object.entries(summary).map(([k, v], i) => (
+                    <div key={i}><span className="font-medium text-muted-foreground">{k.replace(/_/g, ' ')}:</span> {Array.isArray(v) ? <RenderList items={v} /> : v}</div>
+                  ))}
+                </div>
+              );
 
               return (
-                <div className="space-y-6">
+                <div className="space-y-10">
                   {/* Company Overview */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" />Company Overview</CardTitle>
+                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Building className="h-5 w-5 text-primary" />
+                        <span className="text-xl font-bold">Company Overview</span>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {companyOverviewFields.map(([label, value], idx) => (
-                          <div key={idx}><span className="text-sm font-medium text-muted-foreground">{label}</span><p className="text-sm font-semibold">{renderField(value)}</p></div>
-                        ))}
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <div className="text-2xl font-bold mb-1">{merged.company_name}</div>
+                        <div className="flex gap-2 mb-2">
+                          {merged.company_type && <Badge color="primary">{merged.company_type}</Badge>}
+                          {merged.funding && <Badge color="secondary">{typeof merged.funding === 'string' ? merged.funding : merged.funding.status}</Badge>}
+                        </div>
+                        {merged.headquarters && <div className="text-sm text-muted-foreground">{merged.headquarters}</div>}
+                        {merged.founded && <div className="text-sm text-muted-foreground">Founded: {merged.founded}</div>}
+                        {merged.company_size && <div className="text-sm text-muted-foreground">Size: {merged.company_size}</div>}
+                        {merged.revenue_range && <div className="text-sm text-muted-foreground">Revenue: {merged.revenue_range}</div>}
+                        {merged.industry && <div className="text-sm text-muted-foreground">Industry: {merged.industry}</div>}
+                      </div>
+                      <div className="space-y-2">
+                        {merged.summary && <div className="text-base font-medium mb-2">{merged.summary}</div>}
+                        {merged.notable_rounds && <div><span className="font-medium text-muted-foreground">Notable Rounds:</span> {Array.isArray(merged.notable_rounds) ? <RenderBadgeList items={merged.notable_rounds} /> : merged.notable_rounds}</div>}
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Market Intelligence */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><BarChart2 className="h-5 w-5" />Market Intelligence</CardTitle>
+                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <BarChart2 className="h-5 w-5 text-primary" />
+                        <span className="text-xl font-bold">Market Intelligence</span>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Direct Competitors</span><p className="text-sm">{renderField(competitors.direct || competitors.main_rivals)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Indirect Competitors</span><p className="text-sm">{renderField(competitors.indirect || competitors.direct_competitors)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Core Message</span><p className="text-sm">{renderField(positioning.core_message)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Differentiators</span><p className="text-sm">{renderField(positioning.differentiators)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Market Position</span><p className="text-sm">{renderField(positioning.market_position)}</p></div>
-                        </div>
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Main Products</span><p className="text-sm">{renderField(merged.main_products)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Market Trends</span><p className="text-sm">{renderField(merged.market_trends)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Target Market</span><p className="text-sm">{renderField(targetMarket.primary)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Value Proposition (Merchants)</span><p className="text-sm">{renderField(valueProp.merchants)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Unique Benefits</span><p className="text-sm">{renderField(valueProp.unique_benefits || valueProp.key_advantages)}</p></div>
-                        </div>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        {competitors.length > 0 && <div><span className="font-medium text-muted-foreground">Competitors:</span> <RenderCompetitors competitors={competitors} /></div>}
+                        {positioning.differentiators && <div><span className="font-medium text-muted-foreground">Differentiators:</span> <RenderBadgeList items={positioning.differentiators} /></div>}
+                        {positioning.market_position && <div><span className="font-medium text-muted-foreground">Market Position:</span> {positioning.market_position}</div>}
+                        {marketTrends.length > 0 && <div><span className="font-medium text-muted-foreground">Market Trends:</span> <RenderList items={marketTrends} /></div>}
+                      </div>
+                      <div className="space-y-2">
+                        {mainProducts.length > 0 && <div><span className="font-medium text-muted-foreground">Main Products:</span> <RenderBadgeList items={mainProducts} /></div>}
+                        {targetMarket.primary && <div><span className="font-medium text-muted-foreground">Target Market:</span> {targetMarket.primary}</div>}
+                        {valueProp.key_features && <div><span className="font-medium text-muted-foreground">Value Proposition:</span> <RenderBadgeList items={valueProp.key_features} /></div>}
+                        {valueProp.primary_benefits && <div><span className="font-medium text-muted-foreground">Unique Benefits:</span> <RenderBadgeList items={valueProp.primary_benefits} /></div>}
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Sales GTM */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Rocket className="h-5 w-5" />Sales GTM</CardTitle>
+                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Rocket className="h-5 w-5 text-primary" />
+                        <span className="text-xl font-bold">Sales GTM</span>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Social Media</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(socialMedia, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Notable Clients</span>
-                            {Array.isArray(notableClients) && notableClients.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {notableClients.map((c, i) => <li key={i}>{c}</li>)}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Research Summary</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(researchSummary, null, 2)}</pre></div>
-                        </div>
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">GTM Recommendations</span>
-                            {Array.isArray(gtmRecs) && gtmRecs.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {gtmRecs.map((rec, i) => <li key={i}><b>{rec.strategy}:</b> {renderField(rec.actions)}</li>)}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Sales Opportunities</span>
-                            {Array.isArray(salesOpps) && salesOpps.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {salesOpps.map((op, i) => <li key={i}><b>{op.segment}:</b> {op.why} – {op.approach}</li>)}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                        </div>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        {Object.keys(socialMedia).length > 0 && <div><span className="font-medium text-muted-foreground">Social Media:</span> <RenderSocialMedia social={socialMedia} /></div>}
+                        {notableClients.length > 0 && <div><span className="font-medium text-muted-foreground">Notable Clients:</span> <RenderList items={notableClients} /></div>}
+                        {researchSummary && Object.keys(researchSummary).length > 0 && <div><span className="font-medium text-muted-foreground">Research Summary:</span> <RenderResearchSummary summary={researchSummary} /></div>}
+                      </div>
+                      <div className="space-y-2">
+                        {gtmRecs.length > 0 && <div><span className="font-medium text-muted-foreground">GTM Recommendations:</span> <RenderGTMRecs recs={gtmRecs} /></div>}
+                        {salesOpps.length > 0 && <div><span className="font-medium text-muted-foreground">Sales Opportunities:</span> <RenderSalesOpps opps={salesOpps} /></div>}
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Tech Stack */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Cpu className="h-5 w-5" />Tech Stack</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Key Features</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(keyFeatures, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Technology Stack</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(techStack, null, 2)}</pre></div>
-                        </div>
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Platform Compatibility</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(platformCompat, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Integration Capabilities</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(integrationCaps, null, 2)}</pre></div>
-                        </div>
+                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Cpu className="h-5 w-5 text-primary" />
+                        <span className="text-xl font-bold">Tech Stack</span>
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Debug Card */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Raw JSON Output (Debug)</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <pre className="text-xs whitespace-pre-wrap break-all bg-muted p-2 rounded border max-h-96 overflow-auto">{JSON.stringify(merged, null, 2)}</pre>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        {Object.keys(keyFeatures).length > 0 && <div><span className="font-medium text-muted-foreground">Key Features:</span> <RenderMultiColObj obj={keyFeatures} /></div>}
+                        {Object.keys(techStack).length > 0 && <div><span className="font-medium text-muted-foreground">Technology Stack:</span> <RenderMultiColObj obj={techStack} /></div>}
+                      </div>
+                      <div className="space-y-2">
+                        {Object.keys(platformCompat).length > 0 && <div><span className="font-medium text-muted-foreground">Platform Compatibility:</span> <RenderMultiColObj obj={platformCompat} /></div>}
+                        {Object.keys(integrationCaps).length > 0 && <div><span className="font-medium text-muted-foreground">Integration Capabilities:</span> <RenderMultiColObj obj={integrationCaps} /></div>}
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
