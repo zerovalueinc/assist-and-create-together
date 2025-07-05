@@ -420,9 +420,18 @@ const CompanyAnalyzer = () => {
 
               // --- Helper: Render object as key-value list ---
               const RenderObjList = ({ obj }) => (
-                <ul className="space-y-1">
+                <ul className="space-y-1 pl-2 border-l border-muted-foreground/20">
                   {Object.entries(obj).map(([k, v], i) => (
-                    <li key={i}><span className="font-medium text-muted-foreground">{String(k)}:</span> {Array.isArray(v) ? v.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ') : (v === undefined || v === null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)))}</li>
+                    <li key={i} className="text-xs">
+                      <span className="font-medium text-muted-foreground">{String(k)}:</span> {' '}
+                      {typeof v === 'string' || typeof v === 'number'
+                        ? v
+                        : Array.isArray(v)
+                          ? <RenderBadgeList items={v} />
+                          : typeof v === 'object' && v !== null
+                            ? <RenderObjList obj={v} />
+                            : String(v)}
+                    </li>
                   ))}
                 </ul>
               );
@@ -459,19 +468,29 @@ const CompanyAnalyzer = () => {
               // --- Helper: Render badge list ---
               const RenderBadgeList = ({ items }) => (
                 <div className="flex flex-wrap gap-2">
-                  {items.map((item, i) => <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{String(item)}</span>)}
+                  {items.map((item, i) => {
+                    if (typeof item === 'string' || typeof item === 'number') {
+                      return <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{item}</span>;
+                    } else if (typeof item === 'object' && item !== null) {
+                      return <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{JSON.stringify(item)}</span>;
+                    } else {
+                      return <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{String(item)}</span>;
+                    }
+                  })}
                 </div>
               );
 
-              // --- Helper: Render multi-column badge list ---
+              // --- Helper: Render multi-column object ---
               const RenderMultiColObj = ({ obj }) => (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(obj).map(([k, v], i) => (
                     <div key={i}>
                       <span className="font-medium text-muted-foreground">{String(k)}</span>
                       {Array.isArray(v)
-                        ? <RenderBadgeList items={v.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item))} />
-                        : <div className="text-sm mt-1">{v === undefined || v === null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v))}</div>}
+                        ? <RenderBadgeList items={v} />
+                        : typeof v === 'object' && v !== null
+                          ? <RenderObjList obj={v} />
+                          : <div className="text-sm mt-1">{v === undefined || v === null ? '' : String(v)}</div>}
                     </div>
                   ))}
                 </div>
