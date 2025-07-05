@@ -16,6 +16,8 @@ import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '../lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import ICPProfileDisplay from './ui/ICPProfileDisplay';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
+import { SectionLabel } from './ui/section-label';
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -427,17 +429,22 @@ const CompanyAnalyzer = () => {
 
               // --- Helper: Render competitors as table ---
               const RenderCompetitors = ({ competitors }) => (
-                <table className="min-w-full text-xs border mt-2">
-                  <thead><tr><th className="border px-2 py-1">Name</th><th className="border px-2 py-1">Focus</th></tr></thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Focus</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {competitors.map((c, i) => (
-                      <tr key={i} className="odd:bg-muted">
-                        <td className="border px-2 py-1 font-semibold">{c.name}</td>
-                        <td className="border px-2 py-1">{c.focus}</td>
-                      </tr>
+                      <TableRow key={i} className="odd:bg-muted">
+                        <TableCell className="border px-2 py-1 font-semibold">{String(c.name)}</TableCell>
+                        <TableCell className="border px-2 py-1">{String(c.focus)}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               );
 
               // --- Helper: Render social media as icons ---
