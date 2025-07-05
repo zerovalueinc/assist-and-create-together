@@ -36,7 +36,7 @@ const TwoColumnGrid: React.FC<{ leftFields: any; rightFields: any }> = ({ leftFi
         {Object.entries(leftFields).map(([key, value]) => (
           <div key={`left-${key}`} className="field-item">
             <div className="field-label font-medium text-gray-700 mb-1">{prettifyLabel(key)}</div>
-            <div className="field-value text-gray-900">{String(value)}</div>
+            <div className="field-value text-gray-900">{renderValue(value)}</div>
           </div>
         ))}
       </div>
@@ -47,7 +47,7 @@ const TwoColumnGrid: React.FC<{ leftFields: any; rightFields: any }> = ({ leftFi
         {Object.entries(rightFields).map(([key, value]) => (
           <div key={`right-${key}`} className="field-item">
             <div className="field-label font-medium text-gray-700 mb-1">{prettifyLabel(key)}</div>
-            <div className="field-value text-gray-900">{String(value)}</div>
+            <div className="field-value text-gray-900">{renderValue(value)}</div>
           </div>
         ))}
       </div>
@@ -63,15 +63,23 @@ const Description: React.FC<{ content: string }> = ({ content }) => (
 );
 
 // Component for rendering client list
-const ClientList: React.FC<{ clients: string[] }> = ({ clients }) => (
+const ClientList: React.FC<{ clients: any[] }> = ({ clients }) => (
   <div className="subsection mb-6">
-    <div className="subsection-title font-semibold text-lg mb-2">Notable Clients</div>
-    <div className="notable-clients flex flex-wrap gap-3">
-      {clients.map((client, i) => (
-        <span key={i} className="client-item bg-orange-50 border border-orange-300 px-4 py-2 rounded-full text-sm font-medium">
-          {client}
-        </span>
-      ))}
+    <div className="subsection-title font-semibold text-lg mb-3">Notable Clients</div>
+    <div className="client-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {clients.map((client, i) => {
+        // Handle both string clients and object clients
+        const clientName = typeof client === 'string' ? client : 
+                          (client.name || client.company || client.logo_url || 'Unknown Client');
+        const clientCategory = typeof client === 'object' ? client.category : '';
+        
+        return (
+          <div key={i} className="client-item bg-orange-50 border border-orange-200 rounded-lg p-3">
+            <div className="client-name font-medium text-orange-900">{clientName}</div>
+            {clientCategory && <div className="client-category text-sm text-orange-700">{clientCategory}</div>}
+          </div>
+        );
+      })}
     </div>
   </div>
 );
@@ -101,13 +109,15 @@ const SocialLinks: React.FC<{ socialMedia: any }> = ({ socialMedia }) => (
 );
 
 // Component for rendering list grid
-const ListGrid: React.FC<{ items: string[]; title: string }> = ({ items, title }) => (
+const ListGrid: React.FC<{ items: any[]; title: string }> = ({ items, title }) => (
   <div className="subsection mb-6">
-    <div className="subsection-title font-semibold text-lg mb-2">{title}</div>
-    <div className="list-grid grid grid-cols-2 gap-2">
+    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
+    <div className="list-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((item, i) => (
-        <div key={i} className="list-item bg-gray-50 border-l-4 border-indigo-500 px-3 py-2 rounded text-sm font-medium">
-          {item}
+        <div key={i} className="list-item bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="item-content text-blue-900">
+            {typeof item === 'string' ? item : renderValue(item)}
+          </div>
         </div>
       ))}
     </div>
@@ -126,7 +136,7 @@ const ICPSection: React.FC<{ data: any; title: string }> = ({ data, title }) => 
             {Object.entries(data.company_characteristics).map(([key, value]) => (
               <div key={`char-${key}`} className="characteristic-item bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <div className="characteristic-label font-medium text-blue-900 mb-1">{prettifyLabel(key)}</div>
-                <div className="characteristic-value text-blue-800">{String(value)}</div>
+                <div className="characteristic-value text-blue-800">{renderValue(value)}</div>
               </div>
             ))}
           </div>
@@ -139,7 +149,7 @@ const ICPSection: React.FC<{ data: any; title: string }> = ({ data, title }) => 
             {Object.entries(data.technology_profile).map(([key, value]) => (
               <div key={`tech-${key}`} className="tech-item bg-green-50 border border-green-200 rounded-lg p-3">
                 <div className="tech-label font-medium text-green-900 mb-1">{prettifyLabel(key)}</div>
-                <div className="tech-value text-green-800">{String(value)}</div>
+                <div className="tech-value text-green-800">{renderValue(value)}</div>
               </div>
             ))}
           </div>
@@ -164,12 +174,17 @@ const CompetitorGrid: React.FC<{ competitors: any[] }> = ({ competitors }) => (
 );
 
 // Component for rendering bullet list
-const BulletList: React.FC<{ items: string[]; title: string }> = ({ items, title }) => (
+const BulletList: React.FC<{ items: any[]; title: string }> = ({ items, title }) => (
   <div className="subsection mb-6">
-    <div className="subsection-title font-semibold text-lg mb-2">{title}</div>
-    <ul className="list-disc pl-5">
+    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
+    <ul className="bullet-list space-y-2">
       {items.map((item, i) => (
-        <li key={i}>{item}</li>
+        <li key={i} className="bullet-item flex items-start">
+          <span className="bullet-point text-blue-500 mr-2 mt-1">•</span>
+          <span className="bullet-content text-gray-700">
+            {typeof item === 'string' ? item : renderValue(item)}
+          </span>
+        </li>
       ))}
     </ul>
   </div>
@@ -229,6 +244,31 @@ const TechList: React.FC<{ technologies: string[]; title: string }> = ({ technol
     </div>
   </div>
 );
+
+// Helper to safely render any field
+function renderField(field: any) {
+  if (field == null) return 'N/A';
+  if (typeof field === 'string') return field;
+  if (Array.isArray(field)) return field.join(', ');
+  if (typeof field === 'object') return JSON.stringify(field);
+  return String(field);
+}
+
+// Helper to safely render unknown values as string
+const renderValue = (val: unknown): string => {
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) return val.map(renderValue).join(', ');
+  if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  return '';
+};
+
+// Helper to render objects as structured content
+const renderObject = (obj: any): string => {
+  if (typeof obj !== 'object' || obj === null) return String(obj);
+  if (Array.isArray(obj)) return obj.map(item => renderObject(item)).join(', ');
+  return Object.entries(obj).map(([key, value]) => `${key}: ${renderObject(value)}`).join(', ');
+};
 
 // Main canonical report renderer
 const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ reportData }) => {
