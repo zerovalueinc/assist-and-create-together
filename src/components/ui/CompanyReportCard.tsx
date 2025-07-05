@@ -13,8 +13,15 @@ function getCompanyDomain(report: any): string {
 }
 
 function getCompanyName(report: any): string {
-  // Use canonical structure only
-  return report.company_overview?.company_name || report.company_name || 'Untitled';
+  return (
+    report.companyName ||
+    report.company_name ||
+    (report.overview && report.overview.company_name) ||
+    (report.intel && report.intel.company_name) ||
+    report.company_overview?.company_name ||
+    report.name ||
+    'Untitled'
+  );
 }
 
 export function CompanyReportCard({ report, selected, onClick }: CompanyReportCardProps) {

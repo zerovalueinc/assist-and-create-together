@@ -17,6 +17,18 @@ import { CompanyReportCard } from './ui/CompanyReportCard';
 // Set this to true to use the backend proxy for GTM Playbook
 const USE_GTM_PROXY = true;
 
+// Utility function to extract company name from a report object
+function getCompanyName(report: any) {
+  return (
+    report.companyName ||
+    report.company_name ||
+    (report.overview && report.overview.company_name) ||
+    (report.intel && report.intel.company_name) ||
+    report.name ||
+    'Untitled'
+  );
+}
+
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
   const [gtmPlaybook, setGtmPlaybook] = useState(null);
