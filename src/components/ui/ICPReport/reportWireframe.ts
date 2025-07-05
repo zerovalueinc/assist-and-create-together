@@ -1,6 +1,6 @@
 // This file is auto-generated from new-strcuture-intel.json
 // It exports the canonical report wireframe as a TypeScript array
-// Updated to match actual backend data structure
+// Updated to match actual backend data structure with unique field mappings
 
 const reportWireframe = [
   {
@@ -38,9 +38,9 @@ const reportWireframe = [
     description: "Common tech tools and platforms this ICP typically uses.",
     fields: {
       "Tech Stack Tags": "icp_and_buying.icp_demographics.tech_stack",
-      "CRM Platforms": "icp_and_buying.buying_committee_personas",
-      "ERP Systems": "icp_and_buying.firmographics.business_model",
-      "Payment Gateways": "icp_and_buying.kpis_targeted",
+      "CRM Platforms": "icp_and_buying.icp_demographics.tech_stack",
+      "ERP Systems": "icp_and_buying.icp_demographics.tech_stack",
+      "Payment Gateways": "icp_and_buying.icp_demographics.tech_stack",
       "Tech Partners": "icp_and_buying.buying_process.influencer_mapping"
     }
   },
@@ -77,8 +77,8 @@ const reportWireframe = [
     description: "What products are offered and how they are positioned for this ICP.",
     fields: {
       "Core Product Suite": "company_overview.overview",
-      "Main Products": "icp_and_buying.icp_demographics.tech_stack",
-      "Modules & Use Cases": "icp_and_buying.firmographics.business_model",
+      "Main Products": "icp_and_buying.firmographics.business_model",
+      "Modules & Use Cases": "icp_and_buying.icp_demographics.tech_stack",
       "Target Market": "icp_and_buying.icp_demographics.industry",
       "Unique Selling Points": "icp_and_buying.kpis_targeted",
       "Value Proposition by Segment": "icp_and_buying.icp_demographics.revenue",
@@ -97,7 +97,7 @@ const reportWireframe = [
       "Developer Tools": "icp_and_buying.buying_process.content_sought",
       "Documentation": "icp_and_buying.kpis_targeted",
       "App Marketplace": "icp_and_buying.icp_demographics.industry",
-      "Hosting": "icp_and_buying.buying_committee_personas",
+      "Hosting": "icp_and_buying.icp_demographics.region",
       "Performance": "icp_and_buying.pain_points",
       "Uptime": "icp_and_buying.buying_process.buying_cycles.average_length",
       "Security Certifications": "icp_and_buying.red_flags",
@@ -114,7 +114,7 @@ const reportWireframe = [
       "SMB Feature Comparison": "icp_and_buying.firmographics.business_model",
       "Mid-Market Competitors": "icp_and_buying.icp_demographics.tech_stack",
       "Mid-Market Feature Comparison": "icp_and_buying.kpis_targeted",
-      "Enterprise Competitors": "icp_and_buying.buying_committee_personas",
+      "Enterprise Competitors": "icp_and_buying.icp_demographics.size.employees",
       "Enterprise Feature Comparison": "icp_and_buying.pain_points",
       "Threats - SMB": "icp_and_buying.red_flags",
       "Threats - MM": "icp_and_buying.anti_personas",
