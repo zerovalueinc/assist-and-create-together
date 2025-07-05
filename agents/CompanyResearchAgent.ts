@@ -2,6 +2,8 @@
 // PersonaOps Sequential Multi-Agent Company Research Pipeline
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import fs from 'fs';
+import path from 'path';
 
 declare const Deno: any;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -133,6 +135,43 @@ function getFirstObject(obj, keys) {
     if (obj && typeof obj[key] === 'object' && !Array.isArray(obj[key]) && Object.keys(obj[key] || {}).length > 0) return obj[key];
   }
   return {};
+}
+
+// Sanitization: Map merged LLM output to canonical reportstructure.json schema
+function sanitizeToCanonicalReport(merged: any) {
+  const schemaPath = path.resolve(__dirname, '../reportstructure.json');
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
+  const mapping = schema.canonical_report_mapping;
+  const result: any = {};
+
+  // Helper to get default value by type
+  function getDefault(type: string) {
+    if (type === 'string' || type === 'text') return '';
+    if (type === 'array') return [];
+    if (type === 'object') return {};
+    return null;
+  }
+
+  // For each section, build the canonical structure
+  for (const section of mapping.sections) {
+    result[section.id] = {};
+    for (const subsection of section.subsections) {
+      for (const fieldGroup of Array.isArray(subsection.fields) ? subsection.fields : [subsection.fields]) {
+        if (typeof fieldGroup === 'string') {
+          // Single field
+          const fieldDef = mapping.field_mappings[fieldGroup];
+          result[section.id][fieldGroup] = merged[fieldGroup] !== undefined ? merged[fieldGroup] : getDefault(fieldDef?.type);
+        } else if (typeof fieldGroup === 'object' && fieldGroup.fields) {
+          // Grouped fields (e.g., two_column_grid)
+          for (const colField of fieldGroup.fields) {
+            const fieldDef = mapping.field_mappings[colField];
+            result[section.id][colField] = merged[colField] !== undefined ? merged[colField] : getDefault(fieldDef?.type);
+          }
+        }
+      }
+    }
+  }
+  return result;
 }
 
 // Orchestrator: Run all agents in sequence, merging outputs, and save each step
@@ -335,6 +374,8 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
       platformCompatibility: getFirstArray(sales, ['platform_compatibility', 'enterprise_readiness', 'compatibility', 'features_ecosystem_gtm.enterprise_readiness']),
     }
   };
-  console.log('[Pipeline] FINAL MODULAR MERGED RESULT:', JSON.stringify(merged));
-  return { overview, market, tech, sales, merged };
+  // Sanitize to canonical report structure
+  const canonical = sanitizeToCanonicalReport(merged);
+  console.log('[Pipeline] FINAL CANONICAL RESULT:', JSON.stringify(canonical));
+  return { overview, market, tech, sales, merged: canonical };
 } 
