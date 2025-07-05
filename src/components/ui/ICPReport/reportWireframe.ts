@@ -38,10 +38,10 @@ const reportWireframe = [
     description: "Common tech tools and platforms this ICP typically uses.",
     fields: {
       "Tech Stack Tags": "icp_and_buying.icp_demographics.tech_stack",
-      "CRM Platforms": "icp_and_buying.icp_demographics.tech_stack",
-      "ERP Systems": "icp_and_buying.icp_demographics.tech_stack",
-      "Payment Gateways": "icp_and_buying.icp_demographics.tech_stack",
-      "Tech Partners": "icp_and_buying.icp_demographics.tech_stack"
+      "CRM Platforms": "icp_and_buying.buying_committee_personas",
+      "ERP Systems": "icp_and_buying.firmographics.business_model",
+      "Payment Gateways": "icp_and_buying.kpis_targeted",
+      "Tech Partners": "icp_and_buying.buying_process.influencer_mapping"
     }
   },
   {
@@ -92,35 +92,35 @@ const reportWireframe = [
     title: "Product Features & Enterprise Readiness",
     description: "Technical maturity, scalability, and support posture for larger orgs.",
     fields: {
-      "API Type": "company_overview.overview",
-      "Customization": "company_overview.overview",
-      "Developer Tools": "company_overview.overview",
-      "Documentation": "company_overview.overview",
-      "App Marketplace": "company_overview.overview",
-      "Hosting": "company_overview.overview",
-      "Performance": "company_overview.overview",
-      "Uptime": "company_overview.overview",
-      "Security Certifications": "company_overview.overview",
-      "Security Features": "company_overview.overview",
-      "Support Channels": "company_overview.overview",
-      "SLA": "company_overview.overview"
+      "API Type": "icp_and_buying.icp_demographics.tech_stack",
+      "Customization": "icp_and_buying.firmographics.business_model",
+      "Developer Tools": "icp_and_buying.buying_process.content_sought",
+      "Documentation": "icp_and_buying.kpis_targeted",
+      "App Marketplace": "icp_and_buying.icp_demographics.industry",
+      "Hosting": "icp_and_buying.buying_committee_personas",
+      "Performance": "icp_and_buying.pain_points",
+      "Uptime": "icp_and_buying.buying_process.buying_cycles.average_length",
+      "Security Certifications": "icp_and_buying.red_flags",
+      "Security Features": "icp_and_buying.anti_personas",
+      "Support Channels": "icp_and_buying.buying_process.influencer_mapping",
+      "SLA": "icp_and_buying.icp_demographics.revenue"
     }
   },
   {
     title: "Competitive Landscape",
     description: "Competitor fit and positioning across different market segments.",
     fields: {
-      "SMB Competitors": "company_overview.overview",
-      "SMB Feature Comparison": "company_overview.overview",
-      "Mid-Market Competitors": "company_overview.overview",
-      "Mid-Market Feature Comparison": "company_overview.overview",
-      "Enterprise Competitors": "company_overview.overview",
-      "Enterprise Feature Comparison": "company_overview.overview",
-      "Threats - SMB": "company_overview.overview",
-      "Threats - MM": "company_overview.overview",
-      "Threats - Enterprise": "company_overview.overview",
-      "Loss/Win Factors": "company_overview.overview",
-      "Review Plan": "company_overview.overview"
+      "SMB Competitors": "icp_and_buying.icp_demographics.industry",
+      "SMB Feature Comparison": "icp_and_buying.firmographics.business_model",
+      "Mid-Market Competitors": "icp_and_buying.icp_demographics.tech_stack",
+      "Mid-Market Feature Comparison": "icp_and_buying.kpis_targeted",
+      "Enterprise Competitors": "icp_and_buying.buying_committee_personas",
+      "Enterprise Feature Comparison": "icp_and_buying.pain_points",
+      "Threats - SMB": "icp_and_buying.red_flags",
+      "Threats - MM": "icp_and_buying.anti_personas",
+      "Threats - Enterprise": "icp_and_buying.buying_process.trigger_events",
+      "Loss/Win Factors": "icp_and_buying.buying_process.content_sought",
+      "Review Plan": "icp_and_buying.buying_process.buying_cycles.key_stages"
     }
   },
   {
