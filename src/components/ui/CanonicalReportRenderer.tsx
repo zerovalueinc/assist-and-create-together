@@ -331,6 +331,89 @@ const renderObject = (obj: any): string => {
   return Object.entries(obj).map(([key, value]) => `${key}: ${renderObject(value)}`).join(', ');
 };
 
+// Sanitization helper for report data
+function sanitizeReportData(data: any) {
+  const sanitizeArray = (arr: any[], key?: string) => {
+    if (!Array.isArray(arr)) return [];
+    // Extract key if provided, else prettify string or object
+    let values = arr.map(item => {
+      if (typeof item === 'string') {
+        // Prettify logo URLs or domains
+        if (item.match(/^https?:\/\//)) {
+          try {
+            const url = new URL(item);
+            return url.hostname.replace('www.', '');
+          } catch { return item; }
+        }
+        return item;
+      }
+      if (typeof item === 'object' && item !== null) {
+        if (key && item[key]) return item[key];
+        if (item.name) return item.name;
+        if (item.title) return item.title;
+        if (item.company) return item.company;
+        if (item.logo_url) return item.logo_url.split('/').pop();
+        if (item.category) return item.category;
+        return Object.values(item).join(', ');
+      }
+      return String(item);
+    });
+    // Remove duplicates and empty
+    values = [...new Set(values)].filter(Boolean);
+    return values.length ? values : ['N/A'];
+  };
+
+  const sanitizeField = (val: any, key?: string) => {
+    if (val == null || val === '' || (Array.isArray(val) && val.length === 0)) return 'N/A';
+    if (Array.isArray(val)) return sanitizeArray(val, key).join(', ');
+    if (typeof val === 'object') {
+      // For objects, join key-value pairs
+      return Object.entries(val).map(([k, v]) => `${prettifyLabel(k)}: ${sanitizeField(v)}`).join('; ');
+    }
+    if (typeof val === 'string') {
+      // Prettify capitalization
+      return val.charAt(0).toUpperCase() + val.slice(1);
+    }
+    return String(val);
+  };
+
+  const sanitized: any = { ...data };
+  // Notable clients
+  if (sanitized.notable_clients) sanitized.notable_clients = sanitizeArray(sanitized.notable_clients);
+  // Main products
+  if (sanitized.main_products) sanitized.main_products = sanitizeArray(sanitized.main_products);
+  // Direct competitors
+  if (sanitized.direct_competitors) sanitized.direct_competitors = sanitizeArray(sanitized.direct_competitors);
+  // Key platform features
+  if (sanitized.key_platform_features) sanitized.key_platform_features = sanitizeArray(sanitized.key_platform_features);
+  // Integration capabilities
+  if (sanitized.integration_capabilities) sanitized.integration_capabilities = sanitizeArray(sanitized.integration_capabilities);
+  // Platform compatibility
+  if (sanitized.platform_compatibility) sanitized.platform_compatibility = sanitizeArray(sanitized.platform_compatibility);
+  // Buyer personas
+  if (sanitized.buyer_personas) sanitized.buyer_personas = sanitized.buyer_personas.map((p: any) => ({
+    title: p.title || p.role || 'N/A',
+    demographics: sanitizeField(p.demographics),
+    pain_points: sanitizeField(p.pain_points),
+    success_metrics: sanitizeField(p.success_metrics)
+  }));
+  // Market trends
+  if (sanitized.market_trends) sanitized.market_trends = sanitizeArray(sanitized.market_trends);
+  // Remove duplicates for all array fields
+  [
+    'main_products', 'direct_competitors', 'key_platform_features', 'integration_capabilities', 'platform_compatibility', 'market_trends'
+  ].forEach(field => {
+    if (sanitized[field]) sanitized[field] = Array.isArray(sanitized[field]) ? [...new Set(sanitized[field])] : sanitized[field];
+  });
+  // Fallback for all fields
+  Object.keys(sanitized).forEach(key => {
+    if (sanitized[key] == null || sanitized[key] === '' || (Array.isArray(sanitized[key]) && sanitized[key].length === 0)) {
+      sanitized[key] = 'N/A';
+    }
+  });
+  return sanitized;
+}
+
 // Main canonical report renderer
 const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ reportData }) => {
   console.log('[CanonicalReportRenderer] Received reportData:', reportData);
@@ -405,7 +488,7 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
     return transformed;
   };
   
-  const data = transformData(rawData);
+  const data = sanitizeReportData(transformData(rawData));
   
   console.log('[CanonicalReportRenderer] Transformed data:', data);
   console.log('[CanonicalReportRenderer] Transformed data keys:', Object.keys(data || {}));
