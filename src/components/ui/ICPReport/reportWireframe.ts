@@ -28,7 +28,7 @@ const reportWireframe = [
       "Industry (Tags)": "icp_and_buying.icp_demographics.industry",
       "Regions (Target Geography)": "icp_and_buying.icp_demographics.region",
       "Revenue Range": "icp_and_buying.icp_demographics.revenue",
-      "Ideal Revenue": "icp_and_buying.icp_demographics.revenue",
+      "Ideal Revenue": "icp_and_buying.icp_demographics.size.employees",
       "Company Size (Employees)": "icp_and_buying.icp_demographics.size.employees",
       "Size Sweet Spot": "icp_and_buying.icp_demographics.size.sweet_spot"
     }
@@ -76,14 +76,14 @@ const reportWireframe = [
     title: "Product & GTM Positioning",
     description: "What products are offered and how they are positioned for this ICP.",
     fields: {
-      "Core Product Suite": "company_overview.overview",
+      "Core Product Suite": "icp_and_buying.firmographics.growth_stage",
       "Main Products": "icp_and_buying.firmographics.business_model",
       "Modules & Use Cases": "icp_and_buying.icp_demographics.tech_stack",
       "Target Market": "icp_and_buying.icp_demographics.industry",
       "Unique Selling Points": "icp_and_buying.kpis_targeted",
       "Value Proposition by Segment": "icp_and_buying.icp_demographics.revenue",
       "Market Trends": "icp_and_buying.buying_process.trigger_events",
-      "GTM Messaging: CEO": "icp_and_buying.buying_committee_personas",
+      "GTM Messaging: CEO": "icp_and_buying.firmographics.decision_making",
       "GTM Messaging: CMO": "icp_and_buying.buying_process.content_sought",
       "GTM Messaging: CTO": "icp_and_buying.icp_demographics.tech_stack"
     }
@@ -103,7 +103,7 @@ const reportWireframe = [
       "Security Certifications": "icp_and_buying.red_flags",
       "Security Features": "icp_and_buying.anti_personas",
       "Support Channels": "icp_and_buying.buying_process.influencer_mapping",
-      "SLA": "icp_and_buying.icp_demographics.revenue"
+      "SLA": "icp_and_buying.firmographics.sales_channels"
     }
   },
   {
@@ -115,7 +115,7 @@ const reportWireframe = [
       "Mid-Market Competitors": "icp_and_buying.icp_demographics.tech_stack",
       "Mid-Market Feature Comparison": "icp_and_buying.kpis_targeted",
       "Enterprise Competitors": "icp_and_buying.icp_demographics.size.employees",
-      "Enterprise Feature Comparison": "icp_and_buying.pain_points",
+      "Enterprise Feature Comparison": "icp_and_buying.firmographics.growth_stage",
       "Threats - SMB": "icp_and_buying.red_flags",
       "Threats - MM": "icp_and_buying.anti_personas",
       "Threats - Enterprise": "icp_and_buying.buying_process.trigger_events",
