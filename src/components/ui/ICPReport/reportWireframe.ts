@@ -77,15 +77,15 @@ const reportWireframe = [
     description: "What products are offered and how they are positioned for this ICP.",
     fields: {
       "Core Product Suite": "company_overview.overview",
-      "Main Products": "company_overview.overview",
-      "Modules & Use Cases": "company_overview.overview",
+      "Main Products": "icp_and_buying.icp_demographics.tech_stack",
+      "Modules & Use Cases": "icp_and_buying.firmographics.business_model",
       "Target Market": "icp_and_buying.icp_demographics.industry",
-      "Unique Selling Points": "company_overview.overview",
-      "Value Proposition by Segment": "company_overview.overview",
-      "Market Trends": "company_overview.overview",
-      "GTM Messaging: CEO": "company_overview.overview",
-      "GTM Messaging: CMO": "company_overview.overview",
-      "GTM Messaging: CTO": "company_overview.overview"
+      "Unique Selling Points": "icp_and_buying.kpis_targeted",
+      "Value Proposition by Segment": "icp_and_buying.icp_demographics.revenue",
+      "Market Trends": "icp_and_buying.buying_process.trigger_events",
+      "GTM Messaging: CEO": "icp_and_buying.buying_committee_personas",
+      "GTM Messaging: CMO": "icp_and_buying.buying_process.content_sought",
+      "GTM Messaging: CTO": "icp_and_buying.icp_demographics.tech_stack"
     }
   },
   {
