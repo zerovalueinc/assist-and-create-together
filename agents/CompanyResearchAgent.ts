@@ -517,6 +517,17 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
 
   // Sanitize to canonical report structure
   const canonical = sanitizeToCanonicalReport(merged);
-  console.log('[Pipeline] FINAL CANONICAL RESULT:', JSON.stringify(canonical));
-  return { overview, market, tech, sales, merged: canonical };
+  // Always set company_name at the top level for frontend pills and display
+  const topLevelCompanyName = canonical.company_overview?.company_name || overview.company_name || overview.name || '';
+  canonical.company_name = topLevelCompanyName;
+  console.log('[Pipeline] FINAL CANONICAL RESULT:', JSON.stringify(canonical, null, 2));
+  // Debug: Print all top-level canonical fields
+  Object.entries(canonical).forEach(([section, value]) => {
+    if (typeof value === 'object' && value !== null) {
+      console.log(`[Canonical] Section: ${section} - Keys:`, Object.keys(value));
+    } else {
+      console.log(`[Canonical] Field: ${section} - Value:`, value);
+    }
+  });
+  return { overview, market, tech, sales, merged: canonical, company_name: topLevelCompanyName };
 } 
