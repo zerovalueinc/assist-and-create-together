@@ -23,10 +23,10 @@ function renderValue(val: any, fieldName?: string): string {
       // Handle array of objects (like buyer personas, key contacts)
       return val.map((item, index) => {
         if (item.role) {
-          return `${item.role}${item.responsibilities ? ` (${item.responsibilities.join(', ')})` : ''}`;
+          return `${item.role}${item.responsibilities ? ` (${Array.isArray(item.responsibilities) ? item.responsibilities.join(', ') : item.responsibilities})` : ''}`;
         }
         if (item.type) {
-          return `${item.type}${item.characteristics ? ` (${item.characteristics.join(', ')})` : ''}`;
+          return `${item.type}${item.characteristics ? ` (${Array.isArray(item.characteristics) ? item.characteristics.join(', ') : item.characteristics})` : ''}`;
         }
         if (item.name && item.title) {
           return `${item.name} - ${item.title}`;
@@ -41,7 +41,7 @@ function renderValue(val: any, fieldName?: string): string {
     // Handle specific object types
     if (val.external && val.internal) {
       // Handle influencer mapping structure
-      return `External: ${val.external.join(', ')}; Internal: ${val.internal.join(', ')}`;
+      return `External: ${Array.isArray(val.external) ? val.external.join(', ') : val.external}; Internal: ${Array.isArray(val.internal) ? val.internal.join(', ') : val.internal}`;
     }
     if (val.ideal && val.range) {
       // Handle revenue object
@@ -49,7 +49,7 @@ function renderValue(val: any, fieldName?: string): string {
     }
     if (val.growth_stage && val.business_model) {
       // Handle firmographics object
-      return `Growth Stage: ${val.growth_stage.join(', ')}, Business Model: ${val.business_model.join(', ')}, Sales Channels: ${val.sales_channels.join(', ')}, Decision Making: ${val.decision_making}`;
+      return `Growth Stage: ${Array.isArray(val.growth_stage) ? val.growth_stage.join(', ') : val.growth_stage}, Business Model: ${Array.isArray(val.business_model) ? val.business_model.join(', ') : val.business_model}, Sales Channels: ${Array.isArray(val.sales_channels) ? val.sales_channels.join(', ') : val.sales_channels}, Decision Making: ${val.decision_making}`;
     }
     return JSON.stringify(val);
   }
