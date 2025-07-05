@@ -1,638 +1,353 @@
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise ICP/IBP Report</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f8f9fa;
+{
+  "canonical_report_mapping": {
+    "sections": [
+      {
+        "id": "company_overview",
+        "title": "Company Overview",
+        "icon": "building",
+        "order": 1,
+        "subsections": [
+          {
+            "id": "company_header",
+            "type": "header",
+            "fields": ["company_name"]
+          },
+          {
+            "id": "company_details",
+            "type": "two_column_grid",
+            "fields": [
+              {
+                "column": "left",
+                "fields": [
+                  "company_size",
+                  "founded", 
+                  "industry",
+                  "headquarters"
+                ]
+              },
+              {
+                "column": "right", 
+                "fields": [
+                  "revenue_range",
+                  "company_type",
+                  "funding_status"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "company_summary",
+            "type": "description",
+            "fields": ["summary"]
+          },
+          {
+            "id": "notable_clients",
+            "type": "client_list",
+            "fields": ["notable_clients"]
+          },
+          {
+            "id": "social_media",
+            "type": "social_links",
+            "fields": ["social_media"]
+          }
+        ]
+      },
+      {
+        "id": "market_intelligence",
+        "title": "Market Intelligence", 
+        "icon": "chart",
+        "order": 2,
+        "subsections": [
+          {
+            "id": "main_products",
+            "type": "list_grid",
+            "fields": ["main_products"]
+          },
+          {
+            "id": "target_market",
+            "type": "icp_section",
+            "fields": ["target_market"]
+          },
+          {
+            "id": "competitors",
+            "type": "competitor_grid",
+            "fields": ["direct_competitors"]
+          },
+          {
+            "id": "key_differentiators",
+            "type": "bullet_list",
+            "fields": ["key_differentiators"]
+          },
+          {
+            "id": "market_trends",
+            "type": "list_grid",
+            "fields": ["market_trends"]
+          }
+        ]
+      },
+      {
+        "id": "icp_ibp_framework",
+        "title": "Ideal Customer & Buyer Profiles",
+        "icon": "users",
+        "order": 3,
+        "subsections": [
+          {
+            "id": "ideal_customer_profile",
+            "type": "icp_section",
+            "fields": ["icp"]
+          },
+          {
+            "id": "buyer_personas",
+            "type": "buyer_personas",
+            "fields": ["buyer_personas"]
+          }
+        ]
+      },
+      {
+        "id": "sales_gtm_strategy",
+        "title": "Sales GTM Strategy",
+        "icon": "sales",
+        "order": 4,
+        "subsections": [
+          {
+            "id": "sales_opportunities",
+            "type": "opportunity_items",
+            "fields": ["sales_opportunities"]
+          },
+          {
+            "id": "gtm_recommendations",
+            "type": "two_column_grid",
+            "fields": ["gtm_recommendations"]
+          },
+          {
+            "id": "metrics",
+            "type": "metrics_grid",
+            "fields": ["metrics"]
+          }
+        ]
+      },
+      {
+        "id": "technology_stack",
+        "title": "Technology Stack",
+        "icon": "code",
+        "order": 5,
+        "subsections": [
+          {
+            "id": "backend_technologies",
+            "type": "tech_list",
+            "fields": ["backend_technologies"]
+          },
+          {
+            "id": "frontend_technologies", 
+            "type": "tech_list",
+            "fields": ["frontend_technologies"]
+          },
+          {
+            "id": "infrastructure",
+            "type": "tech_list",
+            "fields": ["infrastructure"]
+          },
+          {
+            "id": "key_platform_features",
+            "type": "bullet_list",
+            "fields": ["key_platform_features"]
+          },
+          {
+            "id": "integration_capabilities",
+            "type": "bullet_list", 
+            "fields": ["integration_capabilities"]
+          },
+          {
+            "id": "platform_compatibility",
+            "type": "bullet_list",
+            "fields": ["platform_compatibility"]
+          }
+        ]
+      }
+    ],
+    "field_mappings": {
+      "company_name": {
+        "type": "string",
+        "display": "Company Name",
+        "required": true
+      },
+      "company_size": {
+        "type": "string", 
+        "display": "Company Size",
+        "required": true
+      },
+      "founded": {
+        "type": "string",
+        "display": "Founded",
+        "required": true
+      },
+      "industry": {
+        "type": "string",
+        "display": "Industry", 
+        "required": true
+      },
+      "headquarters": {
+        "type": "string",
+        "display": "Headquarters",
+        "required": true
+      },
+      "revenue_range": {
+        "type": "string",
+        "display": "Revenue Range",
+        "required": true
+      },
+      "company_type": {
+        "type": "string",
+        "display": "Company Type",
+        "required": true
+      },
+      "funding_status": {
+        "type": "string",
+        "display": "Funding Status",
+        "required": false
+      },
+      "summary": {
+        "type": "text",
+        "display": "Company Summary",
+        "required": true
+      },
+      "notable_clients": {
+        "type": "array",
+        "display": "Notable Clients",
+        "required": false
+      },
+      "social_media": {
+        "type": "object",
+        "display": "Social Media",
+        "fields": ["twitter", "facebook", "linkedin"],
+        "required": false
+      },
+      "main_products": {
+        "type": "array",
+        "display": "Main Products",
+        "required": true
+      },
+      "target_market": {
+        "type": "object",
+        "display": "Target Market",
+        "fields": ["primary", "size_range", "industry_focus"],
+        "required": true
+      },
+      "direct_competitors": {
+        "type": "array",
+        "display": "Direct Competitors",
+        "required": true
+      },
+      "key_differentiators": {
+        "type": "array",
+        "display": "Key Differentiators",
+        "required": true
+      },
+      "market_trends": {
+        "type": "array",
+        "display": "Market Trends",
+        "required": true
+      },
+      "icp": {
+        "type": "object",
+        "display": "Ideal Customer Profile",
+        "fields": ["company_characteristics", "technology_profile"],
+        "required": true
+      },
+      "buyer_personas": {
+        "type": "array",
+        "display": "Buyer Personas",
+        "fields": ["title", "demographics", "pain_points", "success_metrics"],
+        "required": true
+      },
+      "sales_opportunities": {
+        "type": "array",
+        "display": "Sales Opportunities",
+        "fields": ["segment", "approach", "rationale"],
+        "required": true
+      },
+      "gtm_recommendations": {
+        "type": "object",
+        "display": "GTM Recommendations",
+        "fields": ["vertical_specific_solutions", "partner_ecosystem", "content_marketing", "sales_enablement"],
+        "required": true
+      },
+      "metrics": {
+        "type": "array",
+        "display": "Key Metrics",
+        "fields": ["label", "value"],
+        "required": true
+      },
+      "backend_technologies": {
+        "type": "array",
+        "display": "Backend Technologies",
+        "required": true
+      },
+      "frontend_technologies": {
+        "type": "array",
+        "display": "Frontend Technologies",
+        "required": true
+      },
+      "infrastructure": {
+        "type": "array",
+        "display": "Infrastructure",
+        "required": true
+      },
+      "key_platform_features": {
+        "type": "array",
+        "display": "Key Platform Features",
+        "required": true
+      },
+      "integration_capabilities": {
+        "type": "array",
+        "display": "Integration Capabilities",
+        "required": true
+      },
+      "platform_compatibility": {
+        "type": "array",
+        "display": "Platform Compatibility",
+        "required": true
+      }
+    },
+    "display_config": {
+      "section_styles": {
+        "company_overview": {
+          "icon": "building",
+          "color": "#4f46e5"
+        },
+        "market_intelligence": {
+          "icon": "chart",
+          "color": "#10b981"
+        },
+        "icp_ibp_framework": {
+          "icon": "users",
+          "color": "#f59e0b"
+        },
+        "sales_gtm_strategy": {
+          "icon": "sales",
+          "color": "#ef4444"
+        },
+        "technology_stack": {
+          "icon": "code",
+          "color": "#8b5cf6"
         }
-
-        .report-container {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .section {
-            margin-bottom: 40px;
-            border-bottom: 1px solid #e9ecef;
-            padding-bottom: 30px;
-        }
-
-        .section:last-child {
-            border-bottom: none;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .section-icon {
-            width: 24px;
-            height: 24px;
-            margin-right: 12px;
-            color: #4f46e5;
-        }
-
-        .section-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1f2937;
-            margin: 0;
-        }
-
-        .company-name {
-            font-size: 32px;
-            font-weight: 800;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .company-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-top: 20px;
-        }
-
-        .detail-group {
-            margin-bottom: 16px;
-        }
-
-        .detail-label {
-            font-weight: 600;
-            color: #6b7280;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .detail-value {
-            color: #1f2937;
-            font-size: 16px;
-        }
-
-        .subsection {
-            margin: 20px 0;
-        }
-
-        .subsection-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 12px;
-        }
-
-        .two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        .list-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 8px;
-            margin: 12px 0;
-        }
-
-        .list-item {
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            border-left: 3px solid #4f46e5;
-        }
-
-        .competitor-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin: 16px 0;
-        }
-
-        .competitor-item {
-            background: #fef3c7;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 500;
-            border: 1px solid #f59e0b;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 16px;
-            margin: 20px 0;
-        }
-
-        .metric-card {
-            background: #f0f9ff;
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid #0ea5e9;
-        }
-
-        .metric-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #0369a1;
-            margin-bottom: 4px;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .icp-section {
-            background: #f0fdf4;
-            border: 1px solid #22c55e;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 16px 0;
-        }
-
-        .buyer-persona {
-            background: #faf5ff;
-            border: 1px solid #a855f7;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 12px 0;
-        }
-
-        .persona-title {
-            font-weight: 600;
-            color: #7c2d92;
-            margin-bottom: 8px;
-        }
-
-        .opportunity-item {
-            background: #ecfdf5;
-            border-left: 4px solid #10b981;
-            padding: 16px;
-            margin: 12px 0;
-            border-radius: 0 6px 6px 0;
-        }
-
-        .opportunity-title {
-            font-weight: 600;
-            color: #065f46;
-            margin-bottom: 8px;
-        }
-
-        .tech-category {
-            margin: 16px 0;
-        }
-
-        .tech-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .tech-item {
-            background: #ddd6fe;
-            color: #5b21b6;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 16px;
-            margin: 16px 0;
-        }
-
-        .social-link {
-            color: #4f46e5;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .notable-clients {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 16px 0;
-        }
-
-        .client-item {
-            background: #fff7ed;
-            border: 1px solid #fb923c;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        ul {
-            padding-left: 20px;
-        }
-
-        li {
-            margin: 6px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="report-container">
-        <!-- Company Overview Section -->
-        <div class="section">
-            <div class="section-header">
-                <svg class="section-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
-                    <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/>
-                </svg>
-                <h2 class="section-title">Company Overview</h2>
-            </div>
-
-            <h1 class="company-name">BigCommerce</h1>
-            
-            <div class="company-details">
-                <div>
-                    <div class="detail-group">
-                        <div class="detail-label">Company Size</div>
-                        <div class="detail-value">1,000-5,000 employees</div>
-                    </div>
-                    <div class="detail-group">
-                        <div class="detail-label">Founded</div>
-                        <div class="detail-value">2009</div>
-                    </div>
-                    <div class="detail-group">
-                        <div class="detail-label">Industry</div>
-                        <div class="detail-value">E-commerce Software</div>
-                    </div>
-                    <div class="detail-group">
-                        <div class="detail-label">Headquarters</div>
-                        <div class="detail-value">Austin, Texas, United States</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="detail-group">
-                        <div class="detail-label">Revenue Range</div>
-                        <div class="detail-value">$200M-$300M annually</div>
-                    </div>
-                    <div class="detail-group">
-                        <div class="detail-label">Company Type</div>
-                        <div class="detail-value">Public (NASDAQ: BIGC)</div>
-                    </div>
-                    <div class="detail-group">
-                        <div class="detail-label">Funding Status</div>
-                        <div class="detail-value">Public Company ($219.2M total raised)</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="subsection">
-                <div class="detail-value">BigCommerce is a leading SaaS e-commerce platform that provides businesses with tools and features to create, manage, and scale online stores. The platform offers customizable templates, payment processing, shipping solutions, marketing tools, and multi-channel selling capabilities.</div>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Notable Clients</div>
-                <div class="notable-clients">
-                    <div class="client-item">Ben & Jerry's</div>
-                    <div class="client-item">Skullcandy</div>
-                    <div class="client-item">Woolrich</div>
-                    <div class="client-item">Bliss</div>
-                    <div class="client-item">Burrow</div>
-                    <div class="client-item">Solo Stove</div>
-                    <div class="client-item">Ted Baker</div>
-                </div>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Social Media</div>
-                <div class="social-links">
-                    <a href="https://twitter.com/BigCommerce" class="social-link">Twitter</a>
-                    <a href="https://www.facebook.com/BigCommerce" class="social-link">Facebook</a>
-                    <a href="https://www.linkedin.com/company/bigcommerce" class="social-link">LinkedIn</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Market Intelligence Section -->
-        <div class="section">
-            <div class="section-header">
-                <svg class="section-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h2 class="section-title">Market Intelligence</h2>
-            </div>
-
-            <div class="two-column">
-                <div>
-                    <div class="subsection">
-                        <div class="subsection-title">Main Products</div>
-                        <div class="list-grid">
-                            <div class="list-item">Enterprise+ Platform</div>
-                            <div class="list-item">BigCommerce Essentials</div>
-                            <div class="list-item">BigCommerce Pro & Plus</div>
-                            <div class="list-item">Multi-channel selling</div>
-                            <div class="list-item">Headless commerce solutions</div>
-                            <div class="list-item">B2B ecommerce functionality</div>
-                        </div>
-                    </div>
-
-                    <div class="subsection">
-                        <div class="subsection-title">Target Market</div>
-                        <div class="icp-section">
-                            <strong>Primary:</strong> Mid-market retailers, Enterprise businesses, B2B companies, Direct-to-consumer brands
-                            <br><br>
-                            <strong>Size Range:</strong> Annual revenue from $1M to $500M+
-                            <br><br>
-                            <strong>Industry Focus:</strong> Retail, Manufacturing, Wholesale, Consumer goods
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="subsection">
-                        <div class="subsection-title">Direct Competitors</div>
-                        <div class="competitor-grid">
-                            <div class="competitor-item">Shopify Plus</div>
-                            <div class="competitor-item">Adobe Commerce</div>
-                            <div class="competitor-item">Wix eCommerce</div>
-                            <div class="competitor-item">Salesforce Commerce</div>
-                        </div>
-                    </div>
-
-                    <div class="subsection">
-                        <div class="subsection-title">Key Differentiators</div>
-                        <ul>
-                            <li>Open SaaS architecture</li>
-                            <li>Strong B2B capabilities</li>
-                            <li>Lower total cost of ownership vs. enterprise competitors</li>
-                            <li>Flexible API-first approach</li>
-                            <li>No transaction fees</li>
-                            <li>Unlimited API calls</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Market Trends</div>
-                <div class="list-grid">
-                    <div class="list-item">Shift toward headless commerce architecture</div>
-                    <div class="list-item">Growing demand for B2B ecommerce solutions</div>
-                    <div class="list-item">Increased focus on omnichannel retail</div>
-                    <div class="list-item">Rising importance of mobile commerce</div>
-                    <div class="list-item">Integration of AI and personalization</div>
-                    <div class="list-item">Enhanced focus on global expansion capabilities</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ICP/IBP Framework -->
-        <div class="section">
-            <div class="section-header">
-                <svg class="section-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
-                </svg>
-                <h2 class="section-title">Ideal Customer & Buyer Profiles</h2>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Ideal Customer Profile (ICP)</div>
-                <div class="icp-section">
-                    <strong>Company Characteristics:</strong>
-                    <ul>
-                        <li>Company Size: 500-5,000 employees</li>
-                        <li>Annual Revenue: $50M - $500M+</li>
-                        <li>Industry: Mid-market to Enterprise Retail, B2B, Manufacturing</li>
-                        <li>Growth Stage: Scale-up to Mature Enterprise</li>
-                        <li>Geographic Focus: North America, Europe, APAC</li>
-                    </ul>
-
-                    <strong>Technology Profile:</strong>
-                    <ul>
-                        <li>Current Platform: Legacy systems, outgrowing current solution</li>
-                        <li>Tech Stack: Advanced integration needs</li>
-                        <li>IT Budget: $1M+ annually</li>
-                        <li>Development Resources: In-house technical teams</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Buyer Personas</div>
-                
-                <div class="buyer-persona">
-                    <div class="persona-title">Economic Buyer: CTO / VP Engineering</div>
-                    <strong>Demographics:</strong> 35-50 years old, 8+ years enterprise experience<br>
-                    <strong>Pain Points:</strong> Platform scalability, technical debt, integration complexity<br>
-                    <strong>Success Metrics:</strong> System uptime, performance optimization, cost efficiency
-                </div>
-
-                <div class="buyer-persona">
-                    <div class="persona-title">Technical Buyer: Director of E-commerce</div>
-                    <strong>Demographics:</strong> 30-45 years old, e-commerce specialist background<br>
-                    <strong>Pain Points:</strong> Conversion optimization, customer experience, feature limitations<br>
-                    <strong>Success Metrics:</strong> Conversion rates, average order value, customer satisfaction
-                </div>
-
-                <div class="buyer-persona">
-                    <div class="persona-title">Financial Stakeholder: CFO / Finance Director</div>
-                    <strong>Demographics:</strong> 40-55 years old, cost optimization focus<br>
-                    <strong>Pain Points:</strong> Total cost of ownership, ROI projections, budget allocation<br>
-                    <strong>Success Metrics:</strong> Implementation costs, ongoing expenses, business value
-                </div>
-            </div>
-        </div>
-
-        <!-- Sales GTM Section -->
-        <div class="section">
-            <div class="section-header">
-                <svg class="section-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-                </svg>
-                <h2 class="section-title">Sales GTM Strategy</h2>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Sales Opportunities</div>
-                
-                <div class="opportunity-item">
-                    <div class="opportunity-title">B2B Manufacturers</div>
-                    <div>Focus on total cost of ownership and B2B-specific capabilities. Growing B2B e-commerce adoption and strong B2B feature set create significant opportunity.</div>
-                </div>
-
-                <div class="opportunity-item">
-                    <div class="opportunity-title">Mid-market retailers seeking headless commerce</div>
-                    <div>Emphasize development flexibility and lower maintenance costs. Strong API capabilities and flexible architecture are key differentiators.</div>
-                </div>
-
-                <div class="opportunity-item">
-                    <div class="opportunity-title">Enterprise companies looking to reduce costs</div>
-                    <div>Focus on migration ease and enterprise feature parity. Lower TCO compared to traditional enterprise platforms is a major advantage.</div>
-                </div>
-
-                <div class="opportunity-item">
-                    <div class="opportunity-title">Multi-channel retailers</div>
-                    <div>Highlight omnichannel capabilities and simplified management. Strong native integrations with major marketplaces.</div>
-                </div>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">GTM Recommendations</div>
-                <div class="two-column">
-                    <div>
-                        <strong>Vertical-Specific Solutions:</strong>
-                        <ul>
-                            <li>Develop industry-specific feature bundles</li>
-                            <li>Create vertical-specific case studies</li>
-                            <li>Partner with industry-specific technology providers</li>
-                        </ul>
-
-                        <strong>Partner Ecosystem Enhancement:</strong>
-                        <ul>
-                            <li>Expand technology partner network</li>
-                            <li>Strengthen relationships with digital agencies</li>
-                            <li>Develop certification programs for partners</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong>Content Marketing Focus:</strong>
-                        <ul>
-                            <li>Create educational content about headless commerce</li>
-                            <li>Develop B2B e-commerce thought leadership</li>
-                            <li>Showcase TCO advantages through calculators</li>
-                        </ul>
-
-                        <strong>Sales Enablement:</strong>
-                        <ul>
-                            <li>Implement vertical-specific sales training</li>
-                            <li>Create competitive battle cards</li>
-                            <li>Develop ROI calculation tools for sales teams</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-value">3-9 Mo</div>
-                    <div class="metric-label">Sales Cycle</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">$50K-$500K</div>
-                    <div class="metric-label">ACV Range</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">15-25%</div>
-                    <div class="metric-label">Conversion Lift</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">20-30%</div>
-                    <div class="metric-label">Efficiency Gains</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tech Stack Section -->
-        <div class="section">
-            <div class="section-header">
-                <svg class="section-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                </svg>
-                <h2 class="section-title">Technology Stack</h2>
-            </div>
-
-            <div class="two-column">
-                <div>
-                    <div class="tech-category">
-                        <div class="subsection-title">Backend Technologies</div>
-                        <div class="tech-list">
-                            <div class="tech-item">PHP</div>
-                            <div class="tech-item">Node.js</div>
-                            <div class="tech-item">RESTful APIs</div>
-                            <div class="tech-item">GraphQL APIs</div>
-                            <div class="tech-item">Webhooks</div>
-                        </div>
-                    </div>
-
-                    <div class="tech-category">
-                        <div class="subsection-title">Frontend Technologies</div>
-                        <div class="tech-list">
-                            <div class="tech-item">React.js</div>
-                            <div class="tech-item">Next.js</div>
-                            <div class="tech-item">GraphQL</div>
-                            <div class="tech-item">Stencil framework</div>
-                            <div class="tech-item">HTML5</div>
-                            <div class="tech-item">CSS3</div>
-                            <div class="tech-item">JavaScript</div>
-                        </div>
-                    </div>
-
-                    <div class="tech-category">
-                        <div class="subsection-title">Infrastructure</div>
-                        <div class="tech-list">
-                            <div class="tech-item">Google Cloud Platform</div>
-                            <div class="tech-item">Content Delivery Network (CDN)</div>
-                            <div class="tech-item">SSL encryption</div>
-                            <div class="tech-item">PCI DSS compliance</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="tech-category">
-                        <div class="subsection-title">Key Platform Features</div>
-                        <ul>
-                            <li>Multi-storefront management</li>
-                            <li>Customizable checkout</li>
-                            <li>Built-in B2B functionality</li>
-                            <li>Advanced product management</li>
-                            <li>Customer segmentation</li>
-                            <li>Abandoned cart recovery</li>
-                            <li>Real-time analytics</li>
-                        </ul>
-                    </div>
-
-                    <div class="tech-category">
-                        <div class="subsection-title">Integration Capabilities</div>
-                        <ul>
-                            <li>Unlimited API calls</li>
-                            <li>Comprehensive API documentation</li>
-                            <li>ERP system integrations</li>
-                            <li>CRM platform connections</li>
-                            <li>Payment gateway support (PayPal, Stripe, Square)</li>
-                            <li>Marketplace channels (Amazon, eBay, Walmart)</li>
-                            <li>Marketing tools (Google Analytics, Mailchimp, HubSpot)</li>
-                        </ul>
-                    </div>
-
-                    <div class="tech-category">
-                        <div class="subsection-title">Platform Compatibility</div>
-                        <ul>
-                            <li>Cloud-based SaaS platform</li>
-                            <li>Progressive Web App (PWA) capable</li>
-                            <li>Platform-agnostic (web-based)</li>
-                            <li>Supported browsers: Chrome, Firefox, Safari, Edge</li>
-                            <li>99.99% uptime guarantee</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+      },
+      "component_types": {
+        "header": "CompanyHeader",
+        "two_column_grid": "TwoColumnGrid",
+        "description": "Description",
+        "client_list": "ClientList",
+        "social_links": "SocialLinks",
+        "list_grid": "ListGrid",
+        "icp_section": "ICPSection",
+        "competitor_grid": "CompetitorGrid",
+        "bullet_list": "BulletList",
+        "buyer_personas": "BuyerPersonas",
+        "opportunity_items": "OpportunityItems",
+        "metrics_grid": "MetricsGrid",
+        "tech_list": "TechList"
+      }
+    }
+  }
+}
 
