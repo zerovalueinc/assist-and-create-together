@@ -27,8 +27,8 @@ const reportWireframe = [
       "Growth Stage": "icp_and_buying.firmographics.growth_stage",
       "Industry (Tags)": "icp_and_buying.icp_demographics.industry",
       "Regions (Target Geography)": "icp_and_buying.icp_demographics.region",
-      "Revenue Range": "icp_and_buying.icp_demographics.revenue.range",
-      "Ideal Revenue": "icp_and_buying.icp_demographics.revenue.ideal",
+      "Revenue Range": "icp_and_buying.icp_demographics.revenue",
+      "Ideal Revenue": "icp_and_buying.icp_demographics.revenue",
       "Company Size (Employees)": "icp_and_buying.icp_demographics.size.employees",
       "Size Sweet Spot": "icp_and_buying.icp_demographics.size.sweet_spot"
     }

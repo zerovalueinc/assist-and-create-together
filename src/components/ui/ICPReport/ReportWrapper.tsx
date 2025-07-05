@@ -16,19 +16,36 @@ function getValueByPath(obj: any, path: string): any {
 // Helper to render any value safely
 function renderValue(val: any): string {
   if (val == null) return 'N/A';
+  
+  if (Array.isArray(val)) {
+    if (val.length === 0) return 'None';
+    if (typeof val[0] === 'object') {
+      // Handle array of objects (like buyer personas)
+      return val.map((item, index) => {
+        if (item.role) {
+          return `${item.role}${item.responsibilities ? ` (${item.responsibilities.join(', ')})` : ''}`;
+        }
+        if (item.type) {
+          return `${item.type}${item.characteristics ? ` (${item.characteristics.join(', ')})` : ''}`;
+        }
+        return JSON.stringify(item);
+      }).join('; ');
+    }
+    return val.join(', ');
+  }
+  
   if (typeof val === 'object') {
+    if (val.external && val.internal) {
+      // Handle influencer mapping structure
+      return `External: ${val.external.join(', ')}; Internal: ${val.internal.join(', ')}`;
+    }
     return JSON.stringify(val);
   }
+  
   return String(val);
 }
 
 const ReportWrapper: React.FC<ReportWrapperProps> = ({ reportData }) => {
-  console.log('[ReportWrapper] Received reportData:', reportData);
-  console.log('[ReportWrapper] Available top-level keys:', Object.keys(reportData || {}));
-  
-  // Log the complete structure for debugging
-  console.log('[ReportWrapper] COMPLETE DATA STRUCTURE:', JSON.stringify(reportData, null, 2));
-
   if (!reportData) {
     return <div>No report data available</div>;
   }
@@ -36,8 +53,6 @@ const ReportWrapper: React.FC<ReportWrapperProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
       {reportWireframe.map((section, index) => {
-        console.log(`[ReportWrapper] Rendering section: ${section.title}`);
-        
         return (
           <Card key={index} className="w-full">
             <CardHeader>
@@ -55,12 +70,11 @@ const ReportWrapper: React.FC<ReportWrapperProps> = ({ reportData }) => {
                 <TableBody>
                   {Object.entries(section.fields).map(([label, path]) => {
                     const value = getValueByPath(reportData, path as string);
-                    console.log(`[ReportWrapper] Field: ${label} | Path: ${path} | Value:`, value);
                     
                     return (
                       <TableRow key={label}>
                         <TableCell className="font-medium">{label}</TableCell>
-                        <TableCell>{renderValue(value)}</TableCell>
+                        <TableCell className="whitespace-pre-wrap">{renderValue(value)}</TableCell>
                       </TableRow>
                     );
                   })}
