@@ -67,6 +67,15 @@ function renderField(field: any) {
   return String(field);
 }
 
+// Helper to safely render unknown values as string
+const renderValue = (val: unknown): string => {
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) return val.map(renderValue).join(', ');
+  if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  return '';
+};
+
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
@@ -370,257 +379,362 @@ const CompanyAnalyzer = () => {
               let merged = analysis && analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : null;
               if (!merged) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
 
-              // --- Company Overview ---
-              const companyOverviewFields = [
-                ['Company Name', merged.company_name],
-                ['Company Type', merged.company_type],
-                ['Headquarters', merged.headquarters],
-                ['Founded', merged.founded],
-                ['Company Size', merged.company_size],
-                ['Revenue Range', merged.revenue_range],
-                ['Industry', merged.industry],
-                ['Summary', merged.summary],
-                ['Funding', merged.funding],
-              ];
-
-              // --- Competitors ---
-              const competitors = Array.isArray(merged.competitors) ? merged.competitors : [];
-
-              // --- Key Features, Tech Stack, Platform, Integrations ---
-              const keyFeatures = merged.key_features || {};
-              const techStack = merged.technology_stack || {};
-              const platformCompat = merged.platform_compatibility || {};
-              const integrationCaps = merged.integration_capabilities || {};
-
-              // --- Market Intelligence ---
-              const positioning = merged.positioning || {};
-              const marketTrends = merged.market_trends || [];
-              const targetMarket = merged.target_market || {};
-              const valueProp = merged.value_proposition || {};
-              const mainProducts = merged.main_products || [];
-
-              // --- Sales GTM ---
-              const socialMedia = merged.social_media || {};
-              const notableClients = merged.notable_clients || [];
-              const researchSummary = merged.research_summary || {};
-              const gtmRecs = merged.gtm_recommendations || [];
-              const salesOpps = merged.sales_opportunities || [];
-
-              // --- Helper: Render badge ---
-              const Badge = ({ children, color = 'secondary' }) => (
-                <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold bg-${color}-100 text-${color}-800 mr-2 mb-1`}>{children}</span>
-              );
-
-              // --- Helper: Render list ---
-              const RenderList = ({ items }) => (
-                <ul className="list-disc pl-5 space-y-1">
-                  {items.map((item, i) => <li key={i}>{item}</li>)}
-                </ul>
-              );
-
-              // --- Helper: Render object as key-value list ---
-              const RenderObjList = ({ obj }) => (
-                <ul className="space-y-1 pl-2 border-l border-muted-foreground/20">
-                  {Object.entries(obj).map(([k, v], i) => (
-                    <li key={i} className="text-xs">
-                      <span className="font-medium text-muted-foreground">{String(k)}:</span> {' '}
-                      {typeof v === 'string' || typeof v === 'number'
-                        ? v
-                        : Array.isArray(v)
-                          ? <RenderBadgeList items={v} />
-                          : typeof v === 'object' && v !== null
-                            ? <RenderObjList obj={v} />
-                            : String(v)}
-                    </li>
-                  ))}
-                </ul>
-              );
-
-              // --- Helper: Render competitors as table ---
-              const RenderCompetitors = ({ competitors }) => (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Focus</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {competitors.map((c, i) => (
-                      <TableRow key={i} className="odd:bg-muted">
-                        <TableCell className="border px-2 py-1 font-semibold">{String(c.name)}</TableCell>
-                        <TableCell className="border px-2 py-1">{String(c.focus)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              );
-
-              // --- Helper: Render social media as icons ---
-              const RenderSocialMedia = ({ social }) => (
-                <div className="flex gap-4 items-center">
-                  {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" title="Twitter"><svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557a9.93 9.93 0 0 1-2.828.775A4.932 4.932 0 0 0 23.337 3.1a9.864 9.864 0 0 1-3.127 1.195A4.916 4.916 0 0 0 16.616 3c-2.72 0-4.924 2.206-4.924 4.924 0 .386.044.763.127 1.124C7.728 8.807 4.1 6.884 1.671 3.965c-.423.724-.666 1.562-.666 2.475 0 1.708.87 3.216 2.188 4.099a4.904 4.904 0 0 1-2.229-.616c-.054 2.281 1.581 4.415 3.949 4.89a4.936 4.936 0 0 1-2.224.084c.627 1.956 2.444 3.377 4.6 3.417A9.867 9.867 0 0 1 0 21.543a13.94 13.94 0 0 0 7.548 2.212c9.057 0 14.009-7.514 14.009-14.009 0-.213-.005-.425-.014-.636A10.012 10.012 0 0 0 24 4.557z"/></svg></a>}
-                  {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" title="Facebook"><svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35C.595 0 0 .592 0 1.326v21.348C0 23.406.595 24 1.326 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.797.143v3.24l-1.918.001c-1.504 0-1.797.715-1.797 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116C23.406 24 24 23.406 24 22.674V1.326C24 .592 23.406 0 22.675 0"/></svg></a>}
-                  {social.linkedin && <a href={social.linkedin} target="_blank" rel="noopener noreferrer" title="LinkedIn"><svg className="w-5 h-5 text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.327-.027-3.037-1.849-3.037-1.851 0-2.132 1.445-2.132 2.939v5.667H9.358V9h3.414v1.561h.049c.476-.899 1.637-1.849 3.37-1.849 3.602 0 4.267 2.369 4.267 5.455v6.285zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .771 0 1.723v20.549C0 23.229.792 24 1.771 24h20.451C23.2 24 24 23.229 24 22.271V1.723C24 .771 23.2 0 22.225 0z"/></svg></a>}
-                </div>
-              );
-
-              // --- Helper: Render badge list ---
-              const RenderBadgeList = ({ items }) => (
-                <div className="flex flex-wrap gap-2">
-                  {items.map((item, i) => {
-                    if (typeof item === 'string' || typeof item === 'number') {
-                      return <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{item}</span>;
-                    } else if (typeof item === 'object' && item !== null) {
-                      return <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{JSON.stringify(item)}</span>;
-                    } else {
-                      return <span key={i} className="bg-muted px-2 py-1 rounded text-xs font-medium">{String(item)}</span>;
-                    }
-                  })}
-                </div>
-              );
-
-              // --- Helper: Render multi-column object ---
-              const RenderMultiColObj = ({ obj }) => (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(obj).map(([k, v], i) => (
-                    <div key={i}>
-                      <span className="font-medium text-muted-foreground">{String(k)}</span>
-                      {Array.isArray(v)
-                        ? <RenderBadgeList items={v} />
-                        : typeof v === 'object' && v !== null
-                          ? <RenderObjList obj={v} />
-                          : <div className="text-sm mt-1">{v === undefined || v === null ? '' : String(v)}</div>}
-                    </div>
-                  ))}
-                </div>
-              );
-
-              // --- Helper: Render sales opportunities ---
-              const RenderSalesOpps = ({ opps }) => (
-                <ul className="list-disc pl-5 space-y-1">
-                  {opps.map((op, i) => (
-                    <li key={i}><span className="font-semibold">{op.segment}:</span> {op.approach} <span className="text-muted-foreground text-xs">{op.rationale}</span></li>
-                  ))}
-                </ul>
-              );
-
-              // --- Helper: Render GTM Recommendations ---
-              const RenderGTMRecs = ({ recs }) => (
-                <div className="space-y-2">
-                  {recs.map((rec, i) => (
-                    <div key={i} className="border rounded p-2 bg-muted">
-                      {Object.entries(rec).map(([k, v], j) => (
-                        <div key={j}><span className="font-medium text-muted-foreground">{k.replace(/_/g, ' ')}:</span> {Array.isArray(v) ? <RenderList items={v} /> : v}</div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              );
-
-              // --- Helper: Render research summary ---
-              const RenderResearchSummary = ({ summary }) => (
-                <div className="space-y-1">
-                  {Object.entries(summary).map(([k, v], i) => (
-                    <div key={i}><span className="font-medium text-muted-foreground">{k.replace(/_/g, ' ')}:</span> {Array.isArray(v) ? <RenderList items={v} /> : v}</div>
-                  ))}
-                </div>
-              );
-
               return (
                 <div className="space-y-10">
-                  {/* Company Overview */}
-                  <Card>
-                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Building className="h-5 w-5 text-primary" />
-                        <span className="text-xl font-bold">Company Overview</span>
+                  {/* Company Overview - Enterprise Layout */}
+                  <Card className="p-8 shadow-lg rounded-2xl">
+                    <CardHeader className="mb-4 pb-0 border-b-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Building className="h-7 w-7 text-primary" />
+                        <h2 className="company-name text-3xl font-extrabold text-gray-900 mb-0">{merged.company_name}</h2>
                       </div>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <div className="text-2xl font-bold mb-1">{merged.company_name}</div>
-                        <div className="flex gap-2 mb-2">
-                          {merged.company_type && <Badge color="primary">{merged.company_type}</Badge>}
-                          {merged.funding && <Badge color="secondary">{typeof merged.funding === 'string' ? merged.funding : merged.funding.status}</Badge>}
+                    <CardContent>
+                      <div className="company-details grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                        <div>
+                          {merged.company_size && (
+                            <div className="detail-group mb-3">
+                              <div className="detail-label">Company Size</div>
+                              <div className="detail-value">{merged.company_size}</div>
+                            </div>
+                          )}
+                          {merged.founded && (
+                            <div className="detail-group mb-3">
+                              <div className="detail-label">Founded</div>
+                              <div className="detail-value">{merged.founded}</div>
+                            </div>
+                          )}
+                          {merged.industry && (
+                            <div className="detail-group mb-3">
+                              <div className="detail-label">Industry</div>
+                              <div className="detail-value">{merged.industry}</div>
+                            </div>
+                          )}
+                          {merged.headquarters && (
+                            <div className="detail-group mb-3">
+                              <div className="detail-label">Headquarters</div>
+                              <div className="detail-value">{merged.headquarters}</div>
+                            </div>
+                          )}
                         </div>
-                        {merged.headquarters && <div className="text-sm text-muted-foreground">{merged.headquarters}</div>}
-                        {merged.founded && <div className="text-sm text-muted-foreground">Founded: {merged.founded}</div>}
-                        {merged.company_size && <div className="text-sm text-muted-foreground">Size: {merged.company_size}</div>}
-                        {merged.revenue_range && <div className="text-sm text-muted-foreground">Revenue: {merged.revenue_range}</div>}
-                        {merged.industry && <div className="text-sm text-muted-foreground">Industry: {merged.industry}</div>}
+                        <div>
+                          {merged.revenue_range && (
+                            <div className="detail-group mb-3">
+                              <div className="detail-label">Revenue Range</div>
+                              <div className="detail-value">{merged.revenue_range}</div>
+                            </div>
+                          )}
+                          {merged.company_type && (
+                            <div className="detail-group mb-3">
+                              <div className="detail-label">Company Type</div>
+                              <div className="detail-value">{merged.company_type}</div>
+                            </div>
+                          )}
+                          {merged.funding && (
+                            <div className="detail-group mb-3">
+                              <div className="detail-label">Funding Status</div>
+                              <div className="detail-value">{typeof merged.funding === 'string' ? merged.funding : JSON.stringify(merged.funding)}</div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {merged.summary && <div className="text-base font-medium mb-2">{merged.summary}</div>}
-                        {merged.notable_rounds && <div><span className="font-medium text-muted-foreground">Notable Rounds:</span> {Array.isArray(merged.notable_rounds) ? <RenderBadgeList items={merged.notable_rounds} /> : merged.notable_rounds}</div>}
-                      </div>
+                      {merged.summary && (
+                        <div className="subsection mb-6">
+                          <div className="detail-value text-lg font-medium text-gray-800">{merged.summary}</div>
+                        </div>
+                      )}
+                      {Array.isArray(merged.notable_clients) && merged.notable_clients.length > 0 && (
+                        <div className="subsection mb-6">
+                          <div className="subsection-title font-semibold text-lg mb-2">Notable Clients</div>
+                          <div className="notable-clients flex flex-wrap gap-3">
+                            {merged.notable_clients.map((client, i) => (
+                              <span key={i} className="client-item bg-orange-50 border border-orange-300 px-4 py-2 rounded-full text-sm font-medium">{client}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {merged.social_media && Object.keys(merged.social_media).length > 0 && (
+                        <div className="subsection mb-2">
+                          <div className="subsection-title font-semibold text-lg mb-2">Social Media</div>
+                          <div className="social-links flex gap-4">
+                            {merged.social_media.twitter && <a href={merged.social_media.twitter} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Twitter</a>}
+                            {merged.social_media.facebook && <a href={merged.social_media.facebook} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Facebook</a>}
+                            {merged.social_media.linkedin && <a href={merged.social_media.linkedin} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">LinkedIn</a>}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-
-                  {/* Market Intelligence */}
-                  <Card>
-                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <BarChart2 className="h-5 w-5 text-primary" />
-                        <span className="text-xl font-bold">Market Intelligence</span>
+                  {/* Market Intelligence - Enterprise Layout */}
+                  <Card className="p-8 shadow-lg rounded-2xl">
+                    <CardHeader className="mb-4 pb-0 border-b-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <BarChart2 className="h-7 w-7 text-primary" />
+                        <h2 className="section-title text-2xl font-bold text-gray-900 mb-0">Market Intelligence</h2>
                       </div>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        {competitors.length > 0 && <div><span className="font-medium text-muted-foreground">Competitors:</span> <RenderCompetitors competitors={competitors} /></div>}
-                        {positioning.differentiators && <div><span className="font-medium text-muted-foreground">Differentiators:</span> <RenderBadgeList items={positioning.differentiators} /></div>}
-                        {positioning.market_position && <div><span className="font-medium text-muted-foreground">Market Position:</span> {positioning.market_position}</div>}
-                        {marketTrends.length > 0 && <div><span className="font-medium text-muted-foreground">Market Trends:</span> <RenderList items={marketTrends} /></div>}
+                    <CardContent>
+                      <div className="two-column grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                        <div>
+                          {Array.isArray(merged.main_products) && merged.main_products.length > 0 && (
+                            <div className="subsection mb-6">
+                              <div className="subsection-title font-semibold text-lg mb-2">Main Products</div>
+                              <div className="list-grid grid grid-cols-2 gap-2">
+                                {merged.main_products.map((prod, i) => (
+                                  <div key={i} className="list-item bg-gray-50 border-l-4 border-indigo-500 px-3 py-2 rounded text-sm font-medium">{prod}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {merged.target_market && (
+                            <div className="subsection mb-6">
+                              <div className="subsection-title font-semibold text-lg mb-2">Target Market</div>
+                              <div className="icp-section bg-green-50 border border-green-400 rounded-lg p-4">
+                                {merged.target_market.primary && <div><strong>Primary:</strong> {merged.target_market.primary}</div>}
+                                {merged.target_market.size_range && <div className="mt-2"><strong>Size Range:</strong> {merged.target_market.size_range}</div>}
+                                {merged.target_market.industry_focus && <div className="mt-2"><strong>Industry Focus:</strong> {Array.isArray(merged.target_market.industry_focus) ? merged.target_market.industry_focus.join(', ') : merged.target_market.industry_focus}</div>}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          {Array.isArray(merged.competitors) && merged.competitors.length > 0 && (
+                            <div className="subsection mb-6">
+                              <div className="subsection-title font-semibold text-lg mb-2">Direct Competitors</div>
+                              <div className="competitor-grid grid grid-cols-2 gap-2">
+                                {merged.competitors.map((comp, i) => (
+                                  <div key={i} className="competitor-item bg-yellow-50 border border-yellow-400 px-3 py-2 rounded text-center font-medium">{typeof comp === 'string' ? comp : comp.name || JSON.stringify(comp)}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {merged.positioning && Array.isArray(merged.positioning.differentiators) && merged.positioning.differentiators.length > 0 && (
+                            <div className="subsection mb-6">
+                              <div className="subsection-title font-semibold text-lg mb-2">Key Differentiators</div>
+                              <ul className="list-disc pl-5">
+                                {merged.positioning.differentiators.map((diff, i) => (
+                                  <li key={i}>{diff}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {mainProducts.length > 0 && <div><span className="font-medium text-muted-foreground">Main Products:</span> <RenderBadgeList items={mainProducts} /></div>}
-                        {targetMarket.primary && <div><span className="font-medium text-muted-foreground">Target Market:</span> {targetMarket.primary}</div>}
-                        {valueProp.key_features && <div><span className="font-medium text-muted-foreground">Value Proposition:</span> <RenderBadgeList items={valueProp.key_features} /></div>}
-                        {valueProp.primary_benefits && <div><span className="font-medium text-muted-foreground">Unique Benefits:</span> <RenderBadgeList items={valueProp.primary_benefits} /></div>}
-                      </div>
+                      {Array.isArray(merged.market_trends) && merged.market_trends.length > 0 && (
+                        <div className="subsection mb-2">
+                          <div className="subsection-title font-semibold text-lg mb-2">Market Trends</div>
+                          <div className="list-grid grid grid-cols-2 gap-2">
+                            {merged.market_trends.map((trend, i) => (
+                              <div key={i} className="list-item bg-gray-50 border-l-4 border-indigo-500 px-3 py-2 rounded text-sm font-medium">{trend}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-
-                  {/* Sales GTM */}
-                  <Card>
-                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Rocket className="h-5 w-5 text-primary" />
-                        <span className="text-xl font-bold">Sales GTM</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        {Object.keys(socialMedia).length > 0 && <div><span className="font-medium text-muted-foreground">Social Media:</span> <RenderSocialMedia social={socialMedia} /></div>}
-                        {notableClients.length > 0 && <div><span className="font-medium text-muted-foreground">Notable Clients:</span> <RenderList items={notableClients} /></div>}
-                        {researchSummary && Object.keys(researchSummary).length > 0 && <div><span className="font-medium text-muted-foreground">Research Summary:</span> <RenderResearchSummary summary={researchSummary} /></div>}
-                      </div>
-                      <div className="space-y-2">
-                        {gtmRecs.length > 0 && <div><span className="font-medium text-muted-foreground">GTM Recommendations:</span> <RenderGTMRecs recs={gtmRecs} /></div>}
-                        {salesOpps.length > 0 && <div><span className="font-medium text-muted-foreground">Sales Opportunities:</span> <RenderSalesOpps opps={salesOpps} /></div>}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tech Stack */}
-                  <Card>
-                    <CardHeader className="border-b pb-2 mb-2 flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Cpu className="h-5 w-5 text-primary" />
-                        <span className="text-xl font-bold">Tech Stack</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        {Object.keys(keyFeatures).length > 0 && <div><span className="font-medium text-muted-foreground">Key Features:</span> <RenderMultiColObj obj={keyFeatures} /></div>}
-                        {Object.keys(techStack).length > 0 && <div><span className="font-medium text-muted-foreground">Technology Stack:</span> <RenderMultiColObj obj={techStack} /></div>}
-                      </div>
-                      <div className="space-y-2">
-                        {Object.keys(platformCompat).length > 0 && <div><span className="font-medium text-muted-foreground">Platform Compatibility:</span> <RenderMultiColObj obj={platformCompat} /></div>}
-                        {Object.keys(integrationCaps).length > 0 && <div><span className="font-medium text-muted-foreground">Integration Capabilities:</span> <RenderMultiColObj obj={integrationCaps} /></div>}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* ICP/IBP Framework - Enterprise Layout */}
+                  {(merged.target_market || (merged.icp && merged.icp.buyerPersonas && merged.icp.buyerPersonas.length > 0)) && (
+                    <Card className="p-8 shadow-lg rounded-2xl">
+                      <CardHeader className="mb-4 pb-0 border-b-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Users className="h-7 w-7 text-primary" />
+                          <h2 className="section-title text-2xl font-bold text-gray-900 mb-0">Ideal Customer & Buyer Profiles</h2>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {/* ICP Section */}
+                        {merged.target_market && (
+                          <div className="subsection mb-6">
+                            <div className="subsection-title font-semibold text-lg mb-2">Ideal Customer Profile (ICP)</div>
+                            <div className="icp-section bg-green-50 border border-green-400 rounded-lg p-4">
+                              {merged.target_market.company_characteristics && (
+                                <>
+                                  <strong>Company Characteristics:</strong>
+                                  <ul className="list-disc pl-5">
+                                    {Array.isArray(merged.target_market.company_characteristics)
+                                      ? merged.target_market.company_characteristics.map((c, i) => <li key={i}>{c}</li>)
+                                      : <li>{merged.target_market.company_characteristics}</li>}
+                                  </ul>
+                                </>
+                              )}
+                              {merged.target_market.technology_profile && (
+                                <>
+                                  <strong>Technology Profile:</strong>
+                                  <ul className="list-disc pl-5">
+                                    {Array.isArray(merged.target_market.technology_profile)
+                                      ? merged.target_market.technology_profile.map((c, i) => <li key={i}>{c}</li>)
+                                      : <li>{merged.target_market.technology_profile}</li>}
+                                  </ul>
+                                </>
+                              )}
+                              {/* Fallback: show primary, size_range, industry_focus if no above */}
+                              {!merged.target_market.company_characteristics && !merged.target_market.technology_profile && (
+                                <>
+                                  {merged.target_market.primary && <div><strong>Primary:</strong> {merged.target_market.primary}</div>}
+                                  {merged.target_market.size_range && <div className="mt-2"><strong>Size Range:</strong> {merged.target_market.size_range}</div>}
+                                  {merged.target_market.industry_focus && <div className="mt-2"><strong>Industry Focus:</strong> {Array.isArray(merged.target_market.industry_focus) ? merged.target_market.industry_focus.join(', ') : merged.target_market.industry_focus}</div>}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {/* Buyer Personas Section */}
+                        {merged.icp && Array.isArray(merged.icp.buyerPersonas) && merged.icp.buyerPersonas.length > 0 && (
+                          <div className="subsection mb-6">
+                            <div className="subsection-title font-semibold text-lg mb-2">Buyer Personas</div>
+                            {merged.icp.buyerPersonas.map((persona, i) => (
+                              <div key={i} className="buyer-persona bg-purple-50 border border-purple-400 rounded-lg p-4 mb-4">
+                                <div className="persona-title font-semibold text-purple-800 mb-2">{persona.title || persona.role}</div>
+                                {persona.demographics && <div><strong>Demographics:</strong> {persona.demographics}</div>}
+                                {persona.painPoints && <div><strong>Pain Points:</strong> {Array.isArray(persona.painPoints) ? persona.painPoints.join(', ') : persona.painPoints}</div>}
+                                {persona.successMetrics && <div><strong>Success Metrics:</strong> {Array.isArray(persona.successMetrics) ? persona.successMetrics.join(', ') : persona.successMetrics}</div>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                  {/* Sales GTM - Enterprise Layout */}
+                  {(Array.isArray(merged.sales_opportunities) && merged.sales_opportunities.length > 0) || (Array.isArray(merged.gtm_recommendations) && merged.gtm_recommendations.length > 0) ? (
+                    <Card className="p-8 shadow-lg rounded-2xl">
+                      <CardHeader className="mb-4 pb-0 border-b-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Rocket className="h-7 w-7 text-primary" />
+                          <h2 className="section-title text-2xl font-bold text-gray-900 mb-0">Sales GTM Strategy</h2>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {/* Sales Opportunities */}
+                        {Array.isArray(merged.sales_opportunities) && merged.sales_opportunities.length > 0 && (
+                          <div className="subsection mb-6">
+                            <div className="subsection-title font-semibold text-lg mb-2">Sales Opportunities</div>
+                            {merged.sales_opportunities.map((op, i) => (
+                              <div key={i} className="opportunity-item bg-emerald-50 border-l-4 border-emerald-400 px-4 py-3 mb-3 rounded-r-lg">
+                                <div className="opportunity-title font-semibold text-emerald-900 mb-1">{op.segment}</div>
+                                <div>{op.approach}</div>
+                                {op.rationale && <div className="text-xs text-emerald-700 mt-1">{op.rationale}</div>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* GTM Recommendations */}
+                        {Array.isArray(merged.gtm_recommendations) && merged.gtm_recommendations.length > 0 && (
+                          <div className="subsection mb-6">
+                            <div className="subsection-title font-semibold text-lg mb-2">GTM Recommendations</div>
+                            <div className="two-column grid grid-cols-1 md:grid-cols-2 gap-8">
+                              {merged.gtm_recommendations.map((rec, i) => (
+                                <div key={i} className="mb-4">
+                                  {rec.strategy && <div className="font-semibold mb-1">{rec.strategy}</div>}
+                                  {Array.isArray(rec.actions) && (
+                                    <ul className="list-disc pl-5">
+                                      {rec.actions.map((action, j) => <li key={j}>{action}</li>)}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* Metrics Grid (if present) */}
+                        {merged.metrics && Array.isArray(merged.metrics) && merged.metrics.length > 0 && (
+                          <div className="metrics-grid grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                            {merged.metrics.map((metric, i) => (
+                              <div key={i} className="metric-card bg-sky-50 border border-sky-400 rounded-lg p-4 text-center">
+                                <div className="metric-value text-xl font-bold text-sky-800 mb-1">{metric.value}</div>
+                                <div className="metric-label text-xs text-sky-700">{metric.label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ) : null}
+                  {/* Tech Stack - Enterprise Layout */}
+                  {(merged.technology_stack || merged.key_features || merged.integration_capabilities || merged.platform_compatibility) && (
+                    <Card className="p-8 shadow-lg rounded-2xl">
+                      <CardHeader className="mb-4 pb-0 border-b-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Cpu className="h-7 w-7 text-primary" />
+                          <h2 className="section-title text-2xl font-bold text-gray-900 mb-0">Technology Stack</h2>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="two-column grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                          <div>
+                            {/* Backend Technologies */}
+                            {merged.technology_stack && Array.isArray(merged.technology_stack.backend) && merged.technology_stack.backend.length > 0 && (
+                              <div className="tech-category mb-6">
+                                <div className="subsection-title font-semibold text-lg mb-2">Backend Technologies</div>
+                                <div className="tech-list flex flex-wrap gap-2">
+                                  {merged.technology_stack.backend.map((tech, i) => (
+                                    <span key={i} className="tech-item bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">{tech}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {/* Frontend Technologies */}
+                            {merged.technology_stack && Array.isArray(merged.technology_stack.frontend) && merged.technology_stack.frontend.length > 0 && (
+                              <div className="tech-category mb-6">
+                                <div className="subsection-title font-semibold text-lg mb-2">Frontend Technologies</div>
+                                <div className="tech-list flex flex-wrap gap-2">
+                                  {merged.technology_stack.frontend.map((tech, i) => (
+                                    <span key={i} className="tech-item bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">{tech}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {/* Infrastructure */}
+                            {merged.technology_stack && Array.isArray(merged.technology_stack.infrastructure) && merged.technology_stack.infrastructure.length > 0 && (
+                              <div className="tech-category mb-6">
+                                <div className="subsection-title font-semibold text-lg mb-2">Infrastructure</div>
+                                <div className="tech-list flex flex-wrap gap-2">
+                                  {merged.technology_stack.infrastructure.map((tech, i) => (
+                                    <span key={i} className="tech-item bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">{tech}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            {/* Key Platform Features */}
+                            {merged.key_features && Object.keys(merged.key_features).length > 0 && (
+                              <div className="tech-category mb-6">
+                                <div className="subsection-title font-semibold text-lg mb-2">Key Platform Features</div>
+                                <ul className="list-disc pl-5">
+                                  {Object.values(merged.key_features).map((feature, i) => (
+                                    <li key={i}>{renderValue(feature)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {/* Integration Capabilities */}
+                            {merged.integration_capabilities && Object.keys(merged.integration_capabilities).length > 0 && (
+                              <div className="tech-category mb-6">
+                                <div className="subsection-title font-semibold text-lg mb-2">Integration Capabilities</div>
+                                <ul className="list-disc pl-5">
+                                  {Object.values(merged.integration_capabilities).map((cap, i) => (
+                                    <li key={i}>{renderValue(cap)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {/* Platform Compatibility */}
+                            {merged.platform_compatibility && Object.keys(merged.platform_compatibility).length > 0 && (
+                              <div className="tech-category mb-6">
+                                <div className="subsection-title font-semibold text-lg mb-2">Platform Compatibility</div>
+                                <ul className="list-disc pl-5">
+                                  {Object.entries(merged.platform_compatibility).map(([k, v], i) => (
+                                    <li key={i}><strong>{k}:</strong> {renderValue(v)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               );
             })()
