@@ -268,6 +268,12 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   }
   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
+  // Log all agent outputs for debugging
+  console.log('[DEBUG] Agent Output - overview:', JSON.stringify(overview));
+  console.log('[DEBUG] Agent Output - market:', JSON.stringify(market));
+  console.log('[DEBUG] Agent Output - tech:', JSON.stringify(tech));
+  console.log('[DEBUG] Agent Output - sales:', JSON.stringify(sales));
+
   // Merge all results into a single object matching the new modular frontend structure, with robust normalization
   const merged = {
     executiveSummary: {
