@@ -120,8 +120,17 @@ const TagList: React.FC<{ items: string[] }> = ({ items }) => (
 );
 
 // Helper to strip index numbers from LLM output
-function stripIndexes(val: string) {
-  return val.replace(/\b\d+[:：]\s*/g, '').replace(/;+$/, '').trim();
+function stripIndexes(val: any): string {
+  if (typeof val === 'string') {
+    return val.replace(/\b\d+[:：]\s*/g, '').replace(/;+$/, '').trim();
+  }
+  if (Array.isArray(val)) {
+    return val.map(stripIndexes).join(', ');
+  }
+  if (typeof val === 'object' && val !== null) {
+    return Object.values(val).map(stripIndexes).join(', ');
+  }
+  return String(val);
 }
 
 // Updated sanitizer to strip index numbers and prettify arrays/objects
