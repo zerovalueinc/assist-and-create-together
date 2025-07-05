@@ -108,105 +108,58 @@ const SocialLinks: React.FC<{ socialMedia: any }> = ({ socialMedia }) => (
   </div>
 );
 
-// Component for rendering list grid
-const ListGrid: React.FC<{ items: any[]; title: string }> = ({ items, title }) => (
-  <div className="subsection mb-6">
-    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
-    <div className="list-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {items.map((item, i) => (
-        <div key={i} className="list-item bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="item-content text-blue-900">
-            {typeof item === 'string' ? item : renderValue(item)}
-          </div>
+// TagList component for tag/badge style lists
+const TagList: React.FC<{ items: string[] }> = ({ items }) => (
+  <div className="flex flex-wrap gap-2 mt-2">
+    {items.map((item, i) => (
+      <span key={i} className="inline-block bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
+        {item}
+      </span>
+    ))}
+  </div>
+);
+
+// ICPDisplay component for structured ICP data
+const ICPDisplay: React.FC<{ icp: any }> = ({ icp }) => {
+  if (!icp || Object.keys(icp).length === 0 || icp === 'N/A') {
+    return <div className="text-gray-500 italic">No ICP data found.</div>;
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      {Object.entries(icp).map(([key, value]) => (
+        <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <div className="font-semibold text-gray-700 mb-1">{prettifyLabel(key)}</div>
+          <div className="text-gray-900">{Array.isArray(value) ? value.join(', ') : String(value)}</div>
         </div>
       ))}
     </div>
-  </div>
-);
+  );
+};
 
-// Component for rendering ICP section
-const ICPSection: React.FC<{ data: any; title: string }> = ({ data, title }) => (
-  <div className="icp-section mb-6">
-    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
-    <div className="icp-content space-y-4">
-      {data.company_characteristics && (
-        <div className="characteristics-section">
-          <div className="section-subtitle font-medium text-gray-800 mb-2">Company Characteristics</div>
-          <div className="characteristics-grid grid grid-cols-1 md:grid-cols-2 gap-3">
-            {Object.entries(data.company_characteristics).map(([key, value]) => (
-              <div key={`char-${key}`} className="characteristic-item bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="characteristic-label font-medium text-blue-900 mb-1">{prettifyLabel(key)}</div>
-                <div className="characteristic-value text-blue-800">{renderValue(value)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {data.technology_profile && (
-        <div className="tech-profile-section">
-          <div className="section-subtitle font-medium text-gray-800 mb-2">Technology Profile</div>
-          <div className="tech-profile-grid grid grid-cols-1 md:grid-cols-2 gap-3">
-            {Object.entries(data.technology_profile).map(([key, value]) => (
-              <div key={`tech-${key}`} className="tech-item bg-green-50 border border-green-200 rounded-lg p-3">
-                <div className="tech-label font-medium text-green-900 mb-1">{prettifyLabel(key)}</div>
-                <div className="tech-value text-green-800">{renderValue(value)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-);
-
-// Component for rendering competitor grid
-const CompetitorGrid: React.FC<{ competitors: any[] }> = ({ competitors }) => (
-  <div className="subsection mb-6">
-    <div className="subsection-title font-semibold text-lg mb-2">Direct Competitors</div>
-    <div className="competitor-grid grid grid-cols-2 gap-2">
-      {competitors.map((comp, i) => (
-        <div key={i} className="competitor-item bg-yellow-50 border border-yellow-400 px-3 py-2 rounded text-center font-medium">
-          {typeof comp === 'string' ? comp : (comp as any).name || JSON.stringify(comp)}
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-// Component for rendering bullet list
-const BulletList: React.FC<{ items: any[]; title: string }> = ({ items, title }) => (
-  <div className="subsection mb-6">
-    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
-    <ul className="bullet-list space-y-2">
-      {items.map((item, i) => (
-        <li key={i} className="bullet-item flex items-start">
-          <span className="bullet-point text-blue-500 mr-2 mt-1">•</span>
-          <span className="bullet-content text-gray-700">
-            {typeof item === 'string' ? item : renderValue(item)}
-          </span>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-// Component for rendering buyer personas
+// Updated BuyerPersonas for two-column grid and clean N/A handling
 const BuyerPersonas: React.FC<{ personas: any[] }> = ({ personas }) => (
   <div className="subsection mb-6">
     <div className="subsection-title font-semibold text-lg mb-2">Buyer Personas</div>
     {personas.length === 0 && (
       <div className="text-gray-500 italic">No personas found.</div>
     )}
-    {personas.map((persona, i) => (
-      <div key={i} className="buyer-persona bg-purple-50 border border-purple-400 rounded-lg p-4 mb-3">
-        <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title || persona.role || 'N/A'}</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div><strong>Demographics:</strong> {persona.demographics || 'N/A'}</div>
-          <div><strong>Pain Points:</strong> {persona.pain_points || 'N/A'}</div>
-          <div><strong>Success Metrics:</strong> {persona.success_metrics || 'N/A'}</div>
+    {personas.map((persona, i) => {
+      const hasAny = persona.demographics !== 'N/A' || persona.pain_points !== 'N/A' || persona.success_metrics !== 'N/A';
+      return (
+        <div key={i} className="buyer-persona bg-purple-50 border border-purple-400 rounded-lg p-4 mb-3">
+          <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title || persona.role || 'N/A'}</div>
+          {hasAny ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div><strong>Demographics:</strong> {persona.demographics !== 'N/A' ? persona.demographics : <span className="text-gray-400">N/A</span>}</div>
+              <div><strong>Pain Points:</strong> {persona.pain_points !== 'N/A' ? persona.pain_points : <span className="text-gray-400">N/A</span>}</div>
+              <div><strong>Success Metrics:</strong> {persona.success_metrics !== 'N/A' ? persona.success_metrics : <span className="text-gray-400">N/A</span>}</div>
+            </div>
+          ) : (
+            <div className="text-gray-400 italic">No details available.</div>
+          )}
         </div>
-      </div>
-    ))}
+      );
+    })}
   </div>
 );
 
@@ -414,6 +367,27 @@ function sanitizeReportData(data: any) {
   return sanitized;
 }
 
+// ListGrid and BulletList now use TagList
+const ListGrid: React.FC<{ items: any[]; title: string }> = ({ items, title }) => (
+  <div className="subsection mb-6">
+    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
+    <TagList items={items} />
+  </div>
+);
+const BulletList: React.FC<{ items: any[]; title: string }> = ({ items, title }) => (
+  <div className="subsection mb-6">
+    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
+    <TagList items={items} />
+  </div>
+);
+// CompetitorGrid uses TagList for consistency
+const CompetitorGrid: React.FC<{ competitors: any[] }> = ({ competitors }) => (
+  <div className="subsection mb-6">
+    <div className="subsection-title font-semibold text-lg mb-2">Direct Competitors</div>
+    <TagList items={competitors} />
+  </div>
+);
+
 // Main canonical report renderer
 const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ reportData }) => {
   console.log('[CanonicalReportRenderer] Received reportData:', reportData);
@@ -557,7 +531,7 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
       case 'icp_section':
         const icpField = fields[0];
         return safeData(icpField, {}) && (
-          <ICPSection data={safeData(icpField, {})} title={prettifyLabel(icpField)} />
+          <ICPDisplay icp={safeData(icpField, {})} />
         );
       case 'competitor_grid':
         return fields.includes('direct_competitors') && Array.isArray(safeData('direct_competitors', [])) && safeData('direct_competitors', []).length > 0 && (
