@@ -64,3 +64,33 @@ export function normalizeReportSection(data: any): Array<{ label: string, value:
   // Fallback: stringify
   return [{ label: '', value: JSON.stringify(data) }];
 }
+
+// Prettifies a label (e.g., 'crm_systems' -> 'CRM Systems')
+export function prettifyLabel(label: string): string {
+  if (!label) return '';
+  return label
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\bApi\b/gi, 'API')
+    .replace(/\bCrm\b/gi, 'CRM')
+    .replace(/\bGtm\b/gi, 'GTM')
+    .replace(/\bIb(p)?\b/gi, 'IBP')
+    .replace(/\bIcp\b/gi, 'ICP')
+    .replace(/\bSaas\b/gi, 'SaaS')
+    .replace(/\bUi\b/gi, 'UI')
+    .replace(/\bUx\b/gi, 'UX')
+    .replace(/\bPwa\b/gi, 'PWA')
+    .replace(/\bErp\b/gi, 'ERP')
+    .replace(/\bB2b\b/gi, 'B2B')
+    .replace(/\bB2c\b/gi, 'B2C')
+    .replace(/\bAws\b/gi, 'AWS')
+    .replace(/\bSmb\b/gi, 'SMB')
+    .replace(/\bApi\b/gi, 'API')
+    .replace(/\bUrl\b/gi, 'URL')
+    .replace(/\bId\b/gi, 'ID')
+    .replace(/\bAi\b/gi, 'AI')
+    .replace(/\bUi\b/gi, 'UI')
+    .replace(/\bUx\b/gi, 'UX')
+    .replace(/\bSql\b/gi, 'SQL')
+    .replace(/\bNo\b/gi, 'No');
+}

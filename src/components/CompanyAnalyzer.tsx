@@ -10,7 +10,7 @@ import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
-import { capitalizeFirstLetter, getCache, setCache, normalizeReportSection } from '../lib/utils';
+import { prettifyLabel, getCache, setCache, normalizeReportSection } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '../lib/supabase/edgeClient';
@@ -715,7 +715,7 @@ const CompanyAnalyzer = () => {
                                 <ul className="list-disc pl-5">
                                   {normalizeReportSection(merged.integration_capabilities).map((item, i) => (
                                     <li key={i}>
-                                      {item.label ? <strong>{capitalizeFirstLetter(item.label)}: </strong> : null}
+                                      {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
                                       {Array.isArray(item.value)
                                         ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
                                         : typeof item.value === 'string' && item.value.startsWith('{')
@@ -733,7 +733,7 @@ const CompanyAnalyzer = () => {
                                 <ul className="list-disc pl-5">
                                   {normalizeReportSection(merged.platform_compatibility).map((item, i) => (
                                     <li key={i}>
-                                      {item.label ? <strong>{capitalizeFirstLetter(item.label)}: </strong> : null}
+                                      {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
                                       {Array.isArray(item.value)
                                         ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
                                         : typeof item.value === 'string' && item.value.startsWith('{')
