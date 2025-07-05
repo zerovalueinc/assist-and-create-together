@@ -238,90 +238,87 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
     ? JSON.parse(reportData.llm_output) 
     : reportData.llm_output || reportData;
 
+  // Defensive fallback for all fields
+  const safeData = (key: string, fallback: any) => {
+    if (data == null) return fallback;
+    const val = data[key];
+    if (val === undefined || val === null) return fallback;
+    if (Array.isArray(fallback) && !Array.isArray(val)) return fallback;
+    if (typeof fallback === 'object' && fallback !== null && typeof val !== 'object') return fallback;
+    return val;
+  };
+
   const renderSubsection = (subsection: any, sectionData: any) => {
     const { id, type, fields } = subsection;
     
     switch (type) {
       case 'header':
-        return fields.includes('company_name') && data.company_name && (
-          <CompanyHeader companyName={data.company_name} />
+        return fields.includes('company_name') && safeData('company_name', 'N/A') && (
+          <CompanyHeader companyName={safeData('company_name', 'N/A')} />
         );
-        
       case 'two_column_grid':
         if (fields.length === 2 && fields[0].column === 'left' && fields[1].column === 'right') {
           const leftFields = fields[0].fields.reduce((acc: any, field: string) => {
-            if (data[field]) acc[field] = data[field];
+            acc[field] = safeData(field, 'N/A');
             return acc;
           }, {});
           const rightFields = fields[1].fields.reduce((acc: any, field: string) => {
-            if (data[field]) acc[field] = data[field];
+            acc[field] = safeData(field, 'N/A');
             return acc;
           }, {});
-          return Object.keys(leftFields).length > 0 || Object.keys(rightFields).length > 0 ? (
+          return (
             <TwoColumnGrid leftFields={leftFields} rightFields={rightFields} />
-          ) : null;
+          );
         }
         return null;
-        
       case 'description':
-        return fields.includes('summary') && data.summary && (
-          <Description content={data.summary} />
+        return fields.includes('summary') && safeData('summary', '') && (
+          <Description content={safeData('summary', 'N/A')} />
         );
-        
       case 'client_list':
-        return fields.includes('notable_clients') && Array.isArray(data.notable_clients) && data.notable_clients.length > 0 && (
-          <ClientList clients={data.notable_clients} />
+        return fields.includes('notable_clients') && Array.isArray(safeData('notable_clients', [])) && safeData('notable_clients', []).length > 0 && (
+          <ClientList clients={safeData('notable_clients', [])} />
         );
-        
       case 'social_links':
-        return fields.includes('social_media') && data.social_media && Object.keys(data.social_media).length > 0 && (
-          <SocialLinks socialMedia={data.social_media} />
+        return fields.includes('social_media') && safeData('social_media', {}) && Object.keys(safeData('social_media', {})).length > 0 && (
+          <SocialLinks socialMedia={safeData('social_media', {})} />
         );
-        
       case 'list_grid':
         const listField = fields[0];
-        return data[listField] && Array.isArray(data[listField]) && data[listField].length > 0 && (
-          <ListGrid items={data[listField]} title={prettifyLabel(listField)} />
+        return Array.isArray(safeData(listField, [])) && safeData(listField, []).length > 0 && (
+          <ListGrid items={safeData(listField, [])} title={prettifyLabel(listField)} />
         );
-        
       case 'icp_section':
         const icpField = fields[0];
-        return data[icpField] && (
-          <ICPSection data={data[icpField]} title={prettifyLabel(icpField)} />
+        return safeData(icpField, {}) && (
+          <ICPSection data={safeData(icpField, {})} title={prettifyLabel(icpField)} />
         );
-        
       case 'competitor_grid':
-        return fields.includes('direct_competitors') && Array.isArray(data.direct_competitors) && data.direct_competitors.length > 0 && (
-          <CompetitorGrid competitors={data.direct_competitors} />
+        return fields.includes('direct_competitors') && Array.isArray(safeData('direct_competitors', [])) && safeData('direct_competitors', []).length > 0 && (
+          <CompetitorGrid competitors={safeData('direct_competitors', [])} />
         );
-        
       case 'bullet_list':
         const bulletField = fields[0];
-        return data[bulletField] && Array.isArray(data[bulletField]) && data[bulletField].length > 0 && (
-          <BulletList items={data[bulletField]} title={prettifyLabel(bulletField)} />
+        return Array.isArray(safeData(bulletField, [])) && safeData(bulletField, []).length > 0 && (
+          <BulletList items={safeData(bulletField, [])} title={prettifyLabel(bulletField)} />
         );
-        
       case 'buyer_personas':
-        return fields.includes('buyer_personas') && Array.isArray(data.buyer_personas) && data.buyer_personas.length > 0 && (
-          <BuyerPersonas personas={data.buyer_personas} />
+        return fields.includes('buyer_personas') && Array.isArray(safeData('buyer_personas', [])) && safeData('buyer_personas', []).length > 0 && (
+          <BuyerPersonas personas={safeData('buyer_personas', [])} />
         );
-        
       case 'opportunity_items':
-        return fields.includes('sales_opportunities') && Array.isArray(data.sales_opportunities) && data.sales_opportunities.length > 0 && (
-          <OpportunityItems opportunities={data.sales_opportunities} />
+        return fields.includes('sales_opportunities') && Array.isArray(safeData('sales_opportunities', [])) && safeData('sales_opportunities', []).length > 0 && (
+          <OpportunityItems opportunities={safeData('sales_opportunities', [])} />
         );
-        
       case 'metrics_grid':
-        return fields.includes('metrics') && Array.isArray(data.metrics) && data.metrics.length > 0 && (
-          <MetricsGrid metrics={data.metrics} />
+        return fields.includes('metrics') && Array.isArray(safeData('metrics', [])) && safeData('metrics', []).length > 0 && (
+          <MetricsGrid metrics={safeData('metrics', [])} />
         );
-        
       case 'tech_list':
         const techField = fields[0];
-        return data[techField] && Array.isArray(data[techField]) && data[techField].length > 0 && (
-          <TechList technologies={data[techField]} title={prettifyLabel(techField)} />
+        return Array.isArray(safeData(techField, [])) && safeData(techField, []).length > 0 && (
+          <TechList technologies={safeData(techField, [])} title={prettifyLabel(techField)} />
         );
-        
       default:
         return null;
     }
@@ -335,10 +332,10 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
       const { fields } = subsection;
       if (subsection.type === 'two_column_grid') {
         return Array.isArray(fields) && fields.some((fieldGroup: any) => 
-          fieldGroup.fields && Array.isArray(fieldGroup.fields) && fieldGroup.fields.some((field: string) => data[field])
+          fieldGroup.fields && Array.isArray(fieldGroup.fields) && fieldGroup.fields.some((field: string) => safeData(field, 'N/A'))
         );
       }
-      return Array.isArray(fields) && fields.some((field: string) => data[field]);
+      return Array.isArray(fields) && fields.some((field: string) => safeData(field, 'N/A'));
     });
 
     if (!hasData) return null;

@@ -1,0 +1,95 @@
+diff --git a/agents/CompanyResearchAgent.ts b/agents/CompanyResearchAgent.ts
+index 3f4f598..a62decc 100644
+--- a/agents/CompanyResearchAgent.ts
++++ b/agents/CompanyResearchAgent.ts
+@@ -244,56 +244,40 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
+   }
+   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
+ 
+-  // Merge all results into a single object matching proposed.md structure
++  // Merge all results into a single flat object matching reportstructure.json
+   const merged = {
+-    company_overview: {
+-      company_name: overview.company_name || 'N/A',
+-      website: overview.website || 'N/A',
+-      overview: overview.overview || 'N/A',
+-      company_size: overview.company_size || 'N/A',
+-      employees_global: overview.employees_global || 'N/A',
+-      employees_key_regions: overview.employees_key_regions || 'N/A',
+-      revenue: overview.revenue || 'N/A',
+-      industry_segments: overview.industry_segments || 'N/A',
+-      funding_status: overview.funding_status || 'N/A',
+-      key_contacts: overview.key_contacts || [],
+-    },
+-    products_positioning: {
+-      core_product_suite: market.core_product_suite || 'N/A',
+-      key_modules: market.key_modules || [],
+-      unique_selling_points: market.unique_selling_points || 'N/A',
+-      market_positioning: market.market_positioning || 'N/A',
+-      value_proposition_by_segment: market.value_proposition_by_segment || {},
+-      key_differentiators: market.key_differentiators || [],
+-      main_products: market.main_products || 'N/A',
+-      target_market: market.target_market || 'N/A',
+-      competitors: market.competitors || [],
+-      market_trends: market.market_trends || [],
+-    },
+-    icp_and_buying: {
+-      icp_demographics: tech.icp_demographics || {},
+-      firmographics: tech.firmographics || {},
+-      pain_points: tech.pain_points || [],
+-      kpis_targeted: tech.kpis_targeted || [],
+-      buying_committee_personas: tech.buying_committee_personas || [],
+-      buying_process: tech.buying_process || {},
+-      red_flags: tech.red_flags || [],
+-      anti_personas: tech.anti_personas || [],
+-    },
+-    features_ecosystem_gtm: {
+-      key_features: sales.key_features || [],
+-      integrations: sales.integrations || [],
+-      api_openness: sales.api_openness || 'N/A',
+-      enterprise_readiness: sales.enterprise_readiness || {},
+-      client_logos: sales.client_logos || [],
+-      competitors: sales.competitors || [],
+-      gtm_messaging: sales.gtm_messaging || {},
+-      icp_fit_matrix: sales.icp_fit_matrix || [],
+-      action_steps: sales.action_steps || {},
+-      social_media: sales.social_media || { linkedin: 'N/A', twitter: 'N/A', facebook: 'N/A' },
+-      research_summary: sales.research_summary || 'N/A',
+-    }
++    company_name: overview.company_name || '',
++    company_size: overview.company_size || '',
++    industry: Array.isArray(overview.industry_segments) ? overview.industry_segments[0] : (overview.industry_segments || ''),
++    founded: '', // Not available in current agent output
++    headquarters: '', // Not available in current agent output
++    revenue_range: overview.revenue || '',
++    company_type: overview.funding_status || '',
++    summary: overview.overview || '',
++    notable_clients: Array.isArray(sales.client_logos) ? sales.client_logos.map(c => c.category || c.logo_url || '') : [],
++    social_media: sales.social_media || { linkedin: '', twitter: '', facebook: '' },
++    main_products: market.main_products || [],
++    target_market: market.target_market || [],
++    direct_competitors: (typeof market.competitors === 'object') ? Object.values(market.competitors).flat() : (market.competitors || []),
++    key_differentiators: (typeof market.key_differentiators === 'object') ? Object.values(market.key_differentiators).flat() : (market.key_differentiators || []),
++    market_trends: market.market_trends || [],
++    icp: tech.icp_demographics || {},
++    buyer_personas: Array.isArray(tech.buying_committee_personas) ? tech.buying_committee_personas.map(p => ({
++      title: p.role,
++      demographics: '',
++      pain_points: '',
++      success_metrics: ''
++    })) : [],
++    sales_opportunities: [], // Not mapped in current agent output
++    gtm_recommendations: {}, // Not mapped in current agent output
++    metrics: [], // Not mapped in current agent output
++    backend_technologies: [], // Not mapped in current agent output
++    frontend_technologies: [], // Not mapped in current agent output
++    infrastructure: [], // Not mapped in current agent output
++    key_platform_features: Array.isArray(sales.key_features) ? sales.key_features : [],
++    integration_capabilities: Array.isArray(sales.integrations) ? sales.integrations : [],
++    platform_compatibility: [], // Not mapped in current agent output
+   };
+-  console.log('[Pipeline] FINAL MERGED RESULT:', JSON.stringify(merged));
++  console.log('[Pipeline] FINAL FLAT MERGED RESULT:', JSON.stringify(merged));
+   return { overview, market, tech, sales, merged };
+ } 
+\ No newline at end of file
