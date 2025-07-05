@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderValue } from './ReportWrapper';
+import { renderValue } from './renderValue';
 
 interface CompanyOverviewProps {
   data: any;
