@@ -285,45 +285,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
-        Row: {
-          company: string | null
-          created_at: string | null
-          email: string
-          first_name: string | null
-          id: string
-          job_title: string | null
-          last_name: string | null
-          phone: string | null
-          timezone: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          company?: string | null
-          created_at?: string | null
-          email: string
-          first_name?: string | null
-          id: string
-          job_title?: string | null
-          last_name?: string | null
-          phone?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          company?: string | null
-          created_at?: string | null
-          email?: string
-          first_name?: string | null
-          id?: string
-          job_title?: string | null
-          last_name?: string | null
-          phone?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       saved_reports: {
         Row: {
           company_name: string | null

@@ -96,13 +96,6 @@ router.post('/hubspot/disconnect', authenticateToken, async (req, res) => {
 // GET /hubspot/status/all - get CRM status for just the current user
 router.get('/hubspot/status/all', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  // Get current user profile
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, email')
-    .eq('id', userId)
-    .maybeSingle();
-  if (profileError) return res.status(500).json({ error: profileError.message });
   // Get integration for user
   const { data: integration, error: intError } = await supabase
     .from('integrations')
@@ -112,13 +105,10 @@ router.get('/hubspot/status/all', authenticateToken, async (req, res) => {
     .maybeSingle();
   if (intError) return res.status(500).json({ error: intError.message });
   // Map status for the user
-  if (!profile) {
-    return res.status(404).json({ error: 'Profile not found' });
-  }
   const statusList = [{
-    user_id: profile.id,
-    name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email,
-    email: profile.email,
+    user_id: userId,
+    name: '',
+    email: '',
     status: integration?.status || 'not_connected',
     integration
   }];

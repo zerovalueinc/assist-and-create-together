@@ -1,24 +1,13 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useUser } from '@supabase/auth-helpers-react';
 
 export function useUserData() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const getSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (data?.session?.user) {
-        setUser(data.session.user);
-        console.debug('[Frontend] Supabase user.id:', data.session.user.id);
-      } else {
-        console.warn('[Frontend] No user session found', error);
-        setUser(null);
-      }
-      setLoading(false);
-    };
-    getSession();
-  }, []);
-
-  return { user, loading };
+  const user = useUser();
+  return {
+    email: user?.email || '',
+    firstName: user?.user_metadata?.firstName || '',
+    lastName: user?.user_metadata?.lastName || '',
+    company: user?.user_metadata?.company || '',
+    initials: `${user?.user_metadata?.firstName?.[0] || ''}${user?.user_metadata?.lastName?.[0] || ''}`.toUpperCase(),
+    user,
+  };
 }

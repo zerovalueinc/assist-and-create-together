@@ -1,7 +1,7 @@
 import { supabase } from '../../../lib/supabase'; // See README for global pattern
 import { AuditResult } from '../types';
 
-const DATABASE_TABLES = ['profiles', 'pipeline_states', 'pipeline_results'] as const;
+const DATABASE_TABLES = ['pipeline_states', 'pipeline_results'] as const;
 
 const classifyDatabaseError = (errorMessage: string) => {
   const isAuthError = errorMessage.includes('JWT') || 

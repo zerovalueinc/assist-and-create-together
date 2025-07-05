@@ -1,108 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, Upload } from "lucide-react";
-import { useUser, useSession } from '@supabase/auth-helpers-react';
+import { useUser, useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '../../lib/supabase'; // See README for global pattern
-import { useUserData } from '@/hooks/useUserData';
 
 const ProfileTab = () => {
   const user = useUser();
   const session = useSession();
-  const { email, firstName, lastName, company, initials } = useUserData();
+  const supabase = useSupabaseClient();
   const { toast } = useToast();
-  
-  // Always show user info instantly
+
+  // Use user_metadata for all profile fields
   const [profileData, setProfileData] = useState({
-    firstName: firstName,
-    lastName: lastName,
-    email: email,
-    company: company,
-    phone: '',
-    jobTitle: '',
-    timezone: 'UTC-8',
+    firstName: user?.user_metadata?.firstName || '',
+    lastName: user?.user_metadata?.lastName || '',
+    email: user?.email || '',
+    company: user?.user_metadata?.company || '',
+    phone: user?.user_metadata?.phone || '',
+    jobTitle: user?.user_metadata?.jobTitle || '',
+    timezone: user?.user_metadata?.timezone || 'UTC-8',
   });
   const [saving, setSaving] = useState(false);
 
-  // Fetch canonical profile in background, merge if present
-  useEffect(() => {
-    let cancelled = false;
-    const fetchProfileData = async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (!cancelled && !error && data) {
-        setProfileData(prev => ({
-          ...prev,
-          firstName: data.first_name || prev.firstName,
-          lastName: data.last_name || prev.lastName,
-          email: data.email || prev.email,
-          company: data.company || prev.company,
-          phone: data.phone || prev.phone,
-          jobTitle: data.job_title || prev.jobTitle,
-          timezone: data.timezone || prev.timezone,
-        }));
-      }
-    };
-    fetchProfileData();
-    return () => { cancelled = true; };
-  }, [user]);
+  const initials = `${profileData.firstName?.[0] || ''}${profileData.lastName?.[0] || ''}`.toUpperCase();
 
   const handleProfileSave = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: profileData.firstName,
-          last_name: profileData.lastName,
-          company: profileData.company,
-          phone: profileData.phone,
-          job_title: profileData.jobTitle,
-          timezone: profileData.timezone,
-        })
-        .eq('id', user.id);
-      if (error) throw error;
-      // Also update Supabase user_metadata
-      const { error: authError } = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         data: {
           firstName: profileData.firstName,
           lastName: profileData.lastName,
           fullName: `${profileData.firstName} ${profileData.lastName}`.trim(),
           company: profileData.company,
+          phone: profileData.phone,
+          jobTitle: profileData.jobTitle,
+          timezone: profileData.timezone,
         }
       });
-      if (authError) throw authError;
+      if (error) throw error;
       toast({
         title: "Profile Updated",
         description: "Your profile information has been saved successfully.",
       });
-      // Re-fetch profile after update
-      const { data: updatedProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (updatedProfile) {
-        setProfileData(prev => ({
-          ...prev,
-          firstName: updatedProfile.first_name || prev.firstName,
-          lastName: updatedProfile.last_name || prev.lastName,
-          email: updatedProfile.email || prev.email,
-          company: updatedProfile.company || prev.company,
-          phone: updatedProfile.phone || prev.phone,
-          jobTitle: updatedProfile.job_title || prev.jobTitle,
-          timezone: updatedProfile.timezone || prev.timezone,
-        }));
-      }
     } catch (error: any) {
       console.error('Profile update error:', error);
       toast({
@@ -110,9 +55,8 @@ const ProfileTab = () => {
         description: error.message || 'Could not update profile.',
         variant: 'destructive',
       });
-    } finally {
-      setSaving(false);
     }
+    setSaving(false);
   };
 
   return (
