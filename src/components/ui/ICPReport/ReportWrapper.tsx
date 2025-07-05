@@ -10,6 +10,17 @@ interface ReportWrapperProps {
   reportData: any;
 }
 
+// Utility: Recursively convert any object to array of {key, value} pairs for safe rendering
+function objectToPairs(obj: any): Array<{ key: string, value: any }> {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return [];
+  return Object.entries(obj).map(([key, value]) => ({
+    key,
+    value: typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? objectToPairs(value)
+      : value
+  }));
+}
+
 // Deep normalization: recursively map all fields, arrays, and nested objects from LLM output to modular structure
 function deepNormalizeLLMOutput(raw: any) {
   if (!raw) return {};
@@ -21,16 +32,8 @@ function deepNormalizeLLMOutput(raw: any) {
     if (Array.isArray(val)) {
       return val.map(flatten);
     } else if (val && typeof val === 'object') {
-      // If object has only string/number values, return as key: value pairs
-      const keys = Object.keys(val);
-      if (keys.every(k => typeof val[k] === 'string' || typeof val[k] === 'number')) {
-        return keys.map(k => `${k}: ${val[k]}`);
-      }
-      // Otherwise, flatten recursively
-      return keys.reduce((acc, k) => {
-        acc[k] = flatten(val[k]);
-        return acc;
-      }, {} as any);
+      // Convert all objects to array of {key, value} pairs for safe rendering
+      return objectToPairs(val);
     }
     return val;
   };
@@ -46,25 +49,25 @@ function deepNormalizeLLMOutput(raw: any) {
       size: raw.company_overview?.company_size || raw.company_size || '',
       founded: raw.company_overview?.founded || raw.founded || '',
       industry: Array.isArray(raw.company_overview?.industry_segments) ? raw.company_overview.industry_segments.join(', ') : (raw.company_overview?.industry_segments || raw.industry || ''),
-      headquarters: raw.company_overview?.headquarters || raw.headquarters || raw.company_overview?.employees_key_regions || '',
+      headquarters: flatten(raw.company_overview?.headquarters || raw.headquarters || raw.company_overview?.employees_key_regions || ''),
       revenue: raw.company_overview?.revenue || raw.revenue || '',
       type: raw.company_overview?.company_type || raw.company_type || '',
       funding: raw.company_overview?.funding_status || raw.funding_status || '',
       website: raw.company_overview?.website || raw.website || '',
       notableClients: Array.isArray(raw.client_logos) ? raw.client_logos.map(c => c.category || c.logo_url || c.name || c.company || flatten(c)) : [],
       socialMedia: raw.social_media || raw.company_overview?.social_media || {},
-      keyContacts: raw.company_overview?.key_contacts || [],
-      employeesKeyRegions: raw.company_overview?.employees_key_regions || {},
+      keyContacts: flatten(raw.company_overview?.key_contacts || []),
+      employeesKeyRegions: flatten(raw.company_overview?.employees_key_regions || {}),
     },
     marketIntelligence: {
-      mainProducts: raw.products_positioning?.main_products || raw.main_products || [],
-      targetMarket: raw.products_positioning?.target_market || raw.target_market || {},
+      mainProducts: flatten(raw.products_positioning?.main_products || raw.main_products || []),
+      targetMarket: flatten(raw.products_positioning?.target_market || raw.target_market || {}),
       directCompetitors: flatten(raw.products_positioning?.competitors) || flatten(raw.competitors) || [],
       keyDifferentiators: flatten(raw.products_positioning?.key_differentiators) || flatten(raw.key_differentiators) || [],
       marketTrends: flatten(raw.products_positioning?.market_trends) || flatten(raw.market_trends) || [],
-      valuePropositionBySegment: raw.products_positioning?.value_proposition_by_segment || {},
+      valuePropositionBySegment: flatten(raw.products_positioning?.value_proposition_by_segment || {}),
       coreProductSuite: raw.products_positioning?.core_product_suite || '',
-      keyModules: raw.products_positioning?.key_modules || [],
+      keyModules: flatten(raw.products_positioning?.key_modules || []),
       marketPositioning: raw.products_positioning?.market_positioning || '',
     },
     icpIbps: {
