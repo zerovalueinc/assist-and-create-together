@@ -367,7 +367,41 @@ const CompanyAnalyzer = () => {
             (() => {
               let merged = analysis && analysis.llm_output ? (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output) : analysis.llm_output) : null;
               if (!merged) return <div className="text-center text-muted-foreground py-8">Could not load report details. Please try another report.</div>;
-              const { company_overview, products_positioning, icp_and_buying, features_ecosystem_gtm } = merged;
+
+              // --- Company Overview Card ---
+              const companyOverviewFields = [
+                ['Company Name', merged.company_name],
+                ['Company Type', merged.company_type],
+                ['Headquarters', merged.headquarters],
+                ['Founded', merged.founded],
+                ['Company Size', merged.company_size],
+                ['Revenue Range', merged.revenue_range],
+                ['Industry', merged.industry],
+                ['Summary', merged.summary],
+                ['Funding Status', merged.funding?.status],
+                ['Total Raised', merged.funding?.total_raised],
+                ['Notable Rounds', merged.funding?.notable_rounds],
+              ];
+
+              // --- Market Intelligence Card ---
+              const competitors = merged.competitors || {};
+              const positioning = merged.positioning || {};
+              const valueProp = merged.value_proposition || {};
+              const targetMarket = merged.target_market || {};
+
+              // --- Sales GTM Card ---
+              const socialMedia = merged.social_media || {};
+              const notableClients = merged.notable_clients || [];
+              const researchSummary = merged.research_summary || {};
+              const gtmRecs = merged.gtm_recommendations || [];
+              const salesOpps = merged.sales_opportunities || [];
+
+              // --- Tech Stack Card ---
+              const keyFeatures = merged.key_features || {};
+              const techStack = merged.technology_stack || {};
+              const platformCompat = merged.platform_compatibility || {};
+              const integrationCaps = merged.integration_capabilities || {};
+
               return (
                 <div className="space-y-6">
                   {/* Company Overview */}
@@ -377,24 +411,68 @@ const CompanyAnalyzer = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {companyOverviewFields.map(([label, value], idx) => (
+                          <div key={idx}><span className="text-sm font-medium text-muted-foreground">{label}</span><p className="text-sm font-semibold">{renderField(value)}</p></div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Market Intelligence */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><BarChart2 className="h-5 w-5" />Market Intelligence</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Company Name</span><p className="text-lg font-semibold">{renderField(company_overview?.company_name)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Website</span><p className="text-sm">{renderField(company_overview?.website)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Overview</span><p className="text-sm">{renderField(company_overview?.overview)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Company Size</span><p className="text-sm">{renderField(company_overview?.company_size)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Employees (Global)</span><p className="text-sm">{renderField(company_overview?.employees_global)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Employees (Key Regions)</span><p className="text-sm">{renderField(company_overview?.employees_key_regions)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Revenue</span><p className="text-sm">{renderField(company_overview?.revenue)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Industry Segments</span><p className="text-sm">{renderField(company_overview?.industry_segments)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Funding Status</span><p className="text-sm">{renderField(company_overview?.funding_status)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Direct Competitors</span><p className="text-sm">{renderField(competitors.direct || competitors.main_rivals)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Indirect Competitors</span><p className="text-sm">{renderField(competitors.indirect || competitors.direct_competitors)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Core Message</span><p className="text-sm">{renderField(positioning.core_message)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Differentiators</span><p className="text-sm">{renderField(positioning.differentiators)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Market Position</span><p className="text-sm">{renderField(positioning.market_position)}</p></div>
                         </div>
                         <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Key Contacts</span>
-                            {Array.isArray(company_overview?.key_contacts) && company_overview.key_contacts.length > 0 ? (
+                          <div><span className="text-sm font-medium text-muted-foreground">Main Products</span><p className="text-sm">{renderField(merged.main_products)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Market Trends</span><p className="text-sm">{renderField(merged.market_trends)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Target Market</span><p className="text-sm">{renderField(targetMarket.primary)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Value Proposition (Merchants)</span><p className="text-sm">{renderField(valueProp.merchants)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Unique Benefits</span><p className="text-sm">{renderField(valueProp.unique_benefits || valueProp.key_advantages)}</p></div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Sales GTM */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Rocket className="h-5 w-5" />Sales GTM</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">Social Media</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(socialMedia, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Notable Clients</span>
+                            {Array.isArray(notableClients) && notableClients.length > 0 ? (
                               <ul className="list-disc pl-5 text-sm space-y-1">
-                                {company_overview.key_contacts.map((c, i) => (
-                                  <li key={i}>{c.name} ({c.title}) {c.linkedin && <a href={c.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">LinkedIn</a>}</li>
-                                ))}
+                                {notableClients.map((c, i) => <li key={i}>{c}</li>)}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Research Summary</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(researchSummary, null, 2)}</pre></div>
+                        </div>
+                        <div className="space-y-4">
+                          <div><span className="text-sm font-medium text-muted-foreground">GTM Recommendations</span>
+                            {Array.isArray(gtmRecs) && gtmRecs.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {gtmRecs.map((rec, i) => <li key={i}><b>{rec.strategy}:</b> {renderField(rec.actions)}</li>)}
+                              </ul>
+                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
+                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Sales Opportunities</span>
+                            {Array.isArray(salesOpps) && salesOpps.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm space-y-1">
+                                {salesOpps.map((op, i) => <li key={i}><b>{op.segment}:</b> {op.why} – {op.approach}</li>)}
                               </ul>
                             ) : <span className="text-sm text-muted-foreground">No data available</span>}
                           </div>
@@ -403,209 +481,32 @@ const CompanyAnalyzer = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Products & Positioning */}
+                  {/* Tech Stack */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Rocket className="h-5 w-5" />Products & Positioning</CardTitle>
+                      <CardTitle className="flex items-center gap-2"><Cpu className="h-5 w-5" />Tech Stack</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Core Product Suite</span><p className="text-sm">{renderField(products_positioning?.core_product_suite)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Unique Selling Points</span><p className="text-sm">{renderField(products_positioning?.unique_selling_points)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Market Positioning</span><p className="text-sm">{renderField(products_positioning?.market_positioning)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Main Products</span><p className="text-sm">{renderField(products_positioning?.main_products)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Target Market</span><p className="text-sm">{renderField(products_positioning?.target_market)}</p></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Key Features</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(keyFeatures, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Technology Stack</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(techStack, null, 2)}</pre></div>
                         </div>
                         <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Key Modules</span>
-                            {Array.isArray(products_positioning?.key_modules) && products_positioning.key_modules.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {products_positioning.key_modules.map((m, i) => (
-                                  <li key={i}>{m.module} – {m.problem_solved} (for {m.target_user})</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Value Proposition by Segment</span>
-                            {products_positioning?.value_proposition_by_segment && typeof products_positioning.value_proposition_by_segment === 'object' ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {Object.entries(products_positioning.value_proposition_by_segment).map(([seg, val], i) => (
-                                  <li key={i}><b>{seg}:</b> {val}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Key Differentiators</span>
-                            {Array.isArray(products_positioning?.key_differentiators) && products_positioning.key_differentiators.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {products_positioning.key_differentiators.map((d, i) => (
-                                  <Badge key={i} variant="secondary" className="text-xs">{d}</Badge>
-                                ))}
-                              </div>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Competitors</span>
-                            {Array.isArray(products_positioning?.competitors) && products_positioning.competitors.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {products_positioning.competitors.map((c, i) => (
-                                  <li key={i}>{renderField(c)}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Market Trends</span>
-                            {Array.isArray(products_positioning?.market_trends) && products_positioning.market_trends.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {products_positioning.market_trends.map((t, i) => (
-                                  <li key={i}>{t}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Platform Compatibility</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(platformCompat, null, 2)}</pre></div>
+                          <div><span className="text-sm font-medium text-muted-foreground">Integration Capabilities</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(integrationCaps, null, 2)}</pre></div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* ICP & Buying Process */}
+                  {/* Debug Card */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" />ICP & Buying Process</CardTitle>
+                      <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Raw JSON Output (Debug)</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">ICP Demographics</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(icp_and_buying?.icp_demographics, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Firmographics</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(icp_and_buying?.firmographics, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Pain Points</span>
-                            {Array.isArray(icp_and_buying?.pain_points) && icp_and_buying.pain_points.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {icp_and_buying.pain_points.map((p, i) => (
-                                  <li key={i}>{p}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">KPIs Targeted</span>
-                            {Array.isArray(icp_and_buying?.kpis_targeted) && icp_and_buying.kpis_targeted.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {icp_and_buying.kpis_targeted.map((k, i) => (
-                                  <li key={i}>{k}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                        </div>
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Buying Committee Personas</span>
-                            {Array.isArray(icp_and_buying?.buying_committee_personas) && icp_and_buying.buying_committee_personas.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {icp_and_buying.buying_committee_personas.map((p, i) => (
-                                  <li key={i}>{p.role}: {p.responsibilities}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Buying Process</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(icp_and_buying?.buying_process, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Red Flags</span>
-                            {Array.isArray(icp_and_buying?.red_flags) && icp_and_buying.red_flags.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {icp_and_buying.red_flags.map((r, i) => (
-                                  <li key={i}>{r}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Anti-Personas</span>
-                            {Array.isArray(icp_and_buying?.anti_personas) && icp_and_buying.anti_personas.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {icp_and_buying.anti_personas.map((a, i) => (
-                                  <li key={i}>{a}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Features, Ecosystem, GTM, Clients, Matrix, Action Steps */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Cpu className="h-5 w-5" />Features, Ecosystem, GTM & More</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Key Features</span>
-                            {Array.isArray(features_ecosystem_gtm?.key_features) && features_ecosystem_gtm.key_features.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {features_ecosystem_gtm.key_features.map((f, i) => (
-                                  <li key={i}>{f}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Integrations</span>
-                            {Array.isArray(features_ecosystem_gtm?.integrations) && features_ecosystem_gtm.integrations.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {features_ecosystem_gtm.integrations.map((i, idx) => (
-                                  <li key={idx}>{renderField(i)}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">API Openness</span><p className="text-sm">{renderField(features_ecosystem_gtm?.api_openness)}</p></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Enterprise Readiness</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.enterprise_readiness, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Client Logos</span>
-                            {Array.isArray(features_ecosystem_gtm?.client_logos) && features_ecosystem_gtm.client_logos.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
-                                {features_ecosystem_gtm.client_logos.map((c, i) => (
-                                  <div key={i} className="flex flex-col items-center">
-                                    {c.logo_url && <img src={c.logo_url} alt={c.category} className="w-10 h-10 object-contain" />}
-                                    <span className="text-xs mt-1">{c.category}</span>
-                                    {c.outcome && <span className="text-xs text-muted-foreground">{c.outcome}</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                        </div>
-                        <div className="space-y-4">
-                          <div><span className="text-sm font-medium text-muted-foreground">Competitors</span>
-                            {Array.isArray(features_ecosystem_gtm?.competitors) && features_ecosystem_gtm.competitors.length > 0 ? (
-                              <ul className="list-disc pl-5 text-sm space-y-1">
-                                {features_ecosystem_gtm.competitors.map((c, i) => (
-                                  <li key={i}>{renderField(c)}</li>
-                                ))}
-                              </ul>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">GTM Messaging</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.gtm_messaging, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">ICP Fit Matrix</span>
-                            {Array.isArray(features_ecosystem_gtm?.icp_fit_matrix) && features_ecosystem_gtm.icp_fit_matrix.length > 0 ? (
-                              <table className="min-w-full text-xs border mt-2">
-                                <thead><tr><th className="border px-2 py-1">Attribute</th><th className="border px-2 py-1">Ideal</th><th className="border px-2 py-1">Acceptable</th><th className="border px-2 py-1">Exclude</th></tr></thead>
-                                <tbody>
-                                  {features_ecosystem_gtm.icp_fit_matrix.map((row, i) => (
-                                    <tr key={i}>
-                                      <td className="border px-2 py-1">{row.attribute}</td>
-                                      <td className="border px-2 py-1">{row.ideal}</td>
-                                      <td className="border px-2 py-1">{row.acceptable}</td>
-                                      <td className="border px-2 py-1">{row.exclude}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            ) : <span className="text-sm text-muted-foreground">No data available</span>}
-                          </div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Action Steps</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.action_steps, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Social Media</span><pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(features_ecosystem_gtm?.social_media, null, 2)}</pre></div>
-                          <div><span className="text-sm font-medium text-muted-foreground">Research Summary</span><p className="text-sm mt-2">{renderField(features_ecosystem_gtm?.research_summary)}</p></div>
-                        </div>
-                      </div>
+                      <pre className="text-xs whitespace-pre-wrap break-all bg-muted p-2 rounded border max-h-96 overflow-auto">{JSON.stringify(merged, null, 2)}</pre>
                     </CardContent>
                   </Card>
                 </div>
