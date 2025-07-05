@@ -259,21 +259,21 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
       transformed.company_name = raw.company_overview.company_name || raw.company_overview.companyName || '';
       transformed.company_size = raw.company_overview.company_size || '';
       transformed.founded = raw.company_overview.founded || '';
-      transformed.industry = raw.company_overview.industry_segments?.[0] || raw.company_overview.industry || '';
+      transformed.industry = Array.isArray(raw.company_overview.industry_segments) ? raw.company_overview.industry_segments[0] : (raw.company_overview.industry || '');
       transformed.headquarters = raw.company_overview.headquarters || '';
       transformed.revenue_range = raw.company_overview.revenue || '';
-      transformed.company_type = raw.company_overview.funding_status || '';
+      transformed.company_type = raw.company_overview.funding_status?.status || raw.company_overview.funding_status || '';
       transformed.summary = raw.company_overview.overview || '';
       transformed.website = raw.company_overview.website || '';
     }
     
     // Extract from products_positioning
     if (raw.products_positioning) {
-      transformed.main_products = raw.products_positioning.main_products || [];
+      transformed.main_products = Array.isArray(raw.products_positioning.main_products) ? raw.products_positioning.main_products : [];
       transformed.target_market = raw.products_positioning.target_market || {};
-      transformed.direct_competitors = raw.products_positioning.competitors || [];
+      transformed.direct_competitors = raw.products_positioning.competitors ? Object.values(raw.products_positioning.competitors).flat() : [];
       transformed.key_differentiators = raw.products_positioning.key_differentiators || [];
-      transformed.market_trends = raw.products_positioning.market_trends || [];
+      transformed.market_trends = Array.isArray(raw.products_positioning.market_trends) ? raw.products_positioning.market_trends : [];
     }
     
     // Extract from features_ecosystem_gtm
@@ -281,24 +281,24 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
       transformed.backend_technologies = raw.features_ecosystem_gtm.backend_technologies || [];
       transformed.frontend_technologies = raw.features_ecosystem_gtm.frontend_technologies || [];
       transformed.infrastructure = raw.features_ecosystem_gtm.infrastructure || [];
-      transformed.key_platform_features = raw.features_ecosystem_gtm.key_features || [];
-      transformed.integration_capabilities = raw.features_ecosystem_gtm.integrations || [];
-      transformed.platform_compatibility = raw.features_ecosystem_gtm.enterprise_readiness || [];
+      transformed.key_platform_features = Array.isArray(raw.features_ecosystem_gtm.key_features) ? raw.features_ecosystem_gtm.key_features : [];
+      transformed.integration_capabilities = raw.features_ecosystem_gtm.integrations ? Object.values(raw.features_ecosystem_gtm.integrations).flat() : [];
+      transformed.platform_compatibility = raw.features_ecosystem_gtm.enterprise_readiness ? Object.values(raw.features_ecosystem_gtm.enterprise_readiness) : [];
     }
     
     // Extract from icp_and_buying
     if (raw.icp_and_buying) {
       transformed.icp = raw.icp_and_buying.icp_demographics || {};
-      transformed.buyer_personas = raw.icp_and_buying.buying_committee_personas || [];
+      transformed.buyer_personas = Array.isArray(raw.icp_and_buying.buying_committee_personas) ? raw.icp_and_buying.buying_committee_personas : [];
       transformed.sales_opportunities = raw.icp_and_buying.action_steps?.lead_scoring || [];
       transformed.gtm_recommendations = raw.icp_and_buying.gtm_messaging || {};
-      transformed.metrics = raw.icp_and_buying.kpis_targeted?.map((kpi: string) => ({ label: kpi, value: '' })) || [];
+      transformed.metrics = Array.isArray(raw.icp_and_buying.kpis_targeted) ? raw.icp_and_buying.kpis_targeted.map((kpi: string) => ({ label: kpi, value: '' })) : [];
     }
     
-    // Extract from sales data
-    if (raw.sales) {
-      transformed.notable_clients = raw.sales.client_logos || [];
-      transformed.social_media = raw.sales.social_media || {};
+    // Extract from sales data (features_ecosystem_gtm contains sales info)
+    if (raw.features_ecosystem_gtm) {
+      transformed.notable_clients = Array.isArray(raw.features_ecosystem_gtm.client_logos) ? raw.features_ecosystem_gtm.client_logos : [];
+      transformed.social_media = raw.features_ecosystem_gtm.social_media || {};
     }
     
     return transformed;
