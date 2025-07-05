@@ -119,56 +119,130 @@ const TagList: React.FC<{ items: string[] }> = ({ items }) => (
   </div>
 );
 
-// ICPDisplay component for structured ICP data
+// Helper to strip index numbers from LLM output
+function stripIndexes(val: string) {
+  return val.replace(/\b\d+[:：]\s*/g, '').replace(/;+$/, '').trim();
+}
+
+// Updated sanitizer to strip index numbers and prettify arrays/objects
+function sanitizeReportData(data: any) {
+  const sanitizeArray = (arr: any[], key?: string) => {
+    if (!Array.isArray(arr)) return [];
+    let values = arr.map(item => {
+      if (typeof item === 'string') {
+        let v = stripIndexes(item);
+        if (v.match(/^https?:\/\//)) {
+          try {
+            const url = new URL(v);
+            return url.hostname.replace('www.', '');
+          } catch { return v; }
+        }
+        return v;
+      }
+      if (typeof item === 'object' && item !== null) {
+        if (key && item[key]) return stripIndexes(item[key]);
+        if (item.name) return stripIndexes(item.name);
+        if (item.title) return stripIndexes(item.title);
+        if (item.company) return stripIndexes(item.company);
+        if (item.logo_url) return item.logo_url.split('/').pop();
+        if (item.category) return stripIndexes(item.category);
+        return Object.values(item).map(stripIndexes).join(', ');
+      }
+      return stripIndexes(String(item));
+    });
+    values = [...new Set(values)].filter(Boolean);
+    return values.length ? values : [];
+  };
+  const sanitizeField = (val: any, key?: string) => {
+    if (val == null || val === '' || (Array.isArray(val) && val.length === 0)) return '';
+    if (Array.isArray(val)) return sanitizeArray(val, key).join(', ');
+    if (typeof val === 'object') {
+      return Object.entries(val).map(([k, v]) => `${prettifyLabel(k)}: ${sanitizeField(v)}`).join('; ');
+    }
+    if (typeof val === 'string') {
+      return stripIndexes(val.charAt(0).toUpperCase() + val.slice(1));
+    }
+    return stripIndexes(String(val));
+  };
+  const sanitized: any = { ...data };
+  if (sanitized.notable_clients) sanitized.notable_clients = sanitizeArray(sanitized.notable_clients);
+  if (sanitized.main_products) sanitized.main_products = sanitizeArray(sanitized.main_products);
+  if (sanitized.direct_competitors) sanitized.direct_competitors = sanitizeArray(sanitized.direct_competitors);
+  if (sanitized.key_platform_features) sanitized.key_platform_features = sanitizeArray(sanitized.key_platform_features);
+  if (sanitized.integration_capabilities) sanitized.integration_capabilities = sanitizeArray(sanitized.integration_capabilities);
+  if (sanitized.platform_compatibility) sanitized.platform_compatibility = sanitizeArray(sanitized.platform_compatibility);
+  if (sanitized.buyer_personas) sanitized.buyer_personas = sanitized.buyer_personas.map((p: any) => {
+    const demographics = sanitizeField(p.demographics);
+    const pain_points = sanitizeField(p.pain_points);
+    const success_metrics = sanitizeField(p.success_metrics);
+    return {
+      title: stripIndexes(p.title || p.role || ''),
+      demographics,
+      pain_points,
+      success_metrics,
+      hasAny: Boolean(demographics || pain_points || success_metrics)
+    };
+  });
+  if (sanitized.market_trends) sanitized.market_trends = sanitizeArray(sanitized.market_trends);
+  [
+    'main_products', 'direct_competitors', 'key_platform_features', 'integration_capabilities', 'platform_compatibility', 'market_trends'
+  ].forEach(field => {
+    if (sanitized[field]) sanitized[field] = Array.isArray(sanitized[field]) ? [...new Set(sanitized[field])] : sanitized[field];
+  });
+  Object.keys(sanitized).forEach(key => {
+    if (sanitized[key] == null || sanitized[key] === '' || (Array.isArray(sanitized[key]) && sanitized[key].length === 0)) {
+      sanitized[key] = '';
+    }
+  });
+  return sanitized;
+}
+
+// Refactored ICPDisplay for balanced, modern look
 const ICPDisplay: React.FC<{ icp: any }> = ({ icp }) => {
-  if (!icp || Object.keys(icp).length === 0 || icp === 'N/A') {
+  if (!icp || Object.keys(icp).length === 0 || icp === '') {
     return <div className="text-gray-500 italic">No ICP data found.</div>;
   }
-  // Helper to flatten/prettify object values
   const prettifyValue = (value: any) => {
     if (typeof value === 'object' && value !== null) {
-      return Object.entries(value).map(([k, v]) => `${prettifyLabel(k)}: ${Array.isArray(v) ? v.join(', ') : v}`).join('; ');
+      return Object.values(value).map(stripIndexes).join(', ');
     }
-    if (Array.isArray(value)) return value.join(', ');
-    return String(value);
+    if (Array.isArray(value)) return value.map(stripIndexes).join(', ');
+    return stripIndexes(String(value));
   };
-  // Render all fields in a two-column grid
+  const entries = Object.entries(icp).filter(([_, v]) => v && v !== '' && v !== 'N/A');
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-      {Object.entries(icp).map(([key, value]) => (
-        <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="font-semibold text-gray-700 mb-1">{prettifyLabel(key)}</div>
-          <div className="text-gray-900">{prettifyValue(value)}</div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      {entries.map(([key, value]) => (
+        <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col justify-center">
+          <div className="font-semibold text-gray-700 mb-1" style={{fontSize:'1rem'}}>{prettifyLabel(key)}</div>
+          <div className="text-gray-900" style={{fontSize:'1.05rem', fontWeight:500}}>{prettifyValue(value)}</div>
         </div>
       ))}
     </div>
   );
 };
 
-// Updated BuyerPersonas for two-column grid and clean N/A handling
+// Refactored BuyerPersonas for compact, clean cards
 const BuyerPersonas: React.FC<{ personas: any[] }> = ({ personas }) => (
   <div className="subsection mb-6">
     <div className="subsection-title font-semibold text-lg mb-2">Buyer Personas</div>
     {personas.length === 0 && (
       <div className="text-gray-500 italic">No personas found.</div>
     )}
-    {personas.map((persona, i) => {
-      const hasAny = persona.demographics !== 'N/A' || persona.pain_points !== 'N/A' || persona.success_metrics !== 'N/A';
-      return (
-        <div key={i} className="buyer-persona bg-purple-50 border border-purple-400 rounded-lg p-4 mb-3">
-          <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title || persona.role || 'N/A'}</div>
-          {hasAny ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div><strong>Demographics:</strong> {persona.demographics !== 'N/A' ? persona.demographics : <span className="text-gray-400">N/A</span>}</div>
-              <div><strong>Pain Points:</strong> {persona.pain_points !== 'N/A' ? persona.pain_points : <span className="text-gray-400">N/A</span>}</div>
-              <div><strong>Success Metrics:</strong> {persona.success_metrics !== 'N/A' ? persona.success_metrics : <span className="text-gray-400">N/A</span>}</div>
-            </div>
-          ) : (
-            <div className="text-gray-400 italic">No details available.</div>
-          )}
-        </div>
-      );
-    })}
+    {personas.map((persona, i) => (
+      <div key={i} className="buyer-persona bg-purple-50 border border-purple-400 rounded-lg p-4 mb-3">
+        <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title || 'N/A'}</div>
+        {persona.hasAny ? (
+          <div className="flex flex-wrap gap-6">
+            {persona.demographics && <div><strong>Demographics:</strong> {persona.demographics}</div>}
+            {persona.pain_points && <div><strong>Pain Points:</strong> {persona.pain_points}</div>}
+            {persona.success_metrics && <div><strong>Success Metrics:</strong> {persona.success_metrics}</div>}
+          </div>
+        ) : (
+          <div className="text-gray-400 italic text-center">No details available.</div>
+        )}
+      </div>
+    ))}
   </div>
 );
 
@@ -292,89 +366,6 @@ const renderObject = (obj: any): string => {
   if (Array.isArray(obj)) return obj.map(item => renderObject(item)).join(', ');
   return Object.entries(obj).map(([key, value]) => `${key}: ${renderObject(value)}`).join(', ');
 };
-
-// Sanitization helper for report data
-function sanitizeReportData(data: any) {
-  const sanitizeArray = (arr: any[], key?: string) => {
-    if (!Array.isArray(arr)) return [];
-    // Extract key if provided, else prettify string or object
-    let values = arr.map(item => {
-      if (typeof item === 'string') {
-        // Prettify logo URLs or domains
-        if (item.match(/^https?:\/\//)) {
-          try {
-            const url = new URL(item);
-            return url.hostname.replace('www.', '');
-          } catch { return item; }
-        }
-        return item;
-      }
-      if (typeof item === 'object' && item !== null) {
-        if (key && item[key]) return item[key];
-        if (item.name) return item.name;
-        if (item.title) return item.title;
-        if (item.company) return item.company;
-        if (item.logo_url) return item.logo_url.split('/').pop();
-        if (item.category) return item.category;
-        return Object.values(item).join(', ');
-      }
-      return String(item);
-    });
-    // Remove duplicates and empty
-    values = [...new Set(values)].filter(Boolean);
-    return values.length ? values : ['N/A'];
-  };
-
-  const sanitizeField = (val: any, key?: string) => {
-    if (val == null || val === '' || (Array.isArray(val) && val.length === 0)) return 'N/A';
-    if (Array.isArray(val)) return sanitizeArray(val, key).join(', ');
-    if (typeof val === 'object') {
-      // For objects, join key-value pairs
-      return Object.entries(val).map(([k, v]) => `${prettifyLabel(k)}: ${sanitizeField(v)}`).join('; ');
-    }
-    if (typeof val === 'string') {
-      // Prettify capitalization
-      return val.charAt(0).toUpperCase() + val.slice(1);
-    }
-    return String(val);
-  };
-
-  const sanitized: any = { ...data };
-  // Notable clients
-  if (sanitized.notable_clients) sanitized.notable_clients = sanitizeArray(sanitized.notable_clients);
-  // Main products
-  if (sanitized.main_products) sanitized.main_products = sanitizeArray(sanitized.main_products);
-  // Direct competitors
-  if (sanitized.direct_competitors) sanitized.direct_competitors = sanitizeArray(sanitized.direct_competitors);
-  // Key platform features
-  if (sanitized.key_platform_features) sanitized.key_platform_features = sanitizeArray(sanitized.key_platform_features);
-  // Integration capabilities
-  if (sanitized.integration_capabilities) sanitized.integration_capabilities = sanitizeArray(sanitized.integration_capabilities);
-  // Platform compatibility
-  if (sanitized.platform_compatibility) sanitized.platform_compatibility = sanitizeArray(sanitized.platform_compatibility);
-  // Buyer personas
-  if (sanitized.buyer_personas) sanitized.buyer_personas = sanitized.buyer_personas.map((p: any) => ({
-    title: p.title || p.role || 'N/A',
-    demographics: sanitizeField(p.demographics),
-    pain_points: sanitizeField(p.pain_points),
-    success_metrics: sanitizeField(p.success_metrics)
-  }));
-  // Market trends
-  if (sanitized.market_trends) sanitized.market_trends = sanitizeArray(sanitized.market_trends);
-  // Remove duplicates for all array fields
-  [
-    'main_products', 'direct_competitors', 'key_platform_features', 'integration_capabilities', 'platform_compatibility', 'market_trends'
-  ].forEach(field => {
-    if (sanitized[field]) sanitized[field] = Array.isArray(sanitized[field]) ? [...new Set(sanitized[field])] : sanitized[field];
-  });
-  // Fallback for all fields
-  Object.keys(sanitized).forEach(key => {
-    if (sanitized[key] == null || sanitized[key] === '' || (Array.isArray(sanitized[key]) && sanitized[key].length === 0)) {
-      sanitized[key] = 'N/A';
-    }
-  });
-  return sanitized;
-}
 
 // ListGrid and BulletList now use TagList
 const ListGrid: React.FC<{ items: any[]; title: string }> = ({ items, title }) => (
