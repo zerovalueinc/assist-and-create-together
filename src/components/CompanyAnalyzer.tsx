@@ -19,6 +19,63 @@ import ICPProfileDisplay from './ui/ICPProfileDisplay';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
 import { SectionLabel } from './ui/section-label';
 
+// Section Components for concise, expandable lists
+import React, { useState } from 'react';
+
+function IntegrationCapabilitiesSection({ data }: { data: any }) {
+  const [showAll, setShowAll] = useState(false);
+  const { items, hasMore } = normalizeReportSection(data, showAll ? 100 : 5);
+  return (
+    <div className="tech-category mb-6">
+      <div className="subsection-title font-semibold text-lg mb-2">Integration Capabilities</div>
+      <ul className="list-disc pl-5">
+        {items.map((item, i) => (
+          <li key={i}>
+            {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
+            {Array.isArray(item.value)
+              ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
+              : typeof item.value === 'string' && item.value.startsWith('{')
+                ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
+                : item.value}
+          </li>
+        ))}
+      </ul>
+      {hasMore && (
+        <button className="mt-2 text-xs text-indigo-600 underline" onClick={() => setShowAll(v => !v)}>
+          {showAll ? 'Show Less' : 'Show More'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PlatformCompatibilitySection({ data }: { data: any }) {
+  const [showAll, setShowAll] = useState(false);
+  const { items, hasMore } = normalizeReportSection(data, showAll ? 100 : 5);
+  return (
+    <div className="tech-category mb-6">
+      <div className="subsection-title font-semibold text-lg mb-2">Platform Compatibility</div>
+      <ul className="list-disc pl-5">
+        {items.map((item, i) => (
+          <li key={i}>
+            {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
+            {Array.isArray(item.value)
+              ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
+              : typeof item.value === 'string' && item.value.startsWith('{')
+                ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
+                : item.value}
+          </li>
+        ))}
+      </ul>
+      {hasMore && (
+        <button className="mt-2 text-xs text-indigo-600 underline" onClick={() => setShowAll(v => !v)}>
+          {showAll ? 'Show Less' : 'Show More'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
   url = url.replace(/^https?:\/\//, ''); // Remove protocol
@@ -710,39 +767,11 @@ const CompanyAnalyzer = () => {
                             )}
                             {/* Integration Capabilities */}
                             {merged.integration_capabilities && (
-                              <div className="tech-category mb-6">
-                                <div className="subsection-title font-semibold text-lg mb-2">Integration Capabilities</div>
-                                <ul className="list-disc pl-5">
-                                  {normalizeReportSection(merged.integration_capabilities).map((item, i) => (
-                                    <li key={i}>
-                                      {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
-                                      {Array.isArray(item.value)
-                                        ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
-                                        : typeof item.value === 'string' && item.value.startsWith('{')
-                                          ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
-                                          : item.value}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
+                              <IntegrationCapabilitiesSection data={merged.integration_capabilities} />
                             )}
                             {/* Platform Compatibility */}
                             {merged.platform_compatibility && (
-                              <div className="tech-category mb-6">
-                                <div className="subsection-title font-semibold text-lg mb-2">Platform Compatibility</div>
-                                <ul className="list-disc pl-5">
-                                  {normalizeReportSection(merged.platform_compatibility).map((item, i) => (
-                                    <li key={i}>
-                                      {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
-                                      {Array.isArray(item.value)
-                                        ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
-                                        : typeof item.value === 'string' && item.value.startsWith('{')
-                                          ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
-                                          : item.value}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
+                              <PlatformCompatibilitySection data={merged.platform_compatibility} />
                             )}
                           </div>
                         </div>

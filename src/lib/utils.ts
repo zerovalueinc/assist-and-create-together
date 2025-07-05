@@ -31,38 +31,34 @@ export function removeCache(key: string) {
   } catch {}
 }
 
-// Normalizes a report section (string, array, object) to a UI-friendly structure
-export function normalizeReportSection(data: any): Array<{ label: string, value: string | string[] }> {
-  if (data == null) return [];
-  // If it's a string, return as a single value
+// Normalizes a report section (string, array, object) to a UI-friendly structure, with optional limit
+export function normalizeReportSection(
+  data: any,
+  limit: number = 5
+): { items: Array<{ label: string, value: string | string[] }>, hasMore: boolean } {
+  let items: Array<{ label: string, value: string | string[] }> = [];
+  if (data == null) return { items: [], hasMore: false };
   if (typeof data === 'string') {
-    return [{ label: '', value: data }];
-  }
-  // If it's an array of strings, return as a list
-  if (Array.isArray(data) && data.every(item => typeof item === 'string')) {
-    return [{ label: '', value: data }];
-  }
-  // If it's an array of objects, flatten each object
-  if (Array.isArray(data) && data.every(item => typeof item === 'object')) {
-    return data.flatMap(item => normalizeReportSection(item));
-  }
-  // If it's an object, map each key to a label/value pair
-  if (typeof data === 'object') {
-    return Object.entries(data).map(([key, value]) => {
-      // Recursively normalize nested objects/arrays
+    items = [{ label: '', value: data }];
+  } else if (Array.isArray(data) && data.every(item => typeof item === 'string')) {
+    items = [{ label: '', value: data }];
+  } else if (Array.isArray(data) && data.every(item => typeof item === 'object')) {
+    items = data.flatMap(item => normalizeReportSection(item, limit).items);
+  } else if (typeof data === 'object') {
+    items = Object.entries(data).map(([key, value]) => {
       if (typeof value === 'object' && value !== null) {
-        // If value is an array of strings, show as list
         if (Array.isArray(value) && value.every(v => typeof v === 'string')) {
           return { label: key, value };
         }
-        // If value is an object or array, flatten further
         return { label: key, value: JSON.stringify(value, null, 2) };
       }
       return { label: key, value: String(value) };
     });
+  } else {
+    items = [{ label: '', value: JSON.stringify(data) }];
   }
-  // Fallback: stringify
-  return [{ label: '', value: JSON.stringify(data) }];
+  const hasMore = Array.isArray(items) && items.length > limit;
+  return { items: items.slice(0, limit), hasMore };
 }
 
 // Prettifies a label (e.g., 'crm_systems' -> 'CRM Systems')
