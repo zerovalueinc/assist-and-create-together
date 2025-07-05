@@ -35,15 +35,17 @@ const GTMGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [useExistingAnalysis, setUseExistingAnalysis] = useState(false);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState(null);
-  const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedICP, setSelectedICP] = useState(null);
   const { toast } = useToast();
   const user = useUser();
   const session = useSession();
   const hasFetched = useRef(false);
   const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
-  const [reports, setReports] = useState<any[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
+
+  // Use the same company report list as Intel (from DataPreloadProvider)
+  const reports = preloadData?.companyAnalyzer || [];
 
   // Use preloaded analyses for pills or fallback to cache
   let availableAnalyses = preloadData?.companyAnalyzer || [];
@@ -88,7 +90,6 @@ const GTMGenerator = () => {
   useEffect(() => {
     if (!user?.id) return;
     getCompanyAnalysis({ userId: user.id }).then((data) => {
-      setReports(data);
       if (data.length > 0) {
         setSelectedReportId(data[0].id);
       }
