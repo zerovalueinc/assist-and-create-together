@@ -79,6 +79,20 @@ const renderValue = (val: unknown): string => {
   return '';
 };
 
+// Helper to normalize company name for pills
+function normalizeReportCompanyName(report: any) {
+  let name = report.company_name;
+  if (!name && report.company_overview) name = report.company_overview.company_name;
+  if (!name && report.llm_output) {
+    let canonical = report.llm_output;
+    if (typeof canonical === 'string') {
+      try { canonical = JSON.parse(canonical); } catch {}
+    }
+    name = canonical?.company_name || canonical?.company_overview?.company_name;
+  }
+  return { ...report, company_name: name || 'Untitled' };
+}
+
 const CompanyAnalyzer = () => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
@@ -92,6 +106,7 @@ const CompanyAnalyzer = () => {
   if (!initialReports.length) {
     initialReports = getCache('yourwork_analyze', []);
   }
+  initialReports = initialReports.map(normalizeReportCompanyName);
   const [reports, setReports] = useState(initialReports);
   const [analysis, setAnalysis] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -107,15 +122,17 @@ const CompanyAnalyzer = () => {
     if (!newReports.length) {
       newReports = getCache('yourwork_analyze', []);
     }
+    newReports = newReports.map(normalizeReportCompanyName);
     setReports(newReports);
   }, [preloadData]);
 
   useEffect(() => {
     if (!user?.id) return;
     getCompanyAnalysis({ userId: user.id }).then((data) => {
-      setReports(data);
-      if (data.length > 0) {
-        setSelectedReportId(data[0].id);
+      const normalized = data.map(normalizeReportCompanyName);
+      setReports(normalized);
+      if (normalized.length > 0) {
+        setSelectedReportId(normalized[0].id);
       }
     });
   }, [user?.id]);
