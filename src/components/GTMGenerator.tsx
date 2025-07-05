@@ -13,6 +13,7 @@ import { useDataPreload } from '@/context/DataPreloadProvider';
 import { useCompany } from '../context/CompanyContext';
 import { invokeEdgeFunction, getCompanyAnalysis } from '../lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
+import { CompanyReportPills } from './ui/CompanyReportPills';
 
 // Set this to true to use the backend proxy for GTM Playbook
 const USE_GTM_PROXY = true;
@@ -366,7 +367,16 @@ const GTMGenerator = () => {
         <CardContent>
           <div className="mb-4">
             <div className="text-sm font-medium mb-1">Select Target Company</div>
-            {renderCompanyPills()}
+            <CompanyReportPills
+              reports={reports}
+              selectedId={selectedReportId}
+              onSelect={(report) => {
+                setSelectedReportId(report.id);
+                setSelectedCompany(report);
+                setUrl(report.companyUrl || report.url || '');
+                setUseExistingAnalysis(true);
+              }}
+            />
           </div>
 
           <div className="mb-4">

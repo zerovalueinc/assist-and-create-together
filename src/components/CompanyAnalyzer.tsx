@@ -19,6 +19,7 @@ import ICPProfileDisplay from './ui/ICPProfileDisplay';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
 import { SectionLabel } from './ui/section-label';
 import CanonicalReportRenderer from './ui/CanonicalReportRenderer';
+import { CompanyReportPills } from './ui/CompanyReportPills';
 
 
 
@@ -308,23 +309,6 @@ const CompanyAnalyzer = () => {
     }
   };
 
-  // Pills selector for reports
-  const renderReportPills = () => (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {reports.map((report) => (
-        <CompanyReportCard
-          key={report.id || report.companyUrl || Math.random()}
-          report={report}
-          selected={selectedReportId === report.id}
-          onClick={() => {
-            setSelectedReportId(report.id);
-            setAnalysis(report);
-          }}
-        />
-      ))}
-    </div>
-  );
-
   return (
     <div className="space-y-8">
       <Card>
@@ -338,7 +322,16 @@ const CompanyAnalyzer = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {reports.length > 0 && renderReportPills()}
+          {reports.length > 0 && (
+            <CompanyReportPills
+              reports={reports}
+              selectedId={selectedReportId}
+              onSelect={(report) => {
+                setSelectedReportId(report.id);
+                setAnalysis(report);
+              }}
+            />
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="url" className="text-sm font-medium">
