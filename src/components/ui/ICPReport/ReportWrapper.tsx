@@ -106,17 +106,46 @@ function deepNormalizeLLMOutput(raw: any) {
 }
 
 export default function ReportWrapper({ reportData }: ReportWrapperProps) {
-  // Use only the canonical structure from backend (merged)
-  const canonical = reportData.merged || reportData;
-
+  console.log('[ReportWrapper] Received reportData:', reportData);
+  
+  // Extract canonical structure - handle both direct canonical and nested llm_output
+  let canonical = reportData;
+  
+  // If reportData has llm_output, use that (this is the canonical structure from backend)
+  if (reportData.llm_output) {
+    canonical = reportData.llm_output;
+    if (typeof canonical === 'string') {
+      try {
+        canonical = JSON.parse(canonical);
+      } catch (e) {
+        console.error('[ReportWrapper] Failed to parse llm_output:', e);
+        canonical = reportData;
+      }
+    }
+  }
+  
+  // If reportData has merged field, use that (alternative canonical structure)
+  if (reportData.merged) {
+    canonical = reportData.merged;
+  }
+  
+  console.log('[ReportWrapper] Using canonical structure:', canonical);
+  
+  // Extract sections from canonical structure
+  const companyOverview = canonical.company_overview || {};
+  const marketIntelligence = canonical.market_intelligence || {};
+  const icpIbpFramework = canonical.icp_ibp_framework || {};
+  const salesGtmStrategy = canonical.sales_gtm_strategy || {};
+  const technologyStack = canonical.technology_stack || {};
+  
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8">
-      <ExecutiveSummary data={canonical.company_overview || {}} />
-      <CompanyOverview data={canonical.company_overview || {}} />
-      <MarketIntelligence data={canonical.market_intelligence || {}} />
-      <ICPIBPFramework data={canonical.icp_ibp_framework || {}} />
-      <SalesGTMStrategy data={canonical.sales_gtm_strategy || {}} />
-      <TechnologyStack data={canonical.technology_stack || {}} />
+      <ExecutiveSummary data={companyOverview} />
+      <CompanyOverview data={companyOverview} />
+      <MarketIntelligence data={marketIntelligence} />
+      <ICPIBPFramework data={icpIbpFramework} />
+      <SalesGTMStrategy data={salesGtmStrategy} />
+      <TechnologyStack data={technologyStack} />
     </div>
   );
 } 
