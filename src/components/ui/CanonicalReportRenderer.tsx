@@ -231,12 +231,17 @@ const TechList: React.FC<{ technologies: string[]; title: string }> = ({ technol
 
 // Main canonical report renderer
 const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ reportData }) => {
+  console.log('[CanonicalReportRenderer] Received reportData:', reportData);
+  
   const mapping = reportMapping.canonical_report_mapping;
   
   // Parse LLM output if it's a string
   const data = typeof reportData.llm_output === 'string' 
     ? JSON.parse(reportData.llm_output) 
     : reportData.llm_output || reportData;
+  
+  console.log('[CanonicalReportRenderer] Parsed data:', data);
+  console.log('[CanonicalReportRenderer] Data keys:', Object.keys(data || {}));
 
   // Defensive fallback for all fields
   const safeData = (key: string, fallback: any) => {

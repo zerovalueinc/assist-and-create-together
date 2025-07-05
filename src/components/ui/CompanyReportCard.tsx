@@ -28,8 +28,24 @@ function getCompanyName(report: any): string {
   
   // Then try to extract from llm_output
   if (report.llm_output) {
-    const llm = typeof report.llm_output === 'string' ? JSON.parse(report.llm_output) : report.llm_output;
-    return llm.company_name || llm.companyName || llm.name || 'Untitled';
+    try {
+      const llm = typeof report.llm_output === 'string' ? JSON.parse(report.llm_output) : report.llm_output;
+      console.log('[CompanyReportCard] Parsed llm_output:', llm);
+      // Check for company_name in the flat structure
+      if (llm.company_name) return llm.company_name;
+      if (llm.companyName) return llm.companyName;
+      if (llm.name) return llm.name;
+      
+      // Fallback: try to extract from nested structure if flat structure doesn't exist
+      if (llm.company_overview && llm.company_overview.company_name) return llm.company_overview.company_name;
+      if (llm.company_overview && llm.company_overview.companyName) return llm.company_overview.companyName;
+      
+      console.log('[CompanyReportCard] No company name found in llm_output, using Untitled');
+      return 'Untitled';
+    } catch (error) {
+      console.error('[CompanyReportCard] Error parsing llm_output:', error);
+      return 'Untitled';
+    }
   }
   
   return 'Untitled';
