@@ -10,7 +10,7 @@ import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
-import { prettifyLabel, getCache, setCache, normalizeReportSection } from '../lib/utils';
+import { prettifyLabel, getCache, setCache, normalizeReportSection, flattenKnownFields } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '../lib/supabase/edgeClient';
@@ -18,25 +18,29 @@ import { CompanyReportCard } from './ui/CompanyReportCard';
 import ICPProfileDisplay from './ui/ICPProfileDisplay';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
 import { SectionLabel } from './ui/section-label';
+import React, { useState } from 'react';
 
 // Section Components for concise, expandable lists
-import React, { useState } from 'react';
 
 function IntegrationCapabilitiesSection({ data }: { data: any }) {
   const [showAll, setShowAll] = useState(false);
+  const known = flattenKnownFields(data);
   const { items, hasMore } = normalizeReportSection(data, showAll ? 100 : 5);
+  const displayItems = known.length > 0 ? known : items;
   return (
     <div className="tech-category mb-6">
       <div className="subsection-title font-semibold text-lg mb-2">Integration Capabilities</div>
       <ul className="list-disc pl-5">
-        {items.map((item, i) => (
+        {displayItems.map((item, i) => (
           <li key={i}>
             {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
             {Array.isArray(item.value)
               ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
-              : typeof item.value === 'string' && item.value.startsWith('{')
-                ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
-                : item.value}
+              : typeof item.value === 'boolean'
+                ? <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{item.value ? 'Yes' : 'No'}</span>
+                : typeof item.value === 'string' && item.value.startsWith('{')
+                  ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
+                  : item.value}
           </li>
         ))}
       </ul>
@@ -51,19 +55,23 @@ function IntegrationCapabilitiesSection({ data }: { data: any }) {
 
 function PlatformCompatibilitySection({ data }: { data: any }) {
   const [showAll, setShowAll] = useState(false);
+  const known = flattenKnownFields(data);
   const { items, hasMore } = normalizeReportSection(data, showAll ? 100 : 5);
+  const displayItems = known.length > 0 ? known : items;
   return (
     <div className="tech-category mb-6">
       <div className="subsection-title font-semibold text-lg mb-2">Platform Compatibility</div>
       <ul className="list-disc pl-5">
-        {items.map((item, i) => (
+        {displayItems.map((item, i) => (
           <li key={i}>
             {item.label ? <strong>{prettifyLabel(item.label)}: </strong> : null}
             {Array.isArray(item.value)
               ? item.value.map((v, j) => <span key={j} className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{v}</span>)
-              : typeof item.value === 'string' && item.value.startsWith('{')
-                ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
-                : item.value}
+              : typeof item.value === 'boolean'
+                ? <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mr-1 mb-1">{item.value ? 'Yes' : 'No'}</span>
+                : typeof item.value === 'string' && item.value.startsWith('{')
+                  ? <details><summary>Details</summary><pre className="bg-gray-50 rounded p-2 text-xs overflow-x-auto">{item.value}</pre></details>
+                  : item.value}
           </li>
         ))}
       </ul>

@@ -90,3 +90,30 @@ export function prettifyLabel(label: string): string {
     .replace(/\bSql\b/gi, 'SQL')
     .replace(/\bNo\b/gi, 'No');
 }
+
+// Flattens known nested fields for badge/list rendering
+export function flattenKnownFields(obj: any): Array<{ label: string, value: string | string[] | boolean }> {
+  if (!obj || typeof obj !== 'object') return [];
+  const knownArrays = [
+    'categories', 'development_tools', 'shipping', 'marketing', 'accounting', 'payment_gateways',
+    'browsers', 'apps', 'notable_clients', 'main_products', 'industry_focus', 'company_characteristics', 'technology_profile',
+  ];
+  const knownBooleans = ['responsive', 'responsive_design'];
+  const result: Array<{ label: string, value: string | string[] | boolean }> = [];
+  for (const [key, value] of Object.entries(obj)) {
+    if (knownArrays.includes(key) && Array.isArray(value)) {
+      result.push({ label: key, value });
+    } else if (knownBooleans.includes(key) && typeof value === 'boolean') {
+      result.push({ label: key, value });
+    } else if (typeof value === 'object' && value !== null) {
+      // Recursively flatten one level for known objects
+      const nested = flattenKnownFields(value);
+      if (nested.length > 0) {
+        nested.forEach(n => result.push({ label: prettifyLabel(key) + ' - ' + prettifyLabel(n.label), value: n.value }));
+      } else {
+        // Unknown object, skip for now (will be handled as JSON elsewhere)
+      }
+    }
+  }
+  return result;
+}
