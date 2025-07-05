@@ -137,7 +137,25 @@ function getFirstObject(obj, keys) {
   return {};
 }
 
-// Sanitization: Map merged LLM output to canonical reportstructure.json schema
+// Recursively search for a field in an object/array
+function findFieldDeep(obj: any, field: string): any {
+  if (!obj || typeof obj !== 'object') return undefined;
+  if (Object.prototype.hasOwnProperty.call(obj, field) && obj[field] !== undefined && obj[field] !== null) {
+    return obj[field];
+  }
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const val = obj[key];
+      if (typeof val === 'object' && val !== null) {
+        const found = findFieldDeep(val, field);
+        if (found !== undefined) return found;
+      }
+    }
+  }
+  return undefined;
+}
+
+// Sanitization: Map merged LLM output to canonical reportstructure.json schema (deep search)
 function sanitizeToCanonicalReport(merged: any) {
   const schemaPath = path.resolve(__dirname, '../reportstructure.json');
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
@@ -160,12 +178,14 @@ function sanitizeToCanonicalReport(merged: any) {
         if (typeof fieldGroup === 'string') {
           // Single field
           const fieldDef = mapping.field_mappings[fieldGroup];
-          result[section.id][fieldGroup] = merged[fieldGroup] !== undefined ? merged[fieldGroup] : getDefault(fieldDef?.type);
+          const value = findFieldDeep(merged, fieldGroup);
+          result[section.id][fieldGroup] = value !== undefined ? value : getDefault(fieldDef?.type);
         } else if (typeof fieldGroup === 'object' && fieldGroup.fields) {
           // Grouped fields (e.g., two_column_grid)
           for (const colField of fieldGroup.fields) {
             const fieldDef = mapping.field_mappings[colField];
-            result[section.id][colField] = merged[colField] !== undefined ? merged[colField] : getDefault(fieldDef?.type);
+            const value = findFieldDeep(merged, colField);
+            result[section.id][colField] = value !== undefined ? value : getDefault(fieldDef?.type);
           }
         }
       }
