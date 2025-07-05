@@ -14,19 +14,22 @@ function getValueByPath(obj: any, path: string): any {
 }
 
 // Helper to render any value safely
-function renderValue(val: any): string {
+function renderValue(val: any, fieldName?: string): string {
   if (val == null) return 'N/A';
   
   if (Array.isArray(val)) {
     if (val.length === 0) return 'None';
     if (typeof val[0] === 'object') {
-      // Handle array of objects (like buyer personas)
+      // Handle array of objects (like buyer personas, key contacts)
       return val.map((item, index) => {
         if (item.role) {
           return `${item.role}${item.responsibilities ? ` (${item.responsibilities.join(', ')})` : ''}`;
         }
         if (item.type) {
           return `${item.type}${item.characteristics ? ` (${item.characteristics.join(', ')})` : ''}`;
+        }
+        if (item.name && item.title) {
+          return `${item.name} - ${item.title}`;
         }
         return JSON.stringify(item);
       }).join('; ');
@@ -35,9 +38,18 @@ function renderValue(val: any): string {
   }
   
   if (typeof val === 'object') {
+    // Handle specific object types
     if (val.external && val.internal) {
       // Handle influencer mapping structure
       return `External: ${val.external.join(', ')}; Internal: ${val.internal.join(', ')}`;
+    }
+    if (val.ideal && val.range) {
+      // Handle revenue object
+      return `Ideal: ${val.ideal}, Range: ${val.range}`;
+    }
+    if (val.growth_stage && val.business_model) {
+      // Handle firmographics object
+      return `Growth Stage: ${val.growth_stage.join(', ')}, Business Model: ${val.business_model.join(', ')}, Sales Channels: ${val.sales_channels.join(', ')}, Decision Making: ${val.decision_making}`;
     }
     return JSON.stringify(val);
   }
@@ -74,7 +86,7 @@ const ReportWrapper: React.FC<ReportWrapperProps> = ({ reportData }) => {
                     return (
                       <TableRow key={label}>
                         <TableCell className="font-medium">{label}</TableCell>
-                        <TableCell className="whitespace-pre-wrap">{renderValue(value)}</TableCell>
+                        <TableCell className="whitespace-pre-wrap">{renderValue(value, label)}</TableCell>
                       </TableRow>
                     );
                   })}
