@@ -237,12 +237,77 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
   const mapping = reportMapping.canonical_report_mapping;
   
   // Parse LLM output if it's a string
-  const data = typeof reportData.llm_output === 'string' 
+  let rawData = typeof reportData.llm_output === 'string' 
     ? JSON.parse(reportData.llm_output) 
     : reportData.llm_output || reportData;
   
-  console.log('[CanonicalReportRenderer] Parsed data:', data);
-  console.log('[CanonicalReportRenderer] Data keys:', Object.keys(data || {}));
+  console.log('[CanonicalReportRenderer] Raw parsed data:', rawData);
+  console.log('[CanonicalReportRenderer] Raw data keys:', Object.keys(rawData || {}));
+  
+  // Transform data to handle both old nested and new flat structures
+  const transformData = (raw: any) => {
+    // If it's already flat (new structure), return as is
+    if (raw.company_name || raw.companyName) {
+      return raw;
+    }
+    
+    // If it's nested (old structure), flatten it
+    const transformed: any = {};
+    
+    // Extract from company_overview
+    if (raw.company_overview) {
+      transformed.company_name = raw.company_overview.company_name || raw.company_overview.companyName || '';
+      transformed.company_size = raw.company_overview.company_size || '';
+      transformed.founded = raw.company_overview.founded || '';
+      transformed.industry = raw.company_overview.industry_segments?.[0] || raw.company_overview.industry || '';
+      transformed.headquarters = raw.company_overview.headquarters || '';
+      transformed.revenue_range = raw.company_overview.revenue || '';
+      transformed.company_type = raw.company_overview.funding_status || '';
+      transformed.summary = raw.company_overview.overview || '';
+      transformed.website = raw.company_overview.website || '';
+    }
+    
+    // Extract from products_positioning
+    if (raw.products_positioning) {
+      transformed.main_products = raw.products_positioning.main_products || [];
+      transformed.target_market = raw.products_positioning.target_market || {};
+      transformed.direct_competitors = raw.products_positioning.competitors || [];
+      transformed.key_differentiators = raw.products_positioning.key_differentiators || [];
+      transformed.market_trends = raw.products_positioning.market_trends || [];
+    }
+    
+    // Extract from features_ecosystem_gtm
+    if (raw.features_ecosystem_gtm) {
+      transformed.backend_technologies = raw.features_ecosystem_gtm.backend_technologies || [];
+      transformed.frontend_technologies = raw.features_ecosystem_gtm.frontend_technologies || [];
+      transformed.infrastructure = raw.features_ecosystem_gtm.infrastructure || [];
+      transformed.key_platform_features = raw.features_ecosystem_gtm.key_features || [];
+      transformed.integration_capabilities = raw.features_ecosystem_gtm.integrations || [];
+      transformed.platform_compatibility = raw.features_ecosystem_gtm.enterprise_readiness || [];
+    }
+    
+    // Extract from icp_and_buying
+    if (raw.icp_and_buying) {
+      transformed.icp = raw.icp_and_buying.icp_demographics || {};
+      transformed.buyer_personas = raw.icp_and_buying.buying_committee_personas || [];
+      transformed.sales_opportunities = raw.icp_and_buying.action_steps?.lead_scoring || [];
+      transformed.gtm_recommendations = raw.icp_and_buying.gtm_messaging || {};
+      transformed.metrics = raw.icp_and_buying.kpis_targeted?.map((kpi: string) => ({ label: kpi, value: '' })) || [];
+    }
+    
+    // Extract from sales data
+    if (raw.sales) {
+      transformed.notable_clients = raw.sales.client_logos || [];
+      transformed.social_media = raw.sales.social_media || {};
+    }
+    
+    return transformed;
+  };
+  
+  const data = transformData(rawData);
+  
+  console.log('[CanonicalReportRenderer] Transformed data:', data);
+  console.log('[CanonicalReportRenderer] Transformed data keys:', Object.keys(data || {}));
 
   // Defensive fallback for all fields
   const safeData = (key: string, fallback: any) => {
