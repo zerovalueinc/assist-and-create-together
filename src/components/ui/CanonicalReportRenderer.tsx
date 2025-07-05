@@ -29,26 +29,28 @@ const CompanyHeader: React.FC<{ companyName: string }> = ({ companyName }) => (
 
 // Component for rendering two-column grid
 const TwoColumnGrid: React.FC<{ leftFields: any; rightFields: any }> = ({ leftFields, rightFields }) => (
-  <div className="company-details grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-    <div>
-      {Object.entries(leftFields).map(([key, value]) => (
-        value && (
-          <div key={key} className="detail-group mb-3">
-            <div className="detail-label">{prettifyLabel(key)}</div>
-            <div className="detail-value">{String(value)}</div>
+  <div className="two-column-grid grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div className="left-column">
+      <div className="subsection-title font-semibold text-lg mb-3">Company Overview</div>
+      <div className="field-list space-y-3">
+        {Object.entries(leftFields).map(([key, value]) => (
+          <div key={`left-${key}`} className="field-item">
+            <div className="field-label font-medium text-gray-700 mb-1">{prettifyLabel(key)}</div>
+            <div className="field-value text-gray-900">{String(value)}</div>
           </div>
-        )
-      ))}
+        ))}
+      </div>
     </div>
-    <div>
-      {Object.entries(rightFields).map(([key, value]) => (
-        value && (
-          <div key={key} className="detail-group mb-3">
-            <div className="detail-label">{prettifyLabel(key)}</div>
-            <div className="detail-value">{String(value)}</div>
+    <div className="right-column">
+      <div className="subsection-title font-semibold text-lg mb-3">Business Details</div>
+      <div className="field-list space-y-3">
+        {Object.entries(rightFields).map(([key, value]) => (
+          <div key={`right-${key}`} className="field-item">
+            <div className="field-label font-medium text-gray-700 mb-1">{prettifyLabel(key)}</div>
+            <div className="field-value text-gray-900">{String(value)}</div>
           </div>
-        )
-      ))}
+        ))}
+      </div>
     </div>
   </div>
 );
@@ -114,34 +116,33 @@ const ListGrid: React.FC<{ items: string[]; title: string }> = ({ items, title }
 
 // Component for rendering ICP section
 const ICPSection: React.FC<{ data: any; title: string }> = ({ data, title }) => (
-  <div className="subsection mb-6">
-    <div className="subsection-title font-semibold text-lg mb-2">{title}</div>
-    <div className="icp-section bg-green-50 border border-green-400 rounded-lg p-4">
-      {data.primary && <div><strong>Primary:</strong> {data.primary}</div>}
-      {data.size_range && <div className="mt-2"><strong>Size Range:</strong> {data.size_range}</div>}
-      {data.industry_focus && (
-        <div className="mt-2">
-          <strong>Industry Focus:</strong> {Array.isArray(data.industry_focus) ? data.industry_focus.join(', ') : data.industry_focus}
-        </div>
-      )}
+  <div className="icp-section mb-6">
+    <div className="subsection-title font-semibold text-lg mb-3">{title}</div>
+    <div className="icp-content space-y-4">
       {data.company_characteristics && (
-        <div className="mt-4">
-          <strong>Company Characteristics:</strong>
-          <ul className="list-disc pl-5 mt-2">
+        <div className="characteristics-section">
+          <div className="section-subtitle font-medium text-gray-800 mb-2">Company Characteristics</div>
+          <div className="characteristics-grid grid grid-cols-1 md:grid-cols-2 gap-3">
             {Object.entries(data.company_characteristics).map(([key, value]) => (
-              <li key={key}>{prettifyLabel(key)}: {String(value)}</li>
+              <div key={`char-${key}`} className="characteristic-item bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="characteristic-label font-medium text-blue-900 mb-1">{prettifyLabel(key)}</div>
+                <div className="characteristic-value text-blue-800">{String(value)}</div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
       {data.technology_profile && (
-        <div className="mt-4">
-          <strong>Technology Profile:</strong>
-          <ul className="list-disc pl-5 mt-2">
+        <div className="tech-profile-section">
+          <div className="section-subtitle font-medium text-gray-800 mb-2">Technology Profile</div>
+          <div className="tech-profile-grid grid grid-cols-1 md:grid-cols-2 gap-3">
             {Object.entries(data.technology_profile).map(([key, value]) => (
-              <li key={key}>{prettifyLabel(key)}: {String(value)}</li>
+              <div key={`tech-${key}`} className="tech-item bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="tech-label font-medium text-green-900 mb-1">{prettifyLabel(key)}</div>
+                <div className="tech-value text-green-800">{String(value)}</div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>
@@ -354,8 +355,10 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
           </div>
         </CardHeader>
         <CardContent>
-          {section.subsections.map((subsection: any) => 
-            renderSubsection(subsection, data)
+          {section.subsections.map((subsection: any, index: number) => 
+            <div key={`${section.id}-${subsection.id || index}`}>
+              {renderSubsection(subsection, data)}
+            </div>
           )}
         </CardContent>
       </Card>
