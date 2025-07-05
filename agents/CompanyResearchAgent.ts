@@ -473,6 +473,12 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   console.log('[DEBUG] Agent Output - tech:', JSON.stringify(tech));
   console.log('[DEBUG] Agent Output - sales:', JSON.stringify(sales));
 
+  // Debug: Check what fields are actually available
+  console.log('[DEBUG] Overview keys:', Object.keys(overview || {}));
+  console.log('[DEBUG] Market keys:', Object.keys(market || {}));
+  console.log('[DEBUG] Tech keys:', Object.keys(tech || {}));
+  console.log('[DEBUG] Sales keys:', Object.keys(sales || {}));
+
   // Merge all results into canonical structure matching reportstructure.json
   const merged = {
     company_overview: {
@@ -514,6 +520,14 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
       platform_compatibility: getFirstArray(sales, ['platform_compatibility', 'compatibility'])
     }
   };
+
+  // Debug: Check what the merged structure looks like
+  console.log('[DEBUG] Merged structure keys:', Object.keys(merged));
+  console.log('[DEBUG] Company overview keys:', Object.keys(merged.company_overview));
+  console.log('[DEBUG] Market intelligence keys:', Object.keys(merged.market_intelligence));
+  console.log('[DEBUG] ICP IBP framework keys:', Object.keys(merged.icp_ibp_framework));
+  console.log('[DEBUG] Sales GTM strategy keys:', Object.keys(merged.sales_gtm_strategy));
+  console.log('[DEBUG] Technology stack keys:', Object.keys(merged.technology_stack));
 
   // Sanitize to canonical report structure
   // const canonical = sanitizeToCanonicalReport(merged);
