@@ -516,7 +516,9 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   };
 
   // Sanitize to canonical report structure
-  const canonical = sanitizeToCanonicalReport(merged);
+  // const canonical = sanitizeToCanonicalReport(merged);
+  // Use the manually created merged structure directly instead of sanitization
+  const canonical: any = merged;
   // Always set company_name at the top level for frontend pills and display
   const topLevelCompanyName = canonical.company_overview?.company_name || overview.company_name || overview.name || '';
   canonical.company_name = topLevelCompanyName;

@@ -28,6 +28,29 @@ const ReportWrapper: React.FC<ReportWrapperProps> = ({ reportData }) => {
   console.log('[ReportWrapper] Received reportData:', reportData);
   console.log('[ReportWrapper] Available top-level keys:', Object.keys(reportData));
   
+  // Log the full structure recursively
+  function logObjectStructure(obj: any, prefix = '') {
+    if (typeof obj !== 'object' || obj === null) {
+      console.log(`${prefix}${typeof obj}: ${obj}`);
+      return;
+    }
+    if (Array.isArray(obj)) {
+      console.log(`${prefix}Array[${obj.length}]:`, obj);
+      return;
+    }
+    Object.entries(obj).forEach(([key, value]) => {
+      if (typeof value === 'object' && value !== null) {
+        console.log(`${prefix}${key}:`, value);
+        logObjectStructure(value, prefix + '  ');
+      } else {
+        console.log(`${prefix}${key}: ${value}`);
+      }
+    });
+  }
+  
+  console.log('[ReportWrapper] FULL DATA STRUCTURE:');
+  logObjectStructure(reportData);
+  
   return (
     <div className="space-y-6">
       {reportWireframe.map((section, idx) => {
