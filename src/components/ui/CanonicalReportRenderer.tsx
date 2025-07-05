@@ -206,50 +206,61 @@ function sanitizeReportData(data: any) {
   return sanitized;
 }
 
-// Refactored ICPDisplay for balanced, modern look
+// Refactored ICPDisplay to strictly match canonical structure
 const ICPDisplay: React.FC<{ icp: any }> = ({ icp }) => {
   if (!icp || Object.keys(icp).length === 0 || icp === '') {
     return <div className="text-gray-500 italic">No ICP data found.</div>;
   }
-  const prettifyValue = (value: any) => {
-    if (typeof value === 'object' && value !== null) {
-      return Object.values(value).map(stripIndexes).join(', ');
-    }
-    if (Array.isArray(value)) return value.map(stripIndexes).join(', ');
-    return stripIndexes(String(value));
-  };
-  const entries = Object.entries(icp).filter(([_, v]) => v && v !== '' && v !== 'N/A');
+  // Only show fields as defined in reportstructure.json
+  const fields = [
+    { key: 'company_characteristics', label: 'Company Characteristics' },
+    { key: 'technology_profile', label: 'Technology Profile' }
+  ];
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {entries.map(([key, value]) => (
-        <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col justify-center">
-          <div className="font-semibold text-gray-700 mb-1" style={{fontSize:'1rem'}}>{prettifyLabel(key)}</div>
-          <div className="text-gray-900" style={{fontSize:'1.05rem', fontWeight:500}}>{prettifyValue(value)}</div>
-        </div>
-      ))}
+      {fields.map(({ key, label }) => {
+        const value = icp[key];
+        if (!value || (Array.isArray(value) && value.length === 0)) return null;
+        return (
+          <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col justify-center">
+            <div className="font-semibold text-gray-700 mb-1" style={{fontSize:'1rem'}}>{label}</div>
+            {Array.isArray(value) ? (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {value.map((v: string, i: number) => (
+                  <span key={i} className="inline-block bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-200">{v}</span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-gray-900" style={{fontSize:'1.05rem', fontWeight:500}}>{value}</div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
 
-// Refactored BuyerPersonas for compact, clean cards
+// Refactored BuyerPersonas to strictly match canonical structure
 const BuyerPersonas: React.FC<{ personas: any[] }> = ({ personas }) => (
   <div className="subsection mb-6">
     <div className="subsection-title font-semibold text-lg mb-2">Buyer Personas</div>
-    {personas.length === 0 && (
+    {(!personas || personas.length === 0) && (
       <div className="text-gray-500 italic">No personas found.</div>
     )}
-    {personas.map((persona, i) => (
+    {personas && personas.map((persona, i) => (
       <div key={i} className="buyer-persona bg-purple-50 border border-purple-400 rounded-lg p-4 mb-3">
-        <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title || 'N/A'}</div>
-        {persona.hasAny ? (
-          <div className="flex flex-wrap gap-6">
-            {persona.demographics && <div><strong>Demographics:</strong> {persona.demographics}</div>}
-            {persona.pain_points && <div><strong>Pain Points:</strong> {persona.pain_points}</div>}
-            {persona.success_metrics && <div><strong>Success Metrics:</strong> {persona.success_metrics}</div>}
-          </div>
-        ) : (
-          <div className="text-gray-400 italic text-center">No details available.</div>
-        )}
+        <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title || ''}</div>
+        <div className="flex flex-col gap-2">
+          {persona.demographics && Array.isArray(persona.demographics) && persona.demographics.length > 0 && (
+            <div><span className="font-medium">Demographics:</span> <span className="flex flex-wrap gap-2 mt-1">{persona.demographics.map((d: string, idx: number) => <span key={idx} className="inline-block bg-blue-50 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium border border-blue-200">{d}</span>)}</span></div>
+          )}
+          {persona.pain_points && Array.isArray(persona.pain_points) && persona.pain_points.length > 0 && (
+            <div><span className="font-medium">Pain Points:</span> <span className="flex flex-wrap gap-2 mt-1">{persona.pain_points.map((p: string, idx: number) => <span key={idx} className="inline-block bg-red-50 text-red-800 px-2 py-0.5 rounded-full text-xs font-medium border border-red-200">{p}</span>)}</span></div>
+          )}
+          {persona.success_metrics && Array.isArray(persona.success_metrics) && persona.success_metrics.length > 0 && (
+            <div><span className="font-medium">Success Metrics:</span> <span className="flex flex-wrap gap-2 mt-1">{persona.success_metrics.map((s: string, idx: number) => <span key={idx} className="inline-block bg-green-50 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium border border-green-200">{s}</span>)}</span></div>
+          )}
+        </div>
       </div>
     ))}
   </div>
@@ -423,49 +434,70 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
     
     // Extract from company_overview
     if (raw.company_overview) {
-      transformed.company_name = raw.company_overview.company_name || raw.company_overview.companyName || '';
-      transformed.company_size = raw.company_overview.company_size || '';
-      transformed.founded = raw.company_overview.founded || '';
-      transformed.industry = Array.isArray(raw.company_overview.industry_segments) ? raw.company_overview.industry_segments[0] : (raw.company_overview.industry || '');
-      transformed.headquarters = raw.company_overview.headquarters || '';
-      transformed.revenue_range = raw.company_overview.revenue || '';
-      transformed.company_type = raw.company_overview.funding_status?.status || raw.company_overview.funding_status || '';
-      transformed.summary = raw.company_overview.overview || '';
-      transformed.website = raw.company_overview.website || '';
+      transformed.company_name = raw.company_overview.company_name || raw.company_overview.companyName || raw.company_overview.name || '';
+      transformed.company_size = raw.company_overview.company_size || raw.company_overview.size || '';
+      transformed.founded = raw.company_overview.founded || raw.company_overview.founding_year || '';
+      transformed.industry = Array.isArray(raw.company_overview.industry_segments) ? raw.company_overview.industry_segments[0] : (raw.company_overview.industry || raw.company_overview.industry_segments || '');
+      transformed.headquarters = raw.company_overview.headquarters || raw.company_overview.location || raw.company_overview.address || raw.company_overview.hq || '';
+      transformed.revenue_range = raw.company_overview.revenue || raw.company_overview.revenue_range || '';
+      transformed.company_type = raw.company_overview.company_type || raw.company_overview.type || '';
+      transformed.funding_status = raw.company_overview.funding_status?.status || raw.company_overview.funding_status || raw.company_overview.funding || '';
+      transformed.summary = raw.company_overview.overview || raw.company_overview.summary || raw.company_overview.description || '';
+      transformed.website = raw.company_overview.website || raw.company_overview.company_url || raw.company_overview.url || '';
     }
     
     // Extract from products_positioning
     if (raw.products_positioning) {
-      transformed.main_products = Array.isArray(raw.products_positioning.main_products) ? raw.products_positioning.main_products : [];
-      transformed.target_market = raw.products_positioning.target_market || {};
-      transformed.direct_competitors = raw.products_positioning.competitors ? Object.values(raw.products_positioning.competitors).flat() : [];
-      transformed.key_differentiators = raw.products_positioning.key_differentiators || [];
-      transformed.market_trends = Array.isArray(raw.products_positioning.market_trends) ? raw.products_positioning.market_trends : [];
+      transformed.main_products = Array.isArray(raw.products_positioning.main_products) ? raw.products_positioning.main_products : (raw.products_positioning.products || []);
+      transformed.target_market = raw.products_positioning.target_market || raw.products_positioning.market || {};
+      transformed.direct_competitors = raw.products_positioning.competitors ? 
+        (Array.isArray(raw.products_positioning.competitors) ? raw.products_positioning.competitors : Object.values(raw.products_positioning.competitors).flat()) : 
+        (raw.products_positioning.competition || []);
+      transformed.key_differentiators = raw.products_positioning.key_differentiators || raw.products_positioning.differentiators || [];
+      transformed.market_trends = Array.isArray(raw.products_positioning.market_trends) ? raw.products_positioning.market_trends : (raw.products_positioning.trends || []);
     }
     
     // Extract from features_ecosystem_gtm
     if (raw.features_ecosystem_gtm) {
-      transformed.backend_technologies = raw.features_ecosystem_gtm.backend_technologies || [];
-      transformed.frontend_technologies = raw.features_ecosystem_gtm.frontend_technologies || [];
-      transformed.infrastructure = raw.features_ecosystem_gtm.infrastructure || [];
-      transformed.key_platform_features = Array.isArray(raw.features_ecosystem_gtm.key_features) ? raw.features_ecosystem_gtm.key_features : [];
-      transformed.integration_capabilities = raw.features_ecosystem_gtm.integrations ? Object.values(raw.features_ecosystem_gtm.integrations).flat() : [];
-      transformed.platform_compatibility = raw.features_ecosystem_gtm.enterprise_readiness ? Object.values(raw.features_ecosystem_gtm.enterprise_readiness) : [];
+      transformed.backend_technologies = raw.features_ecosystem_gtm.backend_technologies || raw.features_ecosystem_gtm.backend || [];
+      transformed.frontend_technologies = raw.features_ecosystem_gtm.frontend_technologies || raw.features_ecosystem_gtm.frontend || [];
+      transformed.infrastructure = raw.features_ecosystem_gtm.infrastructure || raw.features_ecosystem_gtm.tech_stack || [];
+      transformed.key_platform_features = Array.isArray(raw.features_ecosystem_gtm.key_features) ? raw.features_ecosystem_gtm.key_features : (raw.features_ecosystem_gtm.features || []);
+      transformed.integration_capabilities = raw.features_ecosystem_gtm.integrations ? 
+        (Array.isArray(raw.features_ecosystem_gtm.integrations) ? raw.features_ecosystem_gtm.integrations : Object.values(raw.features_ecosystem_gtm.integrations).flat()) : 
+        (raw.features_ecosystem_gtm.integration_capabilities || []);
+      transformed.platform_compatibility = raw.features_ecosystem_gtm.enterprise_readiness ? 
+        (Array.isArray(raw.features_ecosystem_gtm.enterprise_readiness) ? raw.features_ecosystem_gtm.enterprise_readiness : Object.values(raw.features_ecosystem_gtm.enterprise_readiness)) : 
+        (raw.features_ecosystem_gtm.platform_compatibility || []);
     }
     
     // Extract from icp_and_buying
     if (raw.icp_and_buying) {
-      transformed.icp = raw.icp_and_buying.icp_demographics || {};
-      transformed.buyer_personas = Array.isArray(raw.icp_and_buying.buying_committee_personas) ? raw.icp_and_buying.buying_committee_personas : [];
-      transformed.sales_opportunities = raw.icp_and_buying.action_steps?.lead_scoring || [];
-      transformed.gtm_recommendations = raw.icp_and_buying.gtm_messaging || {};
-      transformed.metrics = Array.isArray(raw.icp_and_buying.kpis_targeted) ? raw.icp_and_buying.kpis_targeted.map((kpi: string) => ({ label: kpi, value: '' })) : [];
+      transformed.icp = raw.icp_and_buying.icp_demographics || raw.icp_and_buying.icp || {};
+      transformed.buyer_personas = Array.isArray(raw.icp_and_buying.buying_committee_personas) ? raw.icp_and_buying.buying_committee_personas : (raw.icp_and_buying.personas || []);
+      transformed.sales_opportunities = raw.icp_and_buying.action_steps?.lead_scoring || raw.icp_and_buying.sales_opportunities || [];
+      transformed.gtm_recommendations = raw.icp_and_buying.gtm_messaging || raw.icp_and_buying.gtm_recommendations || {};
+      transformed.metrics = Array.isArray(raw.icp_and_buying.kpis_targeted) ? raw.icp_and_buying.kpis_targeted.map((kpi: string) => ({ label: kpi, value: '' })) : (raw.icp_and_buying.metrics || []);
     }
     
     // Extract from sales data (features_ecosystem_gtm contains sales info)
     if (raw.features_ecosystem_gtm) {
-      transformed.notable_clients = Array.isArray(raw.features_ecosystem_gtm.client_logos) ? raw.features_ecosystem_gtm.client_logos : [];
+      transformed.notable_clients = Array.isArray(raw.features_ecosystem_gtm.client_logos) ? raw.features_ecosystem_gtm.client_logos : (raw.features_ecosystem_gtm.clients || []);
       transformed.social_media = raw.features_ecosystem_gtm.social_media || {};
+    }
+    
+    // Also check for flat structure fields that might be at the root level
+    if (!transformed.company_name && (raw.company_name || raw.companyName || raw.name)) {
+      transformed.company_name = raw.company_name || raw.companyName || raw.name;
+    }
+    if (!transformed.headquarters && (raw.headquarters || raw.location || raw.address)) {
+      transformed.headquarters = raw.headquarters || raw.location || raw.address;
+    }
+    if (!transformed.website && (raw.website || raw.company_url || raw.url)) {
+      transformed.website = raw.website || raw.company_url || raw.url;
+    }
+    if (!transformed.funding_status && raw.funding_status) {
+      transformed.funding_status = raw.funding_status;
     }
     
     return transformed;
