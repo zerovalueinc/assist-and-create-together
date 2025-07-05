@@ -105,6 +105,35 @@ function deepNormalizeLLMOutput(raw: any) {
   };
 }
 
+// Normalization: map backend keys to canonical UI keys
+function normalizeCanonical(canonical: any) {
+  const norm = { ...canonical };
+  // Map products_positioning → market_intelligence
+  if (!norm.market_intelligence && norm.products_positioning) {
+    norm.market_intelligence = norm.products_positioning;
+  }
+  // Map icp_and_buying → icp_ibp_framework
+  if (!norm.icp_ibp_framework && norm.icp_and_buying) {
+    norm.icp_ibp_framework = norm.icp_and_buying;
+  }
+  // Map features_ecosystem_gtm → technology_stack and sales_gtm_strategy
+  if (norm.features_ecosystem_gtm) {
+    if (!norm.technology_stack) {
+      norm.technology_stack = norm.features_ecosystem_gtm;
+    }
+    if (!norm.sales_gtm_strategy) {
+      norm.sales_gtm_strategy = norm.features_ecosystem_gtm;
+    }
+  }
+  // Always provide all sections
+  norm.company_overview = norm.company_overview || {};
+  norm.market_intelligence = norm.market_intelligence || {};
+  norm.icp_ibp_framework = norm.icp_ibp_framework || {};
+  norm.sales_gtm_strategy = norm.sales_gtm_strategy || {};
+  norm.technology_stack = norm.technology_stack || {};
+  return norm;
+}
+
 export default function ReportWrapper({ reportData }: ReportWrapperProps) {
   console.log('[ReportWrapper] Received reportData:', reportData);
   
@@ -131,12 +160,15 @@ export default function ReportWrapper({ reportData }: ReportWrapperProps) {
   
   console.log('[ReportWrapper] Using canonical structure:', canonical);
   
+  // Normalize keys for UI
+  const norm = normalizeCanonical(canonical);
+  
   // Extract sections from canonical structure
-  const companyOverview = canonical.company_overview || {};
-  const marketIntelligence = canonical.market_intelligence || {};
-  const icpIbpFramework = canonical.icp_ibp_framework || {};
-  const salesGtmStrategy = canonical.sales_gtm_strategy || {};
-  const technologyStack = canonical.technology_stack || {};
+  const companyOverview = norm.company_overview || {};
+  const marketIntelligence = norm.market_intelligence || {};
+  const icpIbpFramework = norm.icp_ibp_framework || {};
+  const salesGtmStrategy = norm.sales_gtm_strategy || {};
+  const technologyStack = norm.technology_stack || {};
   
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8">
