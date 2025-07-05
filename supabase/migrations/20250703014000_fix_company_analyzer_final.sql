@@ -13,7 +13,7 @@ DROP TABLE IF EXISTS public.company_analyzer_outputs CASCADE;
 
 CREATE TABLE public.company_analyzer_outputs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID NOT NULL, -- No foreign key constraint to profiles
   companyName TEXT NOT NULL,
   companyProfile JSONB,
   decisionMakers TEXT[],

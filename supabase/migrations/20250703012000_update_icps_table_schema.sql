@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS public.icps CASCADE;
 -- Create the new icps table with the correct structure
 CREATE TABLE public.icps (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID NOT NULL, -- No foreign key constraint to profiles
   companyUrl TEXT NOT NULL,
   companyName TEXT NOT NULL,
   icpData JSONB NOT NULL, -- This will contain the GTMICPSchema structure

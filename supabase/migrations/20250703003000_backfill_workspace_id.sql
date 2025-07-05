@@ -17,8 +17,8 @@ DROP POLICY IF EXISTS "Users can delete their own icps" ON public.icps;
 -- Change user_id to uuid
 ALTER TABLE icps ALTER COLUMN user_id TYPE uuid USING user_id::text::uuid;
 
--- Re-add foreign key constraint to profiles(id)
-ALTER TABLE icps ADD CONSTRAINT icps_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+-- NO FOREIGN KEY CONSTRAINT - profiles table is removed
+-- ALTER TABLE icps ADD CONSTRAINT icps_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
 
 update icps set workspace_id = w.id
 from workspaces w

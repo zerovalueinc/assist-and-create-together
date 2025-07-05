@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS public.company_analyzer_outputs_unrestricted CASCADE;
 -- Create a new secure table for company analyze results
 CREATE TABLE public.company_analyzer_outputs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID NOT NULL, -- No foreign key constraint to profiles
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
   schemaVersion INTEGER DEFAULT 1,
   companyName TEXT NOT NULL,
