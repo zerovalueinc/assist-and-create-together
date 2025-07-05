@@ -106,21 +106,17 @@ function deepNormalizeLLMOutput(raw: any) {
 }
 
 export default function ReportWrapper({ reportData }: ReportWrapperProps) {
-  let data = typeof reportData.llm_output === 'string' 
-    ? JSON.parse(reportData.llm_output) 
-    : reportData.llm_output || reportData;
-
-  // Always deeply normalize the data for the UI
-  const modular = deepNormalizeLLMOutput(data);
+  // Use only the canonical structure from backend (merged)
+  const canonical = reportData.merged || reportData;
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8">
-      <ExecutiveSummary data={modular.executiveSummary || {}} />
-      <CompanyOverview data={modular.companyOverview || {}} />
-      <MarketIntelligence data={modular.marketIntelligence || {}} />
-      <ICPIBPFramework data={modular.icpIbps || {}} />
-      <SalesGTMStrategy data={modular.salesGtmStrategy || {}} />
-      <TechnologyStack data={modular.technologyStack || {}} />
+      <ExecutiveSummary data={canonical.company_overview || {}} />
+      <CompanyOverview data={canonical.company_overview || {}} />
+      <MarketIntelligence data={canonical.market_intelligence || {}} />
+      <ICPIBPFramework data={canonical.icp_ibp_framework || {}} />
+      <SalesGTMStrategy data={canonical.sales_gtm_strategy || {}} />
+      <TechnologyStack data={canonical.technology_stack || {}} />
     </div>
   );
 } 
