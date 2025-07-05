@@ -241,28 +241,19 @@ const CompanyAnalyzer = () => {
             return;
           }
         }
-        console.log('Analysis successful:', reportObj);
-        console.log('[DEBUG] Attempting to fetch fresh report by ID:', reportObj.id, reportObj);
-        if (reportObj.id) {
-          try {
-            const freshReport = await getCompanyAnalysisById(reportObj.id);
-            setAnalysis(freshReport);
-            setReports(prev => [freshReport, ...prev.filter(r => r.id !== freshReport.id)]);
-            setSelectedReportId(freshReport.id || null);
-          } catch (fetchErr) {
-            console.warn('[WARN] Failed to fetch fresh report by ID, falling back to immediate output:', fetchErr);
-            setAnalysis(reportObj);
-            setReports(prev => [reportObj, ...prev]);
-            setSelectedReportId(reportObj.id || null);
+        // FULL INTEGRATION: Always extract canonical structure from llm_output if present
+        let canonical = reportObj;
+        if (reportObj.llm_output) {
+          canonical = reportObj.llm_output;
+          if (typeof canonical === 'string') {
+            try { canonical = JSON.parse(canonical); } catch {}
           }
-        } else {
-          console.warn('[WARN] No ID found on reportObj, using immediate output:', reportObj);
-          setAnalysis(reportObj);
-          setReports(prev => [reportObj, ...prev]);
-          setSelectedReportId(null);
         }
+        setAnalysis(canonical);
+        setReports(prev => [canonical, ...prev.filter(r => r.id !== reportObj.id)]);
+        setSelectedReportId(reportObj.id || null);
         setResearch({
-          companyAnalysis: reportObj,
+          companyAnalysis: canonical,
           isCached: false,
           timestamp: new Date().toISOString()
         });
@@ -270,7 +261,7 @@ const CompanyAnalyzer = () => {
         refreshData();
         toast({
           title: "Analysis Complete",
-          description: `Successfully analyzed ${reportObj.company_name || reportObj.companyName}`,
+          description: `Successfully analyzed ${canonical.company_name || canonical.companyName}`,
         });
       } else {
         console.error('Analysis failed - no success flag or analysis data');
