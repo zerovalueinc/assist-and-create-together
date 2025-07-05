@@ -117,3 +117,18 @@ export function flattenKnownFields(obj: any): Array<{ label: string, value: stri
   }
   return result;
 }
+
+// Given an object and a list of known fields, split into known and extra for smart template rendering
+export function extractKnownAndExtra(obj: any, knownFields: string[]): { known: Record<string, any>, extra: Record<string, any> } {
+  if (!obj || typeof obj !== 'object') return { known: {}, extra: {} };
+  const known: Record<string, any> = {};
+  const extra: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (knownFields.includes(key)) {
+      known[key] = value;
+    } else {
+      extra[key] = value;
+    }
+  }
+  return { known, extra };
+}

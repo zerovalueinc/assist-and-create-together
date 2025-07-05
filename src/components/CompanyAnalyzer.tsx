@@ -10,7 +10,7 @@ import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '../lib/supabase'; // See README for global pattern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
-import { prettifyLabel, getCache, setCache, normalizeReportSection, flattenKnownFields } from '../lib/utils';
+import { prettifyLabel, getCache, setCache, normalizeReportSection, flattenKnownFields, extractKnownAndExtra } from '../lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '../lib/supabase/edgeClient';
@@ -455,79 +455,112 @@ const CompanyAnalyzer = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="company-details grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                        <div>
-                          {merged.company_size && (
-                            <div className="detail-group mb-3">
-                              <div className="detail-label">Company Size</div>
-                              <div className="detail-value">{merged.company_size}</div>
+                      {(() => {
+                        const knownFields = [
+                          'company_name', 'company_size', 'founded', 'industry', 'headquarters',
+                          'revenue_range', 'company_type', 'funding', 'summary', 'notable_clients', 'social_media'
+                        ];
+                        const { known, extra } = extractKnownAndExtra(merged, knownFields);
+                        return (
+                          <>
+                            <div className="company-details grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                              <div>
+                                {known.company_size && (
+                                  <div className="detail-group mb-3">
+                                    <div className="detail-label">Company Size</div>
+                                    <div className="detail-value">{known.company_size}</div>
+                                  </div>
+                                )}
+                                {known.founded && (
+                                  <div className="detail-group mb-3">
+                                    <div className="detail-label">Founded</div>
+                                    <div className="detail-value">{known.founded}</div>
+                                  </div>
+                                )}
+                                {known.industry && (
+                                  <div className="detail-group mb-3">
+                                    <div className="detail-label">Industry</div>
+                                    <div className="detail-value">{known.industry}</div>
+                                  </div>
+                                )}
+                                {known.headquarters && (
+                                  <div className="detail-group mb-3">
+                                    <div className="detail-label">Headquarters</div>
+                                    <div className="detail-value">{known.headquarters}</div>
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                {known.revenue_range && (
+                                  <div className="detail-group mb-3">
+                                    <div className="detail-label">Revenue Range</div>
+                                    <div className="detail-value">{known.revenue_range}</div>
+                                  </div>
+                                )}
+                                {known.company_type && (
+                                  <div className="detail-group mb-3">
+                                    <div className="detail-label">Company Type</div>
+                                    <div className="detail-value">{known.company_type}</div>
+                                  </div>
+                                )}
+                                {known.funding && (
+                                  <div className="detail-group mb-3">
+                                    <div className="detail-label">Funding Status</div>
+                                    <div className="detail-value">
+                                      {typeof known.funding === 'string' ? known.funding : (
+                                        <>
+                                          {known.funding.status && <span>Status: {known.funding.status}. </span>}
+                                          {known.funding.total_raised && <span>Total Raised: {known.funding.total_raised}. </span>}
+                                          {Array.isArray(known.funding.notable_rounds) && known.funding.notable_rounds.length > 0 && (
+                                            <span>Notable Rounds: {known.funding.notable_rounds.join(', ')}</span>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          {merged.founded && (
-                            <div className="detail-group mb-3">
-                              <div className="detail-label">Founded</div>
-                              <div className="detail-value">{merged.founded}</div>
-                            </div>
-                          )}
-                          {merged.industry && (
-                            <div className="detail-group mb-3">
-                              <div className="detail-label">Industry</div>
-                              <div className="detail-value">{merged.industry}</div>
-                            </div>
-                          )}
-                          {merged.headquarters && (
-                            <div className="detail-group mb-3">
-                              <div className="detail-label">Headquarters</div>
-                              <div className="detail-value">{merged.headquarters}</div>
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          {merged.revenue_range && (
-                            <div className="detail-group mb-3">
-                              <div className="detail-label">Revenue Range</div>
-                              <div className="detail-value">{merged.revenue_range}</div>
-                            </div>
-                          )}
-                          {merged.company_type && (
-                            <div className="detail-group mb-3">
-                              <div className="detail-label">Company Type</div>
-                              <div className="detail-value">{merged.company_type}</div>
-                            </div>
-                          )}
-                          {merged.funding && (
-                            <div className="detail-group mb-3">
-                              <div className="detail-label">Funding Status</div>
-                              <div className="detail-value">{typeof merged.funding === 'string' ? merged.funding : JSON.stringify(merged.funding)}</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {merged.summary && (
-                        <div className="subsection mb-6">
-                          <div className="detail-value text-lg font-medium text-gray-800">{merged.summary}</div>
-                        </div>
-                      )}
-                      {Array.isArray(merged.notable_clients) && merged.notable_clients.length > 0 && (
-                        <div className="subsection mb-6">
-                          <div className="subsection-title font-semibold text-lg mb-2">Notable Clients</div>
-                          <div className="notable-clients flex flex-wrap gap-3">
-                            {merged.notable_clients.map((client, i) => (
-                              <span key={i} className="client-item bg-orange-50 border border-orange-300 px-4 py-2 rounded-full text-sm font-medium">{client}</span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {merged.social_media && Object.keys(merged.social_media).length > 0 && (
-                        <div className="subsection mb-2">
-                          <div className="subsection-title font-semibold text-lg mb-2">Social Media</div>
-                          <div className="social-links flex gap-4">
-                            {merged.social_media.twitter && <a href={merged.social_media.twitter} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Twitter</a>}
-                            {merged.social_media.facebook && <a href={merged.social_media.facebook} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Facebook</a>}
-                            {merged.social_media.linkedin && <a href={merged.social_media.linkedin} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">LinkedIn</a>}
-                          </div>
-                        </div>
-                      )}
+                            {known.summary && (
+                              <div className="subsection mb-6">
+                                <div className="detail-value text-lg font-medium text-gray-800">{known.summary}</div>
+                              </div>
+                            )}
+                            {Array.isArray(known.notable_clients) && known.notable_clients.length > 0 && (
+                              <div className="subsection mb-6">
+                                <div className="subsection-title font-semibold text-lg mb-2">Notable Clients</div>
+                                <div className="notable-clients flex flex-wrap gap-3">
+                                  {known.notable_clients.map((client, i) => (
+                                    <span key={i} className="client-item bg-orange-50 border border-orange-300 px-4 py-2 rounded-full text-sm font-medium">{client}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {known.social_media && Object.keys(known.social_media).length > 0 && (
+                              <div className="subsection mb-2">
+                                <div className="subsection-title font-semibold text-lg mb-2">Social Media</div>
+                                <div className="social-links flex gap-4">
+                                  {known.social_media.twitter && <a href={known.social_media.twitter} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Twitter</a>}
+                                  {known.social_media.facebook && <a href={known.social_media.facebook} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Facebook</a>}
+                                  {known.social_media.linkedin && <a href={known.social_media.linkedin} className="social-link text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">LinkedIn</a>}
+                                </div>
+                              </div>
+                            )}
+                            {Object.keys(extra).length > 0 && (
+                              <div className="subsection mt-6">
+                                <details>
+                                  <summary className="font-semibold text-indigo-700 cursor-pointer">Other Details</summary>
+                                  <div className="mt-2 text-xs bg-gray-50 rounded p-3 overflow-x-auto">
+                                    {Object.entries(extra).map(([k, v]) => (
+                                      <div key={k} className="mb-1"><strong>{prettifyLabel(k)}:</strong> {typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}</div>
+                                    ))}
+                                  </div>
+                                </details>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                   {/* Market Intelligence - Enterprise Layout */}
