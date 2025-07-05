@@ -105,6 +105,10 @@ function deepNormalizeLLMOutput(raw: any) {
   };
 }
 
+function ensureArray(val: any) {
+  return Array.isArray(val) ? val : [];
+}
+
 // Normalization: map backend keys to canonical UI keys
 function normalizeCanonical(canonical: any) {
   const norm = { ...canonical };
@@ -131,6 +135,33 @@ function normalizeCanonical(canonical: any) {
   norm.icp_ibp_framework = norm.icp_ibp_framework || {};
   norm.sales_gtm_strategy = norm.sales_gtm_strategy || {};
   norm.technology_stack = norm.technology_stack || {};
+
+  // Defensive: ensure all expected array fields are arrays
+  if (norm.market_intelligence) {
+    norm.market_intelligence.main_products = ensureArray(norm.market_intelligence.main_products);
+    norm.market_intelligence.key_differentiators = ensureArray(norm.market_intelligence.key_differentiators);
+    norm.market_intelligence.direct_competitors = ensureArray(norm.market_intelligence.direct_competitors);
+    norm.market_intelligence.market_trends = ensureArray(norm.market_intelligence.market_trends);
+  }
+  if (norm.icp_ibp_framework) {
+    norm.icp_ibp_framework.buyer_personas = ensureArray(norm.icp_ibp_framework.buyer_personas);
+    if (norm.icp_ibp_framework.icp) {
+      norm.icp_ibp_framework.icp.company_characteristics = ensureArray(norm.icp_ibp_framework.icp.company_characteristics);
+      norm.icp_ibp_framework.icp.technology_profile = ensureArray(norm.icp_ibp_framework.icp.technology_profile);
+    }
+  }
+  if (norm.sales_gtm_strategy) {
+    norm.sales_gtm_strategy.sales_opportunities = ensureArray(norm.sales_gtm_strategy.sales_opportunities);
+    norm.sales_gtm_strategy.metrics = ensureArray(norm.sales_gtm_strategy.metrics);
+  }
+  if (norm.technology_stack) {
+    norm.technology_stack.backend_technologies = ensureArray(norm.technology_stack.backend_technologies);
+    norm.technology_stack.frontend_technologies = ensureArray(norm.technology_stack.frontend_technologies);
+    norm.technology_stack.infrastructure = ensureArray(norm.technology_stack.infrastructure);
+    norm.technology_stack.key_platform_features = ensureArray(norm.technology_stack.key_platform_features);
+    norm.technology_stack.integration_capabilities = ensureArray(norm.technology_stack.integration_capabilities);
+    norm.technology_stack.platform_compatibility = ensureArray(norm.technology_stack.platform_compatibility);
+  }
   return norm;
 }
 
