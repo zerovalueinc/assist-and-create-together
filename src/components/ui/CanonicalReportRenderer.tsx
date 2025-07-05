@@ -308,6 +308,17 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
   
   console.log('[CanonicalReportRenderer] Transformed data:', data);
   console.log('[CanonicalReportRenderer] Transformed data keys:', Object.keys(data || {}));
+  
+  // Debug: Show actual values for key fields
+  console.log('[CanonicalReportRenderer] Key field values:', {
+    company_name: data.company_name,
+    company_size: data.company_size,
+    industry: data.industry,
+    summary: data.summary?.substring(0, 100) + '...',
+    main_products: data.main_products,
+    direct_competitors: data.direct_competitors,
+    buyer_personas: data.buyer_personas
+  });
 
   // Defensive fallback for all fields
   const safeData = (key: string, fallback: any) => {
