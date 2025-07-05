@@ -194,12 +194,17 @@ const BulletList: React.FC<{ items: any[]; title: string }> = ({ items, title })
 const BuyerPersonas: React.FC<{ personas: any[] }> = ({ personas }) => (
   <div className="subsection mb-6">
     <div className="subsection-title font-semibold text-lg mb-2">Buyer Personas</div>
+    {personas.length === 0 && (
+      <div className="text-gray-500 italic">No personas found.</div>
+    )}
     {personas.map((persona, i) => (
       <div key={i} className="buyer-persona bg-purple-50 border border-purple-400 rounded-lg p-4 mb-3">
-        <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title}</div>
-        {persona.demographics && <div><strong>Demographics:</strong> {persona.demographics}</div>}
-        {persona.pain_points && <div className="mt-1"><strong>Pain Points:</strong> {persona.pain_points}</div>}
-        {persona.success_metrics && <div className="mt-1"><strong>Success Metrics:</strong> {persona.success_metrics}</div>}
+        <div className="persona-title font-semibold text-purple-900 mb-2">{persona.title || persona.role || 'N/A'}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div><strong>Demographics:</strong> {persona.demographics || 'N/A'}</div>
+          <div><strong>Pain Points:</strong> {persona.pain_points || 'N/A'}</div>
+          <div><strong>Success Metrics:</strong> {persona.success_metrics || 'N/A'}</div>
+        </div>
       </div>
     ))}
   </div>
@@ -244,6 +249,62 @@ const TechList: React.FC<{ technologies: string[]; title: string }> = ({ technol
     </div>
   </div>
 );
+
+// Component for rendering integration capabilities
+const IntegrationCapabilities: React.FC<{ integrations: any }> = ({ integrations }) => {
+  if (!integrations || (Array.isArray(integrations) && integrations.length === 0) || (typeof integrations === 'object' && Object.keys(integrations).length === 0)) {
+    return <div className="text-gray-500 italic">No integration capabilities found.</div>;
+  }
+  // If it's an array, render as a list
+  if (Array.isArray(integrations)) {
+    return (
+      <ul className="list-disc pl-5">
+        {integrations.map((item, i) => <li key={i}>{renderValue(item)}</li>)}
+      </ul>
+    );
+  }
+  // If it's an object, render each key as a section
+  return (
+    <div className="space-y-2">
+      {Object.entries(integrations).map(([key, value]) => (
+        <div key={key}>
+          <span className="font-semibold text-blue-800">{prettifyLabel(key)}:</span>
+          <ul className="list-disc pl-5">
+            {Array.isArray(value) ? value.map((v, i) => <li key={i}>{renderValue(v)}</li>) : <li>{renderValue(value)}</li>}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Component for rendering platform compatibility
+const PlatformCompatibility: React.FC<{ compatibility: any }> = ({ compatibility }) => {
+  if (!compatibility || (Array.isArray(compatibility) && compatibility.length === 0) || (typeof compatibility === 'object' && Object.keys(compatibility).length === 0)) {
+    return <div className="text-gray-500 italic">No platform compatibility info found.</div>;
+  }
+  // If it's an array, render as a list
+  if (Array.isArray(compatibility)) {
+    return (
+      <ul className="list-disc pl-5">
+        {compatibility.map((item, i) => <li key={i}>{renderValue(item)}</li>)}
+      </ul>
+    );
+  }
+  // If it's an object, render as a table
+  return (
+    <table className="min-w-full text-sm border mt-2">
+      <tbody>
+        {Object.entries(compatibility).map(([key, value]) => (
+          <tr key={key}>
+            <td className="font-semibold text-blue-800 pr-2 align-top">{prettifyLabel(key)}:</td>
+            <td>{renderValue(value)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
 
 // Helper to safely render any field
 function renderField(field: any) {
@@ -440,6 +501,14 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
         const techField = fields[0];
         return Array.isArray(safeData(techField, [])) && safeData(techField, []).length > 0 && (
           <TechList technologies={safeData(techField, [])} title={prettifyLabel(techField)} />
+        );
+      case 'integration_capabilities':
+        return fields.includes('integration_capabilities') && safeData('integration_capabilities', []) && (
+          <IntegrationCapabilities integrations={safeData('integration_capabilities', [])} />
+        );
+      case 'platform_compatibility':
+        return fields.includes('platform_compatibility') && safeData('platform_compatibility', []) && (
+          <PlatformCompatibility compatibility={safeData('platform_compatibility', [])} />
         );
       default:
         return null;
