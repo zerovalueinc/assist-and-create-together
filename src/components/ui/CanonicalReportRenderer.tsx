@@ -124,12 +124,21 @@ const ICPDisplay: React.FC<{ icp: any }> = ({ icp }) => {
   if (!icp || Object.keys(icp).length === 0 || icp === 'N/A') {
     return <div className="text-gray-500 italic">No ICP data found.</div>;
   }
+  // Helper to flatten/prettify object values
+  const prettifyValue = (value: any) => {
+    if (typeof value === 'object' && value !== null) {
+      return Object.entries(value).map(([k, v]) => `${prettifyLabel(k)}: ${Array.isArray(v) ? v.join(', ') : v}`).join('; ');
+    }
+    if (Array.isArray(value)) return value.join(', ');
+    return String(value);
+  };
+  // Render all fields in a two-column grid
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       {Object.entries(icp).map(([key, value]) => (
         <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
           <div className="font-semibold text-gray-700 mb-1">{prettifyLabel(key)}</div>
-          <div className="text-gray-900">{Array.isArray(value) ? value.join(', ') : String(value)}</div>
+          <div className="text-gray-900">{prettifyValue(value)}</div>
         </div>
       ))}
     </div>
