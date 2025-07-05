@@ -122,11 +122,66 @@ function normalizeCanonical(canonical: any) {
   }
   // Map features_ecosystem_gtm → technology_stack and sales_gtm_strategy
   if (norm.features_ecosystem_gtm) {
-    if (!norm.technology_stack) {
-      norm.technology_stack = norm.features_ecosystem_gtm;
+    // --- Sales GTM Strategy ---
+    if (!norm.sales_gtm_strategy) norm.sales_gtm_strategy = {};
+    const gtm = norm.features_ecosystem_gtm;
+    // Map sales_opportunities
+    if (gtm.action_steps && Array.isArray(gtm.action_steps.lead_scoring)) {
+      norm.sales_gtm_strategy.sales_opportunities = gtm.action_steps.lead_scoring;
+    } else {
+      norm.sales_gtm_strategy.sales_opportunities = [];
     }
-    if (!norm.sales_gtm_strategy) {
-      norm.sales_gtm_strategy = norm.features_ecosystem_gtm;
+    // Map gtm_recommendations
+    if (gtm.gtm_messaging) {
+      norm.sales_gtm_strategy.gtm_recommendations = gtm.gtm_messaging;
+    } else {
+      norm.sales_gtm_strategy.gtm_recommendations = {};
+    }
+    // Map metrics (try to find a relevant array)
+    if (Array.isArray(gtm.metrics)) {
+      norm.sales_gtm_strategy.metrics = gtm.metrics;
+    } else if (Array.isArray(gtm.kpis_targeted)) {
+      norm.sales_gtm_strategy.metrics = gtm.kpis_targeted.map(kpi => ({ label: kpi, value: '' }));
+    } else {
+      norm.sales_gtm_strategy.metrics = [];
+    }
+    // --- Technology Stack ---
+    if (!norm.technology_stack) norm.technology_stack = {};
+    // Map backend_technologies
+    if (gtm.key_features && Array.isArray(gtm.key_features.ecommerce_platform)) {
+      norm.technology_stack.backend_technologies = gtm.key_features.ecommerce_platform;
+    } else {
+      norm.technology_stack.backend_technologies = [];
+    }
+    // Map frontend_technologies (if available)
+    if (gtm.key_features && Array.isArray(gtm.key_features.frontend)) {
+      norm.technology_stack.frontend_technologies = gtm.key_features.frontend;
+    } else {
+      norm.technology_stack.frontend_technologies = [];
+    }
+    // Map infrastructure
+    if (gtm.enterprise_readiness && gtm.enterprise_readiness.scalability) {
+      norm.technology_stack.infrastructure = Object.values(gtm.enterprise_readiness.scalability).flat();
+    } else {
+      norm.technology_stack.infrastructure = [];
+    }
+    // Map key_platform_features
+    if (gtm.key_features && Array.isArray(gtm.key_features.business_tools)) {
+      norm.technology_stack.key_platform_features = gtm.key_features.business_tools;
+    } else {
+      norm.technology_stack.key_platform_features = [];
+    }
+    // Map integration_capabilities
+    if (gtm.integrations) {
+      norm.technology_stack.integration_capabilities = Object.values(gtm.integrations).flat();
+    } else {
+      norm.technology_stack.integration_capabilities = [];
+    }
+    // Map platform_compatibility
+    if (gtm.enterprise_readiness && gtm.enterprise_readiness.support) {
+      norm.technology_stack.platform_compatibility = Object.values(gtm.enterprise_readiness.support).flat();
+    } else {
+      norm.technology_stack.platform_compatibility = [];
     }
   }
   // Always provide all sections
