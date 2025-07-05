@@ -30,6 +30,19 @@ function getCompanyName(report: any) {
   );
 }
 
+function normalizeReportCompanyName(report: any) {
+  let name = report.company_name;
+  if (!name && report.company_overview) name = report.company_overview.company_name;
+  if (!name && report.llm_output) {
+    let canonical = report.llm_output;
+    if (typeof canonical === 'string') {
+      try { canonical = JSON.parse(canonical); } catch {}
+    }
+    name = canonical?.company_name || canonical?.company_overview?.company_name;
+  }
+  return { ...report, company_name: name || 'Untitled' };
+}
+
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
   const [gtmPlaybook, setGtmPlaybook] = useState(null);
@@ -45,8 +58,13 @@ const GTMGenerator = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
 
-  // Use the same company report list as Intel (from DataPreloadProvider)
-  const reports = preloadData?.companyAnalyzer || [];
+  // Use preloaded reports or fallback to cache, then normalize identically to Intel
+  let initialReports = preloadData?.companyAnalyzer || [];
+  if (!initialReports.length) {
+    initialReports = getCache('yourwork_analyze', []);
+  }
+  initialReports = initialReports.map(normalizeReportCompanyName);
+  const [reports, setReports] = useState(initialReports);
 
   // Use preloaded analyses for pills or fallback to cache
   let availableAnalyses = preloadData?.companyAnalyzer || [];
@@ -91,8 +109,10 @@ const GTMGenerator = () => {
   useEffect(() => {
     if (!user?.id) return;
     getCompanyAnalysis({ userId: user.id }).then((data) => {
-      if (data.length > 0) {
-        setSelectedReportId(data[0].id);
+      const normalized = data.map(normalizeReportCompanyName);
+      setReports(normalized);
+      if (normalized.length > 0) {
+        setSelectedReportId(normalized[0].id);
       }
     });
   }, [user?.id]);
@@ -210,7 +230,7 @@ const GTMGenerator = () => {
               setSelectedReportId(report.id);
               setSelectedCompany(report);
               setSelectedAnalysisId(report.id);
-              setUrl(report.companyUrl || report.url || '');
+              setUrl(report.company_url || report.companyUrl || report.url || '');
               setUseExistingAnalysis(true);
             }}
           />
@@ -367,16 +387,18 @@ const GTMGenerator = () => {
         <CardContent>
           <div className="mb-4">
             <div className="text-sm font-medium mb-1">Select Target Company</div>
-            <CompanyReportPills
-              reports={reports}
-              selectedId={selectedReportId}
-              onSelect={(report) => {
-                setSelectedReportId(report.id);
-                setSelectedCompany(report);
-                setUrl(report.companyUrl || report.url || '');
-                setUseExistingAnalysis(true);
-              }}
-            />
+            {reports.length > 0 && (
+              <CompanyReportPills
+                reports={reports}
+                selectedId={selectedReportId}
+                onSelect={(report) => {
+                  setSelectedReportId(report.id);
+                  setSelectedCompany(report);
+                  setUrl(report.company_url || report.companyUrl || report.url || '');
+                  setUseExistingAnalysis(true);
+                }}
+              />
+            )}
           </div>
 
           <div className="mb-4">
