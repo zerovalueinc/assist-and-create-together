@@ -248,9 +248,9 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   const merged = {
     company_name: overview.company_name || '',
     company_size: overview.company_size || '',
-    founded: '', // Not available
+    founded: overview.founded || '',
     industry: Array.isArray(overview.industry_segments) ? overview.industry_segments[0] : (overview.industry_segments || ''),
-    headquarters: '', // Not available
+    headquarters: overview.headquarters || '',
     revenue_range: overview.revenue || '',
     company_type: overview.funding_status || '',
     summary: overview.overview || '',
@@ -264,19 +264,19 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
     icp: tech.icp_demographics || {},
     buyer_personas: Array.isArray(tech.buying_committee_personas) ? tech.buying_committee_personas.map(p => ({
       title: p.role,
-      demographics: '',
-      pain_points: '',
-      success_metrics: ''
+      demographics: p.demographics || '',
+      pain_points: p.pain_points || '',
+      success_metrics: p.success_metrics || ''
     })) : [],
-    sales_opportunities: [], // Not mapped in current agent output
-    gtm_recommendations: {}, // Not mapped in current agent output
-    metrics: [], // Not mapped in current agent output
-    backend_technologies: [], // Not mapped in current agent output
-    frontend_technologies: [], // Not mapped in current agent output
-    infrastructure: [], // Not mapped in current agent output
+    sales_opportunities: Array.isArray(sales.action_steps?.lead_scoring) ? sales.action_steps.lead_scoring : [],
+    gtm_recommendations: sales.gtm_messaging || {},
+    metrics: Array.isArray(tech.kpis_targeted) ? tech.kpis_targeted.map(kpi => ({ label: kpi, value: '' })) : [],
+    backend_technologies: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('backend')) : [],
+    frontend_technologies: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('frontend')) : [],
+    infrastructure: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('infrastructure')) : [],
     key_platform_features: Array.isArray(sales.key_features) ? sales.key_features : [],
-    integration_capabilities: Array.isArray(sales.integrations) ? sales.integrations : [],
-    platform_compatibility: [], // Not mapped in current agent output
+    integration_capabilities: Array.isArray(sales.integrations) ? sales.integrations : (typeof sales.integrations === 'object' ? Object.values(sales.integrations).flat() : []),
+    platform_compatibility: Array.isArray(sales.enterprise_readiness) ? sales.enterprise_readiness : [],
   };
   console.log('[Pipeline] FINAL FLAT MERGED RESULT:', JSON.stringify(merged));
   return { overview, market, tech, sales, merged };
