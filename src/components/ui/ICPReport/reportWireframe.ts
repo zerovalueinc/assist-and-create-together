@@ -38,9 +38,9 @@ const reportWireframe = [
     description: "Common tech tools and platforms this ICP typically uses.",
     fields: {
       "Tech Stack Tags": "icp_and_buying.icp_demographics.tech_stack",
-      "CRM Platforms": "icp_and_buying.icp_demographics.tech_stack",
-      "ERP Systems": "icp_and_buying.icp_demographics.tech_stack",
-      "Payment Gateways": "icp_and_buying.icp_demographics.tech_stack",
+      "CRM Platforms": "icp_and_buying.firmographics.business_model",
+      "ERP Systems": "icp_and_buying.icp_demographics.industry",
+      "Payment Gateways": "icp_and_buying.icp_demographics.revenue",
       "Tech Partners": "icp_and_buying.buying_process.influencer_mapping"
     }
   },
