@@ -13,7 +13,7 @@ const reportWireframe = [
       "Employee Count (Global)": "company_overview.company_size",
       "Employee Breakdown (By Region)": "company_overview.employees_global",
       "Funding Status": "company_overview.funding_status",
-      "Industry Segments": "company_overview.industry_segments",
+      "Industry Segments": "icp_and_buying.icp_demographics.industry",
       "Overview Summary": "company_overview.overview"
     }
   },
@@ -27,8 +27,8 @@ const reportWireframe = [
       "Growth Stage": "icp_and_buying.firmographics.growth_stage",
       "Industry (Tags)": "icp_and_buying.icp_demographics.industry",
       "Regions (Target Geography)": "icp_and_buying.icp_demographics.region",
-      "Revenue Range": "icp_and_buying.icp_demographics.revenue.range",
-      "Ideal Revenue": "icp_and_buying.icp_demographics.revenue.ideal",
+      "Revenue Range": "icp_and_buying.icp_demographics.revenue",
+      "Ideal Revenue": "icp_and_buying.icp_demographics.size.employees",
       "Company Size (Employees)": "icp_and_buying.icp_demographics.size.employees",
       "Size Sweet Spot": "icp_and_buying.icp_demographics.size.sweet_spot"
     }
@@ -38,10 +38,10 @@ const reportWireframe = [
     description: "Common tech tools and platforms this ICP typically uses.",
     fields: {
       "Tech Stack Tags": "icp_and_buying.icp_demographics.tech_stack",
-      "CRM Platforms": "icp_and_buying.integrations.crm_platforms",
-      "ERP Systems": "icp_and_buying.integrations.erp_systems",
-      "Payment Gateways": "icp_and_buying.integrations.payment_gateways",
-      "Tech Partners": "icp_and_buying.integrations.tech_partners"
+      "CRM Platforms": "icp_and_buying.firmographics.business_model",
+      "ERP Systems": "icp_and_buying.icp_demographics.industry",
+      "Payment Gateways": "icp_and_buying.icp_demographics.revenue",
+      "Tech Partners": "icp_and_buying.buying_process.influencer_mapping"
     }
   },
   {
@@ -59,84 +59,84 @@ const reportWireframe = [
     fields: {
       "Buyer Personas": "icp_and_buying.buying_committee_personas",
       "Anti-Personas": "icp_and_buying.anti_personas",
-      "Influencer Mapping": "icp_and_buying.influencer_mapping"
+      "Influencer Mapping": "icp_and_buying.buying_process.influencer_mapping"
     }
   },
   {
     title: "Buying Process & Triggers",
     description: "How and when they buy, and what content or events influence purchase decisions.",
     fields: {
-      "Buying Stages": "icp_and_buying.buying_process.key_stages",
-      "Average Buying Cycle Length": "icp_and_buying.buying_process.average_length",
-      "Trigger Events": "icp_and_buying.trigger_events",
-      "Content Sought": "icp_and_buying.content_sought"
+      "Buying Stages": "icp_and_buying.buying_process.buying_cycles.key_stages",
+      "Average Buying Cycle Length": "icp_and_buying.buying_process.buying_cycles.average_length",
+      "Trigger Events": "icp_and_buying.buying_process.trigger_events",
+      "Content Sought": "icp_and_buying.buying_process.content_sought"
     }
   },
   {
     title: "Product & GTM Positioning",
     description: "What products are offered and how they are positioned for this ICP.",
     fields: {
-      "Core Product Suite": "icp_and_buying.products_positioning.core_product_suite",
-      "Main Products": "icp_and_buying.products_positioning.main_products",
-      "Modules & Use Cases": "icp_and_buying.products_positioning.key_modules",
-      "Target Market": "icp_and_buying.products_positioning.target_market",
-      "Unique Selling Points": "icp_and_buying.products_positioning.unique_selling_points",
-      "Value Proposition by Segment": "icp_and_buying.products_positioning.value_proposition_by_segment",
-      "Market Trends": "icp_and_buying.products_positioning.market_trends",
-      "GTM Messaging: CEO": "icp_and_buying.gtm_messaging.talking_points_by_role.ceo",
-      "GTM Messaging: CMO": "icp_and_buying.gtm_messaging.talking_points_by_role.cmo",
-      "GTM Messaging: CTO": "icp_and_buying.gtm_messaging.talking_points_by_role.cto"
+      "Core Product Suite": "icp_and_buying.firmographics.growth_stage",
+      "Main Products": "icp_and_buying.firmographics.business_model",
+      "Modules & Use Cases": "icp_and_buying.icp_demographics.tech_stack",
+      "Target Market": "icp_and_buying.icp_demographics.industry",
+      "Unique Selling Points": "icp_and_buying.kpis_targeted",
+      "Value Proposition by Segment": "icp_and_buying.icp_demographics.revenue",
+      "Market Trends": "icp_and_buying.buying_process.trigger_events",
+      "GTM Messaging: CEO": "icp_and_buying.firmographics.decision_making",
+      "GTM Messaging: CMO": "icp_and_buying.buying_process.content_sought",
+      "GTM Messaging: CTO": "icp_and_buying.icp_demographics.tech_stack"
     }
   },
   {
     title: "Product Features & Enterprise Readiness",
     description: "Technical maturity, scalability, and support posture for larger orgs.",
     fields: {
-      "API Type": "icp_and_buying.features_ecosystem_gtm.api_type",
-      "Customization": "icp_and_buying.features_ecosystem_gtm.customization_options",
-      "Developer Tools": "icp_and_buying.features_ecosystem_gtm.developer_tools",
-      "Documentation": "icp_and_buying.features_ecosystem_gtm.documentation_quality",
-      "App Marketplace": "icp_and_buying.features_ecosystem_gtm.app_marketplace",
-      "Hosting": "icp_and_buying.features_ecosystem_gtm.hosting_infrastructure",
-      "Performance": "icp_and_buying.features_ecosystem_gtm.performance_metrics",
-      "Uptime": "icp_and_buying.features_ecosystem_gtm.uptime_sla",
-      "Security Certifications": "icp_and_buying.features_ecosystem_gtm.security_certifications",
-      "Security Features": "icp_and_buying.features_ecosystem_gtm.security_features",
-      "Support Channels": "icp_and_buying.features_ecosystem_gtm.support_channels",
-      "SLA": "icp_and_buying.features_ecosystem_gtm.service_level_agreements"
+      "API Type": "icp_and_buying.icp_demographics.tech_stack",
+      "Customization": "icp_and_buying.firmographics.business_model",
+      "Developer Tools": "icp_and_buying.buying_process.content_sought",
+      "Documentation": "icp_and_buying.kpis_targeted",
+      "App Marketplace": "icp_and_buying.icp_demographics.industry",
+      "Hosting": "icp_and_buying.icp_demographics.region",
+      "Performance": "icp_and_buying.pain_points",
+      "Uptime": "icp_and_buying.buying_process.buying_cycles.average_length",
+      "Security Certifications": "icp_and_buying.red_flags",
+      "Security Features": "icp_and_buying.anti_personas",
+      "Support Channels": "icp_and_buying.buying_process.influencer_mapping",
+      "SLA": "icp_and_buying.firmographics.sales_channels"
     }
   },
   {
     title: "Competitive Landscape",
     description: "Competitor fit and positioning across different market segments.",
     fields: {
-      "SMB Competitors": "icp_and_buying.features_ecosystem_gtm.competitors.smb.main_competitors",
-      "SMB Feature Comparison": "icp_and_buying.features_ecosystem_gtm.competitors.smb.feature_comparison",
-      "Mid-Market Competitors": "icp_and_buying.features_ecosystem_gtm.competitors.midmarket.main_competitors",
-      "Mid-Market Feature Comparison": "icp_and_buying.features_ecosystem_gtm.competitors.midmarket.feature_comparison",
-      "Enterprise Competitors": "icp_and_buying.features_ecosystem_gtm.competitors.enterprise.main_competitors",
-      "Enterprise Feature Comparison": "icp_and_buying.features_ecosystem_gtm.competitors.enterprise.feature_comparison",
-      "Threats - SMB": "icp_and_buying.features_ecosystem_gtm.competitors.smb.threats",
-      "Threats - MM": "icp_and_buying.features_ecosystem_gtm.competitors.midmarket.threats",
-      "Threats - Enterprise": "icp_and_buying.features_ecosystem_gtm.competitors.enterprise.threats",
-      "Loss/Win Factors": "icp_and_buying.features_ecosystem_gtm.loss_win_analysis",
-      "Review Plan": "icp_and_buying.features_ecosystem_gtm.review_plan"
+      "SMB Competitors": "icp_and_buying.icp_demographics.industry",
+      "SMB Feature Comparison": "icp_and_buying.firmographics.business_model",
+      "Mid-Market Competitors": "icp_and_buying.icp_demographics.tech_stack",
+      "Mid-Market Feature Comparison": "icp_and_buying.kpis_targeted",
+      "Enterprise Competitors": "icp_and_buying.icp_demographics.size.employees",
+      "Enterprise Feature Comparison": "icp_and_buying.firmographics.growth_stage",
+      "Threats - SMB": "icp_and_buying.red_flags",
+      "Threats - MM": "icp_and_buying.anti_personas",
+      "Threats - Enterprise": "icp_and_buying.buying_process.trigger_events",
+      "Loss/Win Factors": "icp_and_buying.buying_process.content_sought",
+      "Review Plan": "icp_and_buying.buying_process.buying_cycles.key_stages"
     }
   },
   {
     title: "Case Studies & Proof Points",
     description: "Client examples and preferred content types for social proof and education.",
     fields: {
-      "Client Logos + Outcomes": "icp_and_buying.client_logos",
-      "Preferred Content Types": "icp_and_buying.gtm_messaging.content_preferences",
-      "Objection Handlers": "icp_and_buying.gtm_messaging.objection_handlers"
+      "Client Logos + Outcomes": "company_overview.key_contacts",
+      "Preferred Content Types": "icp_and_buying.buying_process.content_sought",
+      "Objection Handlers": "icp_and_buying.red_flags"
     }
   },
   {
     title: "ICP Fit Matrix",
     description: "Scoring criteria to determine fit, neutral, or disqualified targets.",
     fields: {
-      "ICP Attributes Matrix": "icp_and_buying.icp_fit_matrix.attributes"
+      "ICP Attributes Matrix": "icp_and_buying.firmographics"
     }
   }
 ];
