@@ -331,14 +331,14 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
     const IconComponent = sectionIcons[section.id as keyof typeof sectionIcons];
     
     // Check if section has any data to render
-    const hasData = section.subsections.some((subsection: any) => {
+    const hasData = Array.isArray(section.subsections) && section.subsections.some((subsection: any) => {
       const { fields } = subsection;
       if (subsection.type === 'two_column_grid') {
-        return fields.some((fieldGroup: any) => 
-          fieldGroup.fields.some((field: string) => data[field])
+        return Array.isArray(fields) && fields.some((fieldGroup: any) => 
+          fieldGroup.fields && Array.isArray(fieldGroup.fields) && fieldGroup.fields.some((field: string) => data[field])
         );
       }
-      return fields.some((field: string) => data[field]);
+      return Array.isArray(fields) && fields.some((field: string) => data[field]);
     });
 
     if (!hasData) return null;
