@@ -274,61 +274,60 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   console.log('[DEBUG] Agent Output - tech:', JSON.stringify(tech));
   console.log('[DEBUG] Agent Output - sales:', JSON.stringify(sales));
 
-  // Merge all results into a single object matching the new modular frontend structure, with robust normalization
+  // Use the correct top-level keys from the LLM output
+  const co = overview.company_overview || {};
+  const pp = overview.products_positioning || {};
+  const fg = overview.features_ecosystem_gtm || {};
+  const ib = overview.icp_and_buying || {};
+
   const merged = {
     executiveSummary: {
-      companyName: getFirst(overview, ['company_name', 'companyName', 'name']),
-      industry: getFirst(overview, ['industry', 'industry_segments', 'industryClassification']),
-      summary: getFirst(overview, ['overview', 'summary', 'description']),
+      companyName: co.company_name || '',
+      industry: Array.isArray(co.industry_segments) ? co.industry_segments[0] : (co.industry_segments || co.industry || ''),
+      summary: co.overview || '',
     },
     companyOverview: {
-      size: getFirst(overview, ['company_size', 'size', 'employeeCount', 'employeeRange', 'employees_global']),
-      founded: getFirst(overview, ['founded', 'foundedYear', 'founding_year', 'foundingYear']),
-      industry: getFirst(overview, ['industry', 'industry_segments', 'industryClassification']),
-      headquarters: getFirst(overview, ['headquarters', 'location', 'address', 'hq']),
-      revenue: getFirst(overview, ['revenue', 'revenue_range', 'estimatedAnnualRevenue']),
-      type: getFirst(overview, ['company_type', 'type', 'businessModel']),
-      funding: getFirst(overview, ['funding_status', 'funding', 'fundingStage']),
-      website: getFirst(overview, ['website', 'websiteUrl', 'company_url', 'url']),
-      notableClients: Array.isArray(sales.client_logos) ? sales.client_logos.map(c => c.category || c.logo_url || c.name || c.company || '') : [],
-      socialMedia: sales.social_media || { linkedin: '', twitter: '', facebook: '' },
+      size: co.company_size || '',
+      founded: co.founded || '',
+      industry: Array.isArray(co.industry_segments) ? co.industry_segments[0] : (co.industry_segments || co.industry || ''),
+      headquarters: co.headquarters || '',
+      revenue: co.revenue || '',
+      type: co.company_type || '',
+      funding: co.funding_status || '',
+      website: co.website || '',
+      notableClients: Array.isArray(fg.client_logos) ? fg.client_logos.map(c => c.category || c.logo_url || c.name || c.company || '') : [],
+      socialMedia: fg.social_media || { linkedin: '', twitter: '', facebook: '' },
     },
     marketIntelligence: {
-      mainProducts: getFirstArray(market, ['main_products', 'core_product_suite', 'productOfferings', 'products']),
-      targetMarket: getFirstObject(market, ['target_market', 'customerSegments', 'targetMarketSegments', 'market_positioning', 'value_proposition_by_segment']),
-      directCompetitors: (typeof market.competitors === 'object') ? Object.values(market.competitors).flat() : getFirstArray(market, ['direct_competitors', 'competitors', 'competitiveLandscape', 'directCompetitors']),
-      keyDifferentiators: getFirstArray(market, ['key_differentiators', 'differentiators', 'unique_selling_points', 'keyDifferentiators']),
-      marketTrends: getFirstArray(market, ['market_trends', 'marketTrends', 'trends']),
+      mainProducts: pp.main_products || [],
+      targetMarket: pp.target_market || {},
+      directCompetitors: (typeof pp.competitors === 'object') ? Object.values(pp.competitors).flat() : (pp.competitors || []),
+      keyDifferentiators: (typeof pp.key_differentiators === 'object') ? Object.values(pp.key_differentiators).flat() : (pp.key_differentiators || []),
+      marketTrends: pp.market_trends || [],
     },
     icpIbps: {
-      icp: getFirstObject(tech, ['icp_demographics', 'icp', 'idealCustomerProfile', 'firmographics']),
-      buyerPersonas: Array.isArray(tech.buying_committee_personas)
-        ? tech.buying_committee_personas.map(p => ({
-            title: getFirst(p, ['title', 'role']),
-            demographics: getFirstArray(p, ['demographics', 'demographic', 'attributes']),
-            pain_points: getFirstArray(p, ['pain_points', 'painPoints', 'painpoints']),
-            success_metrics: getFirstArray(p, ['success_metrics', 'successMetrics', 'kpis', 'KPIs']),
+      icp: ib.icp_demographics || {},
+      buyerPersonas: Array.isArray(ib.buying_committee_personas)
+        ? ib.buying_committee_personas.map(p => ({
+            title: p.title || p.role || '',
+            demographics: p.demographics || [],
+            pain_points: p.pain_points || [],
+            success_metrics: p.success_metrics || [],
           }))
-        : getFirstArray(tech, ['personas', 'buyer_personas', 'keyPersonas']),
+        : [],
     },
     salesGtmStrategy: {
-      salesOpportunities: Array.isArray(sales.action_steps?.lead_scoring)
-        ? sales.action_steps.lead_scoring
-        : getFirstArray(sales, ['sales_opportunities', 'opportunities', 'leadScoring', 'opportunityData']),
-      gtmRecommendations: getFirstObject(sales, ['gtm_messaging', 'gtmRecommendations', 'goToMarketStrategy', 'go_to_market_strategy']),
-      metrics: Array.isArray(tech.kpis_targeted)
-        ? tech.kpis_targeted.map(kpi => ({ label: kpi, value: '' }))
-        : getFirstArray(tech, ['metrics', 'metricsToTrack', 'kpis', 'KPIs']),
+      salesOpportunities: fg.action_steps?.lead_scoring ? Object.values(fg.action_steps.lead_scoring).flat() : [],
+      gtmRecommendations: fg.gtm_messaging || {},
+      metrics: Array.isArray(ib.kpis_targeted) ? ib.kpis_targeted.map(kpi => ({ label: kpi, value: '' })) : [],
     },
     technologyStack: {
-      backendTechnologies: getFirstArray(sales, ['backend_technologies', 'backend', 'backendTech', 'techStackComponents']),
-      frontendTechnologies: getFirstArray(sales, ['frontend_technologies', 'frontend', 'frontendTech']),
-      infrastructure: getFirstArray(sales, ['infrastructure', 'tech_stack', 'infrastructureTech']),
-      keyPlatformFeatures: getFirstArray(sales, ['key_platform_features', 'features', 'uniqueSellingPropositions']),
-      integrationCapabilities: Array.isArray(sales.integrations)
-        ? sales.integrations
-        : (typeof sales.integrations === 'object' ? Object.values(sales.integrations).flat() : getFirstArray(sales, ['integration_capabilities', 'integrations'])),
-      platformCompatibility: getFirstArray(sales, ['platform_compatibility', 'enterprise_readiness', 'compatibility']),
+      backendTechnologies: Array.isArray(fg.key_features) ? fg.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('backend')) : [],
+      frontendTechnologies: Array.isArray(fg.key_features) ? fg.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('frontend')) : [],
+      infrastructure: Array.isArray(fg.key_features) ? fg.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('infrastructure')) : [],
+      keyPlatformFeatures: Array.isArray(fg.key_features) ? fg.key_features : [],
+      integrationCapabilities: fg.integrations ? Object.values(fg.integrations).flat() : [],
+      platformCompatibility: fg.enterprise_readiness ? Object.values(fg.enterprise_readiness) : [],
     }
   };
   console.log('[Pipeline] FINAL MODULAR MERGED RESULT:', JSON.stringify(merged));
