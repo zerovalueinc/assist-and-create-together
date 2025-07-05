@@ -244,40 +244,55 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
   }
   console.log('[Pipeline] Agent 4 result:', JSON.stringify(sales));
 
-  // Merge all results into a single flat object matching reportstructure.json
+  // Merge all results into a single object matching the new modular frontend structure
   const merged = {
-    company_name: overview.company_name || '',
-    company_size: overview.company_size || '',
-    founded: overview.founded || '',
-    industry: Array.isArray(overview.industry_segments) ? overview.industry_segments[0] : (overview.industry_segments || ''),
-    headquarters: overview.headquarters || '',
-    revenue_range: overview.revenue || '',
-    company_type: overview.funding_status || '',
-    summary: overview.overview || '',
-    notable_clients: Array.isArray(sales.client_logos) ? sales.client_logos.map(c => c.category || c.logo_url || '') : [],
-    social_media: sales.social_media || { linkedin: '', twitter: '', facebook: '' },
-    main_products: market.main_products || [],
-    target_market: market.target_market || {},
-    direct_competitors: (typeof market.competitors === 'object') ? Object.values(market.competitors).flat() : (market.competitors || []),
-    key_differentiators: (typeof market.key_differentiators === 'object') ? Object.values(market.key_differentiators).flat() : (market.key_differentiators || []),
-    market_trends: market.market_trends || [],
-    icp: tech.icp_demographics || {},
-    buyer_personas: Array.isArray(tech.buying_committee_personas) ? tech.buying_committee_personas.map(p => ({
-      title: p.role,
-      demographics: p.demographics || '',
-      pain_points: p.pain_points || '',
-      success_metrics: p.success_metrics || ''
-    })) : [],
-    sales_opportunities: Array.isArray(sales.action_steps?.lead_scoring) ? sales.action_steps.lead_scoring : [],
-    gtm_recommendations: sales.gtm_messaging || {},
-    metrics: Array.isArray(tech.kpis_targeted) ? tech.kpis_targeted.map(kpi => ({ label: kpi, value: '' })) : [],
-    backend_technologies: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('backend')) : [],
-    frontend_technologies: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('frontend')) : [],
-    infrastructure: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('infrastructure')) : [],
-    key_platform_features: Array.isArray(sales.key_features) ? sales.key_features : [],
-    integration_capabilities: Array.isArray(sales.integrations) ? sales.integrations : (typeof sales.integrations === 'object' ? Object.values(sales.integrations).flat() : []),
-    platform_compatibility: Array.isArray(sales.enterprise_readiness) ? sales.enterprise_readiness : [],
+    executiveSummary: {
+      companyName: overview.company_name || '',
+      industry: Array.isArray(overview.industry_segments) ? overview.industry_segments[0] : (overview.industry_segments || overview.industry || ''),
+      summary: overview.overview || '',
+    },
+    companyOverview: {
+      size: overview.company_size || '',
+      founded: overview.founded || '',
+      industry: Array.isArray(overview.industry_segments) ? overview.industry_segments[0] : (overview.industry_segments || overview.industry || ''),
+      headquarters: overview.headquarters || '',
+      revenue: overview.revenue || '',
+      type: overview.funding_status || '',
+      funding: overview.funding_status || '',
+      website: overview.website || '',
+      notableClients: Array.isArray(sales.client_logos) ? sales.client_logos.map(c => c.category || c.logo_url || '') : [],
+      socialMedia: sales.social_media || { linkedin: '', twitter: '', facebook: '' },
+    },
+    marketIntelligence: {
+      mainProducts: market.main_products || [],
+      targetMarket: market.target_market || {},
+      directCompetitors: (typeof market.competitors === 'object') ? Object.values(market.competitors).flat() : (market.competitors || []),
+      keyDifferentiators: (typeof market.key_differentiators === 'object') ? Object.values(market.key_differentiators).flat() : (market.key_differentiators || []),
+      marketTrends: market.market_trends || [],
+    },
+    icpIbps: {
+      icp: tech.icp_demographics || {},
+      buyerPersonas: Array.isArray(tech.buying_committee_personas) ? tech.buying_committee_personas.map(p => ({
+        title: p.role,
+        demographics: p.demographics || [],
+        pain_points: p.pain_points || [],
+        success_metrics: p.success_metrics || []
+      })) : [],
+    },
+    salesGtmStrategy: {
+      salesOpportunities: Array.isArray(sales.action_steps?.lead_scoring) ? sales.action_steps.lead_scoring : [],
+      gtmRecommendations: sales.gtm_messaging || {},
+      metrics: Array.isArray(tech.kpis_targeted) ? tech.kpis_targeted.map(kpi => ({ label: kpi, value: '' })) : [],
+    },
+    technologyStack: {
+      backendTechnologies: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('backend')) : [],
+      frontendTechnologies: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('frontend')) : [],
+      infrastructure: Array.isArray(sales.key_features) ? sales.key_features.filter(f => typeof f === 'string' && f.toLowerCase().includes('infrastructure')) : [],
+      keyPlatformFeatures: Array.isArray(sales.key_features) ? sales.key_features : [],
+      integrationCapabilities: Array.isArray(sales.integrations) ? sales.integrations : (typeof sales.integrations === 'object' ? Object.values(sales.integrations).flat() : []),
+      platformCompatibility: Array.isArray(sales.enterprise_readiness) ? sales.enterprise_readiness : [],
+    }
   };
-  console.log('[Pipeline] FINAL FLAT MERGED RESULT:', JSON.stringify(merged));
+  console.log('[Pipeline] FINAL MODULAR MERGED RESULT:', JSON.stringify(merged));
   return { overview, market, tech, sales, merged };
 } 
