@@ -1,17 +1,25 @@
 import * as React from "react";
+import Link from 'next/link';
 import { useUser } from '@supabase/auth-helpers-react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Zap, FolderOpen, BarChart3, User, LogOut, Home } from 'lucide-react';
+import { Zap, FolderOpen, BarChart3, User, LogOut, Home, Shield, Briefcase, Key, Mail, Lock, Layers, List, Settings, FileText, CheckCircle, Activity } from 'lucide-react';
 import { useUserData } from '@/hooks/useUserData';
 
 const navItems = [
   { label: 'Dashboard', icon: Home, path: '/' },
-  { label: 'Workspace', icon: FolderOpen, path: '/workspace' },
-  { label: 'Analytics', icon: BarChart3, path: '/analytics' },
+  { label: 'Intel', icon: Shield, path: '/intel' },
+  { label: 'GTM', icon: Briefcase, path: '/gtm' },
+  { label: 'Sales Intelligence', icon: BarChart3, path: '/sales-intelligence' },
+  { label: 'Lead Enrichment', icon: Layers, path: '/lead-enrichment' },
+  { label: 'Your Work', icon: List, path: '/your-work' },
+  { label: 'System Audit', icon: Activity, path: '/system-audit' },
+  { label: 'Pipeline Orchestrator', icon: Settings, path: '/pipeline-orchestrator' },
+  { label: 'Email Campaigns', icon: Mail, path: '/email-campaigns' },
+  { label: 'CRM Table', icon: FileText, path: '/crm-table' },
+  { label: 'API Key Setup', icon: Key, path: '/api-key-setup' },
   { label: 'Account', icon: User, path: '/account' },
 ];
 
@@ -21,13 +29,11 @@ export default function AppHeader() {
   const fullName = userData?.full_name || userData?.fullName || '';
   const company = userData?.company || '';
   const initials = userData?.initials || '';
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = async () => {
     const { supabase } = await import('@/lib/supabaseClient');
     await supabase.auth.signOut();
-    navigate('/auth');
+    window.location.href = '/auth';
   };
 
   return (
@@ -35,44 +41,27 @@ export default function AppHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/') }>
+            <Link href="/" className="flex items-center space-x-2 cursor-pointer">
               <Zap className="h-8 w-8 text-blue-600" />
               <h1 className="text-2xl font-bold text-slate-900">PersonaOps</h1>
-            </div>
+            </Link>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
               AI-Powered
             </Badge>
           </div>
-          <nav className="flex items-center space-x-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <div key={item.label} className="relative group">
-                  <button
-                    onClick={() => navigate(item.path)}
-                    className={`flex items-center justify-center p-3 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      isActive 
-                        ? 'bg-blue-50 text-blue-700' 
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span className={`ml-2 font-medium transition-all duration-300 overflow-hidden ${
-                      isActive 
-                        ? 'max-w-xs opacity-100' 
-                        : 'max-w-0 opacity-0'
-                    }`}>
-                      {item.label}
-                    </span>
-                  </button>
-                  {!isActive && (
-                    <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-3 py-2 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-                      {item.label}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <nav className="flex items-center space-x-1 overflow-x-auto">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.path}
+                className="flex items-center justify-center p-3 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="ml-2 font-medium transition-all duration-300">
+                  {item.label}
+                </span>
+              </Link>
+            ))}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -99,7 +88,7 @@ export default function AppHeader() {
                       )}
                     </div>
                   </div>
-                  <DropdownMenuItem onClick={() => navigate('/account')} className="cursor-pointer hover:bg-slate-50">
+                  <DropdownMenuItem onClick={() => window.location.href = '/account'} className="cursor-pointer hover:bg-slate-50">
                     <User className="mr-2 h-4 w-4" />
                     <span>Account Settings</span>
                   </DropdownMenuItem>
@@ -110,7 +99,7 @@ export default function AppHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="outline" className="ml-4" onClick={() => navigate('/auth')}>
+              <Button variant="outline" className="ml-4" onClick={() => window.location.href = '/auth'}>
                 Sign In
               </Button>
             )}
