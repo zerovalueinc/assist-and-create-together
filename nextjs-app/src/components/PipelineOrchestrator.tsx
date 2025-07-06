@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Play, Pause, RotateCcw, CheckCircle, AlertCircle, Clock, Zap, Target, Users, Mail, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from '@/lib/supabaseClient';
 import { getCache, setCache } from '@/lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { ApiKeySetup } from './ApiKeySetup';
@@ -17,29 +12,25 @@ import { PipelineState } from './pipeline/types';
 import { useUserData } from '@/hooks/useUserData';
 
 const PipelineOrchestrator = () => {
-  const [pipelines, setPipelines] = useState<any[]>([]);
-  const [activePipeline, setActivePipeline] = useState<any>(null);
-  const [pipelineStatus, setPipelineStatus] = useState<any>({});
   const [url, setUrl] = useState('');
   const [userInput, setUserInput] = useState('');
   const [batchSize, setBatchSize] = useState(10);
   const [pipelineState, setPipelineState] = useState<PipelineState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<Record<string, unknown> | null>(null);
   const [showApiSetup, setShowApiSetup] = useState(false);
   const { toast } = useToast();
   const { session } = useAuth();
-  const { data: preloadData } = useDataPreload();
   const { startPipeline, pollPipelineStatus, fetchResults } = usePipelineOperations();
-  const { user, loading } = useUserData() as { user: any, loading: boolean };
-  const email = user?.email || '';
+  const { user, loading } = useUserData() as { user: Record<string, unknown>, loading: boolean };
+  const email = user?.email as string || '';
 
   // Show cached pipeline state/results instantly
   useEffect(() => {
     if (!email) return;
-    const cachedState = getCache<any>(`pipeline_state_${email}`, null);
-    const cachedResults = getCache<any>(`pipeline_results_${email}`, null);
-    if (cachedState) setPipelineState(cachedState);
+    const cachedState = getCache<Record<string, unknown>>(`pipeline_state_${email}`, null);
+    const cachedResults = getCache<Record<string, unknown>>(`pipeline_results_${email}`, null);
+    if (cachedState) setPipelineState(cachedState as PipelineState);
     if (cachedResults) setResults(cachedResults);
   }, [email]);
 
@@ -59,8 +50,8 @@ const PipelineOrchestrator = () => {
         setCache(`pipeline_state_${email}`, newPipelineState);
         startPolling(newPipelineState.id);
       }
-    } catch (error: any) {
-      if (error.message === 'API_CONFIG_REQUIRED') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'API_CONFIG_REQUIRED') {
         setShowApiSetup(true);
         toast({
           title: "API Configuration Required",
@@ -94,8 +85,8 @@ const PipelineOrchestrator = () => {
             });
           }
         }
-      } catch (error) {
-        console.error('Error polling pipeline status:', error);
+      } catch {
+        console.error('Error polling pipeline status');
         clearInterval(pollInterval);
       }
     }, 2000);

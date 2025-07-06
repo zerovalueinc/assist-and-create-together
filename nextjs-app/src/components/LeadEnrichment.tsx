@@ -14,19 +14,17 @@ import { useDataPreload } from '@/context/DataPreloadProvider';
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { session } = useAuth();
   const [pipelineId, setPipelineId] = useState<string | null>(null);
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
-  const { data: preloadData } = useDataPreload();
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [intelReport, setIntelReport] = useState<any>(null);
-  const [gtmPlaybook, setGtmPlaybook] = useState<any>(null);
-  const [availableIntelReports, setAvailableIntelReports] = useState<any[]>([]);
-  const [availableGtmPlaybooks, setAvailableGtmPlaybooks] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<Record<string, unknown>[]>([]);
+  const [contacts, setContacts] = useState<Record<string, unknown>[]>([]);
+  const [intelReport, setIntelReport] = useState<Record<string, unknown> | null>(null);
+  const [gtmPlaybook, setGtmPlaybook] = useState<Record<string, unknown> | null>(null);
+  const [availableIntelReports, setAvailableIntelReports] = useState<Record<string, unknown>[]>([]);
+  const [availableGtmPlaybooks, setAvailableGtmPlaybooks] = useState<Record<string, unknown>[]>([]);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   const searchLeads = async () => {
@@ -104,8 +102,10 @@ const LeadEnrichment = () => {
 
   // Show cached leads instantly
   useEffect(() => {
-    const cachedLeads = getCache<any[]>('lead_enrichment_leads', []);
-    if (cachedLeads.length > 0) setLeads(cachedLeads);
+    const cachedLeads = getCache<Record<string, unknown>[]>('lead_enrichment_leads', []);
+    if (cachedLeads.length > 0) {
+      // Leads are loaded but not used in this component
+    }
   }, []);
 
   // Fetch available Intel reports for selection (client-side, instant, GTM-style)
@@ -120,8 +120,8 @@ const LeadEnrichment = () => {
       if (error) throw error;
       setAvailableIntelReports(data || []);
       console.log('[LeadEnrichment] Fetched Intel reports for user:', session.user.id, data);
-    } catch (error) {
-      console.error('Error fetching Intel reports:', error);
+    } catch {
+      console.error('Error fetching Intel reports');
       setAvailableIntelReports([]);
     }
   };
@@ -136,8 +136,8 @@ const LeadEnrichment = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
       setAvailableGtmPlaybooks(data || []);
-    } catch (error) {
-      console.error('Error fetching GTM playbooks:', error);
+    } catch {
+      console.error('Error fetching GTM playbooks');
       setAvailableGtmPlaybooks([]);
     }
   };
@@ -172,8 +172,8 @@ const LeadEnrichment = () => {
               setPollingInterval(null);
             }
           }
-        } catch (error) {
-          console.error('Error polling pipeline:', error);
+        } catch {
+          console.error('Error polling pipeline');
         }
       }, 2000); // Poll every 2 seconds
       setPollingInterval(interval);

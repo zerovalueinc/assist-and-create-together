@@ -78,15 +78,15 @@ const ICPGenerator = () => {
   const session = useSession();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { data: preloadData, retry: refreshData } = useDataPreload();
-  const [selectedCompany, setSelectedCompany] = useState<any>(null);
-  const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Record<string, unknown> | null>(null);
+  const [recentReports, setRecentReports] = useState<Record<string, unknown>[]>([]);
   const [recentPlaybooks, setRecentPlaybooks] = useState<any[]>([]);
   const [showICPModal, setShowICPModal] = useState(false);
-  const [modalICP, setModalICP] = useState<any>(null);
-  const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
+  const [modalICP, setModalICP] = useState<Record<string, unknown> | null>(null);
+  const [availableCompanies, setAvailableCompanies] = useState<Record<string, unknown>[]>([]);
   const [showPlaybookModal, setShowPlaybookModal] = useState(false);
-  const [playbookData, setPlaybookData] = useState<any>(null);
-  const [savedPlaybooks, setSavedPlaybooks] = useState<any[]>([]);
+  const [playbookData, setPlaybookData] = useState<Record<string, unknown> | null>(null);
+  const [savedPlaybooks, setSavedPlaybooks] = useState<Record<string, unknown>[]>([]);
   const [showSavedPlaybooksModal, setShowSavedPlaybooksModal] = useState(false);
 
   // Debug log for recentReports (only when it changes)

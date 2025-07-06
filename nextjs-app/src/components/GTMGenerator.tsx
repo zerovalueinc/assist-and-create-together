@@ -4,8 +4,8 @@ import { useUser } from '@supabase/auth-helpers-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 const GTMGenerator = () => {
-  const [gtmPlaybooks, setGtmPlaybooks] = useState<any[]>([]);
-  const [selectedPlaybook, setSelectedPlaybook] = useState(null);
+  const [gtmPlaybooks, setGtmPlaybooks] = useState<Record<string, unknown>[]>([]);
+  const [selectedPlaybook, setSelectedPlaybook] = useState<Record<string, unknown> | null>(null);
   const user = useUser();
 
   useEffect(() => {
@@ -25,11 +25,11 @@ const GTMGenerator = () => {
       <div className="flex flex-wrap gap-2 mb-8">
         {gtmPlaybooks.map((row) => (
           <button
-            key={row.id}
+            key={row.id as string}
             className="rounded-full border px-4 py-1 text-sm bg-blue-100 hover:bg-blue-200"
             onClick={() => setSelectedPlaybook(row)}
           >
-            {row.company_name || row.companyName || row.id}
+            {row.company_name as string || row.companyName as string || row.id as string}
           </button>
         ))}
       </div>
