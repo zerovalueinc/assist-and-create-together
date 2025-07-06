@@ -3,14 +3,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
 import { useUser, useSession } from '@supabase/auth-helpers-react';
-import { supabase } from '../lib/supabase'; // See README for global pattern
-import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
+import { supabase } from '@/lib/supabaseClient';
+import { capitalizeFirstLetter, getCache, setCache } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
-import { useCompany } from '../context/CompanyContext';
-import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { useCompany } from '@/context/CompanyContext';
+import { getCompanyAnalysis } from '@/lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
   const user = useUser();

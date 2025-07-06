@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Users, TrendingUp, MessageSquare, Rocket, FileText, BarChart2, Share2, Download, Copy } from 'lucide-react';
 
-export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
+export function GTMPlaybookModal({ open, onClose, playbookData, company }: { open: any; onClose: any; playbookData: any; company: any }) {
   // Handle different data structures from database
   let gtmPlaybook, researchSummary, confidence, sources;
   
@@ -127,7 +127,7 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
               <div className="mt-2"><b>Target Segments:</b> {gtmPlaybook.marketAnalysis?.targetMarketSegments?.join(', ') || 'N/A'}</div>
               <div className="mt-2"><b>Competitors:</b> {gtmPlaybook.marketAnalysis?.competitiveLandscape?.join(', ') || 'N/A'}</div>
               <div className="flex flex-wrap gap-2 mt-2">
-                {(gtmPlaybook.marketAnalysis?.marketTrends || []).map((trend, i) => (
+                {(gtmPlaybook.marketAnalysis?.marketTrends || []).map((trend: any, i: number) => (
                   <Badge key={i}>{trend}</Badge>
                 ))}
               </div>
@@ -141,7 +141,7 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
               <div className="mb-2"><b>Company Size:</b> {gtmPlaybook.idealCustomerProfile?.firmographics?.companySize || 'N/A'}</div>
               <div className="mb-2"><b>Revenue Range:</b> {gtmPlaybook.idealCustomerProfile?.firmographics?.revenueRange || 'N/A'}</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                {gtmPlaybook.idealCustomerProfile?.personas?.map((persona, i) => (
+                {gtmPlaybook.idealCustomerProfile?.personas?.map((persona: any, i: number) => (
                   <Card key={i} className="bg-muted/50">
                     <CardContent className="flex flex-col gap-2 p-4">
                       {/* TODO: Use avatar/logo if available */}
@@ -184,7 +184,7 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
               <div className="mt-2"><b>Secondary Messages:</b> {gtmPlaybook.messagingFramework?.secondaryMessages?.join(', ') || 'N/A'}</div>
               <div className="mt-2"><b>Objection Handling:</b>
                 <ul className="list-disc ml-6">
-                  {gtmPlaybook.messagingFramework?.objectionHandling?.map((o, i) => (
+                  {gtmPlaybook.messagingFramework?.objectionHandling?.map((o: any, i: number) => (
                     <li key={i}><b>{o.objection}:</b> {o.response || 'N/A'}</li>
                   ))}
                 </ul>
@@ -236,7 +236,7 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
           <div className="p-4">
             <p>An error occurred while loading the playbook data.</p>
             <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-x-auto">
-              {error?.message || 'Unknown error'}
+              {(error as any)?.message || 'Unknown error'}
             </pre>
           </div>
         </DialogContent>

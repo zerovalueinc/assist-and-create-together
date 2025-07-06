@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -7,7 +6,10 @@ import { Shield, Zap, Target, Users, BarChart3, Mail } from "lucide-react";
 import { useUserData } from "@/hooks/useUserData";
 
 const AccountHeader = () => {
-  const { fullName, company, initials } = useUserData();
+  const { user, loading } = useUserData() as { user: any, loading: boolean };
+  const fullName = user?.user_metadata?.fullName || user?.user_metadata?.name || user?.email || '';
+  const company = user?.user_metadata?.company || '';
+  const initials = fullName ? fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '';
 
   const accountStats = [
     { label: "Companies Analyzed", value: "2,847", icon: Target, change: "+12%" },

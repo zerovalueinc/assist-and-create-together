@@ -7,13 +7,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, Upload } from "lucide-react";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '../../lib/supabase'; // See README for global pattern
+import { supabase } from '@/lib/supabaseClient';
 import { useUserData } from '@/hooks/useUserData';
 
 const ProfileTab = () => {
   const user = useUser();
   const session = useSession();
-  const { email, firstName, lastName, company, initials } = useUserData();
+  const { user: userData, loading } = useUserData() as { user: any, loading: boolean };
+  const email = userData?.email || '';
+  const firstName = userData?.user_metadata?.firstName || '';
+  const lastName = userData?.user_metadata?.lastName || '';
+  const company = userData?.user_metadata?.company || '';
+  const initials = (firstName && lastName) ? `${firstName[0]}${lastName[0]}`.toUpperCase() : (userData?.user_metadata?.name ? userData.user_metadata.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '');
   const { toast } = useToast();
   
   // Always show user info instantly

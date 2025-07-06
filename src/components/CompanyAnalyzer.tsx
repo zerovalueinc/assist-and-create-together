@@ -7,13 +7,13 @@ import { Loader2, Search, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCompany } from "@/context/CompanyContext";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
-import { supabase } from '../lib/supabase'; // See README for global pattern
+import { supabase } from '@/lib/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
-import { prettifyLabel, getCache, setCache } from '../lib/utils';
+import { prettifyLabel, getCache, setCache } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '../lib/supabase/edgeClient';
+import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '@/lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import ICPProfileDisplay from './ui/ICPProfileDisplay';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
@@ -129,7 +129,8 @@ const CompanyAnalyzer = () => {
         setResearchSteps([]);
         return;
       }
-      const companyUrl = analysis.company_url || analysis.companyUrl || (analysis.llm_output && (typeof analysis.llm_output === 'string' ? JSON.parse(analysis.llm_output).company_url : analysis.llm_output.company_url));
+      const analysisAny = analysis as any;
+      const companyUrl = analysisAny.company_url || analysisAny.companyUrl || (analysisAny.llm_output && (typeof analysisAny.llm_output === 'string' ? JSON.parse(analysisAny.llm_output).company_url : analysisAny.llm_output.company_url));
       if (!companyUrl) {
         setResearchSteps([]);
         return;

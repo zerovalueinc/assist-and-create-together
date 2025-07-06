@@ -16,7 +16,10 @@ const navItems = [
 
 export default function AppHeader() {
   const user = useUser();
-  const { fullName, company, initials } = useUserData();
+  const { user: userData, loading } = useUserData() as { user: any, loading: boolean };
+  const fullName = userData?.full_name || userData?.fullName || '';
+  const company = userData?.company || '';
+  const initials = userData?.initials || '';
   const navigate = useNavigate();
   const location = useLocation();
 

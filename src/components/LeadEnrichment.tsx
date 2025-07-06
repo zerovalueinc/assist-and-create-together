@@ -7,13 +7,13 @@ import { Loader2, Users, Upload, Download, Search, RefreshCw } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { SectionLabel } from "./ui/section-label";
-import { getCache, setCache } from '../lib/utils';
-import { useUserData } from '../hooks/useUserData';
-import { supabase } from '../lib/supabase';
+import { getCache, setCache } from '@/lib/utils';
+import { useUserData } from '@/hooks/useUserData';
+import { supabase } from '@/lib/supabaseClient';
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [leads, setLeads] = useState([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const session = useSession();
@@ -72,7 +72,7 @@ const LeadEnrichment = () => {
     }
   };
 
-  const enrichLead = async (leadId) => {
+  const enrichLead = async (leadId: any) => {
     try {
       const response = await fetch('/api/app/enrich', {
         method: 'POST',

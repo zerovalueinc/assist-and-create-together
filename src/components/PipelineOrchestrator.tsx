@@ -6,8 +6,8 @@ import { PipelineForm } from './pipeline/PipelineForm';
 import { PipelineStatus } from './pipeline/PipelineStatus';
 import { usePipelineOperations } from './pipeline/usePipelineOperations';
 import { PipelineState } from './pipeline/types';
-import { getCache, setCache } from '../lib/utils';
-import { useUserData } from '../hooks/useUserData';
+import { getCache, setCache } from '@/lib/utils';
+import { useUserData } from '@/hooks/useUserData';
 
 export default function PipelineOrchestrator() {
   const [url, setUrl] = useState('');
@@ -19,7 +19,8 @@ export default function PipelineOrchestrator() {
   const [showApiSetup, setShowApiSetup] = useState(false);
   const { toast } = useToast();
   const { startPipeline, pollPipelineStatus, fetchResults } = usePipelineOperations();
-  const { email } = useUserData();
+  const { user, loading } = useUserData() as { user: any, loading: boolean };
+  const email = user?.email || '';
 
   // Show cached pipeline state/results instantly
   useEffect(() => {
@@ -41,9 +42,11 @@ export default function PipelineOrchestrator() {
         skipEnrichment: false
       });
       
-      setPipelineState(newPipelineState);
-      setCache(`pipeline_state_${email}`, newPipelineState);
-      startPolling(newPipelineState.id);
+      if (newPipelineState) {
+        setPipelineState(newPipelineState);
+        setCache(`pipeline_state_${email}`, newPipelineState);
+        startPolling(newPipelineState.id);
+      }
     } catch (error: any) {
       if (error.message === 'API_CONFIG_REQUIRED') {
         setShowApiSetup(true);

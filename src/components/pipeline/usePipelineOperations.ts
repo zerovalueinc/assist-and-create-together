@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase'; // See README for global pattern
+import { supabase } from '@/lib/supabaseClient'; // See README for global pattern
 import { useToast } from '@/hooks/use-toast';
 import { PipelineState, PipelineConfig } from './types';
 

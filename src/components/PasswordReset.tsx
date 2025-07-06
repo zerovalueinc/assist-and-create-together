@@ -6,7 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, Loader2, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '../lib/supabase'; // See README for global pattern
+import { supabase } from '@/lib/supabaseClient';
 
 const PasswordReset: React.FC = () => {
   const [searchParams] = useSearchParams();

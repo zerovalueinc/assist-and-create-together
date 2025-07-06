@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@supabase/auth-helpers-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 const GTMGenerator = () => {
-  const [gtmPlaybooks, setGtmPlaybooks] = useState([]);
+  const [gtmPlaybooks, setGtmPlaybooks] = useState<any[]>([]);
   const [selectedPlaybook, setSelectedPlaybook] = useState(null);
   const user = useUser();
 

@@ -1,4 +1,4 @@
-import { supabase } from '../../../lib/supabase'; // See README for global pattern
+import { supabase } from '@/lib/supabaseClient'; // See README for global pattern
 import { AuditResult } from '../types';
 
 // Enhanced connection test with better error handling and diagnostics
@@ -134,7 +134,7 @@ export const testSupabaseConnection = async (results: AuditResult[]) => {
         component: 'Supabase Connection',
         status,
         message: connectionResult.message || 'Connection failed',
-        details
+        details: details.map((d) => typeof d === 'string' ? d : JSON.stringify(d))
       });
       return;
     }

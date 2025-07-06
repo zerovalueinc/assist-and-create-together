@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, WifiOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase'; // See README for global pattern
+import { supabase } from '@/lib/supabaseClient';
 
 interface NetworkTest {
   name: string;

@@ -15,10 +15,10 @@ import { useUser, useSession } from '@supabase/auth-helpers-react';
 import type { GTMICPSchema } from "@/schema/gtm_icp_schema";
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { supabase } from '../lib/supabase'; // See README for global pattern
-import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
+import { supabase } from '@/lib/supabaseClient';
+import { capitalizeFirstLetter, getCache, setCache } from '@/lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { getCompanyAnalysis } from '@/lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import { GTMPlaybookModal } from './ui/GTMPlaybookModal';
 
@@ -66,8 +66,8 @@ const ICPGenerator = () => {
   const [targetMarket, setTargetMarket] = useState('');
   const [salesCycle, setSalesCycle] = useState('');
   const [competitivePosition, setCompetitivePosition] = useState('');
-  const [primaryGoals, setPrimaryGoals] = useState([]);
-  const [marketingChannels, setMarketingChannels] = useState([]);
+  const [primaryGoals, setPrimaryGoals] = useState<string[]>([]);
+  const [marketingChannels, setMarketingChannels] = useState<string[]>([]);
   const [additionalContext, setAdditionalContext] = useState('');
 
   const [icp, setICP] = useState<GTMICPSchema | null>(null);
@@ -85,7 +85,7 @@ const ICPGenerator = () => {
   const [modalICP, setModalICP] = useState<any>(null);
   const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
   const [showPlaybookModal, setShowPlaybookModal] = useState(false);
-  const [playbookData, setPlaybookData] = useState(null);
+  const [playbookData, setPlaybookData] = useState<any>(null);
   const [savedPlaybooks, setSavedPlaybooks] = useState<any[]>([]);
   const [showSavedPlaybooksModal, setShowSavedPlaybooksModal] = useState(false);
 
@@ -111,7 +111,7 @@ const ICPGenerator = () => {
       const { data, error } = await supabase
         .from('gtm_playbooks')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -160,7 +160,7 @@ const ICPGenerator = () => {
         const { data, error } = await supabase
           .from('gtm_playbooks')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', user?.id)
           .order('created_at', { ascending: false });
         
         if (error) {
@@ -263,7 +263,7 @@ const ICPGenerator = () => {
         const { data: updatedPlaybooks, error } = await supabase
           .from('gtm_playbooks')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', user?.id)
           .order('created_at', { ascending: false });
         
         if (!error) {
@@ -272,8 +272,8 @@ const ICPGenerator = () => {
       } else {
         toast({ title: "Generation Failed", description: result.error || "Unknown error", variant: "destructive" });
       }
-    } catch (error) {
-      toast({ title: "Generation Failed", description: error.message || "Unknown error", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Generation Failed", description: error?.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }

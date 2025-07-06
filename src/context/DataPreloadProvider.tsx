@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { getCache, setCache } from '@/lib/utils';
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCompany } from './CompanyContext';
-import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
+import { getCompanyAnalysis } from '@/lib/supabase/edgeClient';
 
 interface DashboardData {
   companyAnalyzer: any[];

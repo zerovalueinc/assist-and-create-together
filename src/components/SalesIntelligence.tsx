@@ -5,17 +5,18 @@ import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "lucide-react";
 import { SectionLabel } from "./ui/section-label";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
-import { supabase } from '../lib/supabase'; // See README for global pattern
-import { getCache, setCache } from '../lib/utils';
+import { supabase } from '@/lib/supabaseClient';
+import { getCache, setCache } from '@/lib/utils';
 import { useCompany } from '../context/CompanyContext';
 
 const SalesIntelligence = () => {
-  const [reports, setReports] = useState([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const user = useUser();
   const session = useSession();
-  const { workspaceId } = useCompany();
+  const { research } = useCompany();
+  const workspaceId = user?.id; // Use user ID as workspace ID for now
   const hasFetched = useRef(false);
 
   useEffect(() => {

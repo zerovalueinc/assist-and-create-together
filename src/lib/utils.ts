@@ -17,7 +17,7 @@ export function setCache(key: string, value: any) {
   } catch {}
 }
 
-export function getCache<T = any>(key: string, fallback: T = null): T {
+export function getCache<T = any>(key: string, fallback: T): T {
   try {
     const val = localStorage.getItem(key);
     if (val) return JSON.parse(val);
