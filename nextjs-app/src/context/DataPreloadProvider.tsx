@@ -1,3 +1,4 @@
+'use client';
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCache, setCache } from '@/lib/utils';

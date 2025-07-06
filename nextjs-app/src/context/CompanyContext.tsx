@@ -1,3 +1,4 @@
+'use client';
 import React, { createContext, useContext, useState } from 'react';
 
 export type CompanyResearch = any; // Replace with a more specific type if desired
