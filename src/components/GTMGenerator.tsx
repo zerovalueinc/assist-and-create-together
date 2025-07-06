@@ -15,6 +15,7 @@ import { invokeEdgeFunction, getCompanyAnalysis } from '../lib/supabase/edgeClie
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import { CompanyReportPills } from './ui/CompanyReportPills';
 import { GTMPlaybookModal } from './ui/GTMPlaybookModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 // Set this to true to use the backend proxy for GTM Playbook
 const USE_GTM_PROXY = true;
@@ -375,16 +376,13 @@ const GTMGenerator = () => {
           <div className="mt-8">
             <div className="font-semibold text-base mb-1">Saved GTM Playbooks</div>
             <div className="flex flex-wrap gap-2 mb-4">
-              {gtmPlaybooks.map(pb => (
+              {gtmPlaybooks.map((row) => (
                 <button
-                  key={pb.id}
+                  key={row.id}
                   className="rounded-full border px-4 py-1 text-sm bg-blue-100 hover:bg-blue-200"
-                  onClick={() => {
-                    console.log('[GTMGenerator] Clicked GTM playbook pill:', pb);
-                    setSelectedPlaybook(pb);
-                  }}
+                  onClick={() => setSelectedPlaybook(row)}
                 >
-                  {pb.companyName || pb.company_name}
+                  {row.company_name || row.companyName || row.id}
                 </button>
               ))}
             </div>
@@ -439,12 +437,16 @@ const GTMGenerator = () => {
       </Card>
 
       {selectedPlaybook && (
-        <GTMPlaybookModal
-          open={!!selectedPlaybook}
-          onClose={() => setSelectedPlaybook(null)}
-          playbookData={selectedPlaybook}
-          company={selectedPlaybook.companyName || selectedPlaybook.company_name}
-        />
+        <Dialog open={!!selectedPlaybook} onOpenChange={() => setSelectedPlaybook(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Raw GTM Playbook Row</DialogTitle>
+            </DialogHeader>
+            <pre className="text-xs bg-gray-100 p-4 rounded overflow-x-auto max-h-[60vh]">
+              {selectedPlaybook ? JSON.stringify(selectedPlaybook, null, 2) : ''}
+            </pre>
+          </DialogContent>
+        </Dialog>
       )}
 
       {reportsWithICP.length === 0 ? (
