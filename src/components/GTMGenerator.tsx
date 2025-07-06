@@ -58,13 +58,18 @@ const GTMGenerator = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
 
-  // Use preloaded reports or fallback to cache, then normalize identically to Intel
-  let initialReports = preloadData?.companyAnalyzer || [];
-  if (!initialReports.length) {
-    initialReports = getCache('yourwork_analyze', []);
-  }
-  initialReports = initialReports.map(normalizeReportCompanyName);
-  const [reports, setReports] = useState(initialReports);
+  // Use direct result from getCompanyAnalysis for pills
+  const [reports, setReports] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    getCompanyAnalysis({ userId: user.id }).then((data) => {
+      setReports(data);
+      if (data.length > 0) {
+        setSelectedReportId(data[0].id);
+      }
+    });
+  }, [user?.id]);
 
   // Use preloaded analyses for pills or fallback to cache
   let availableAnalyses = preloadData?.companyAnalyzer || [];
@@ -105,17 +110,6 @@ const GTMGenerator = () => {
   const [salesCycle, setSalesCycle] = useState('');
   const [primaryGoals, setPrimaryGoals] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
-
-  useEffect(() => {
-    if (!user?.id) return;
-    getCompanyAnalysis({ userId: user.id }).then((data) => {
-      const normalized = data.map(normalizeReportCompanyName);
-      setReports(normalized);
-      if (normalized.length > 0) {
-        setSelectedReportId(normalized[0].id);
-      }
-    });
-  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();

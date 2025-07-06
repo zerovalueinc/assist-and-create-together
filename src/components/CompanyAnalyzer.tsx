@@ -102,38 +102,22 @@ const CompanyAnalyzer = () => {
   const session = useSession();
   const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
 
-  // Use preloaded reports or fallback to cache
-  let initialReports = preloadData?.companyAnalyzer || [];
-  if (!initialReports.length) {
-    initialReports = getCache('yourwork_analyze', []);
-  }
-  initialReports = initialReports.map(normalizeReportCompanyName);
-  const [reports, setReports] = useState(initialReports);
-  const [analysis, setAnalysis] = useState(null);
+  // Use direct result from getCompanyAnalysis for pills
+  const [reports, setReports] = useState<any[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState<string>('');
   const [researchSteps, setResearchSteps] = useState<any[]>([]);
   const [stepsLoading, setStepsLoading] = useState(false);
   const [expandedStepIndexes, setExpandedStepIndexes] = useState<number[]>([]);
 
-  // Reload reports when preloadData changes (e.g., on tab switch)
-  useEffect(() => {
-    let newReports = preloadData?.companyAnalyzer || [];
-    if (!newReports.length) {
-      newReports = getCache('yourwork_analyze', []);
-    }
-    newReports = newReports.map(normalizeReportCompanyName);
-    setReports(newReports);
-  }, [preloadData]);
-
   useEffect(() => {
     if (!user?.id) return;
     getCompanyAnalysis({ userId: user.id }).then((data) => {
-      const normalized = data.map(normalizeReportCompanyName);
-      setReports(normalized);
-      if (normalized.length > 0) {
-        setSelectedReportId(normalized[0].id);
+      setReports(data);
+      if (data.length > 0) {
+        setSelectedReportId(data[0].id);
       }
     });
   }, [user?.id]);
