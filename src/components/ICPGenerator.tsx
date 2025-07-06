@@ -143,26 +143,18 @@ const ICPGenerator = () => {
     }
   };
 
-  const generateGTMPlaybook = async () => {
+  const handleSubmit = async () => {
     if (!selectedCompany) {
-      toast({
-        title: "No Company Selected",
-        description: "Please select a target company first.",
-        variant: "destructive",
-      });
+      toast({ title: "No company selected", variant: "destructive" });
       return;
     }
-
     setLoading(true);
     try {
-      const response = await fetch(`${SUPABASE_FUNCTIONS_BASE}/gtm-generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          companyUrl: selectedCompany.companyUrl,
+      const payload = {
+        websiteUrl: selectedCompany.website || selectedCompany.companyUrl,
+        useExistingAnalysis: true,
+        analysisId: selectedCompany.id,
+        gtmFormAnswers: {
           playbookType,
           productStage,
           channelExpansion,
@@ -172,77 +164,28 @@ const ICPGenerator = () => {
           primaryGoals,
           marketingChannels,
           additionalContext,
-        }),
+        },
+        selectedCompany,
+      };
+      const response = await fetch('/api/gtm-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify(payload),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const result = await response.json();
-      
       if (result.success) {
-        setICP(result.gtmPlaybook);
-        toast({
-          title: "GTM Playbook Generated",
-          description: "Your comprehensive GTM strategy is ready!",
-        });
+        toast({ title: "GTM Playbook Generated", description: "Your playbook is ready!" });
+        // Optionally: setICP(result.gtmPlaybook);
       } else {
-        throw new Error(result.error || 'Failed to generate GTM playbook');
+        toast({ title: "Generation Failed", description: result.error || "Unknown error", variant: "destructive" });
       }
     } catch (error) {
-      console.error('Error generating GTM playbook:', error);
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate GTM playbook. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Generation Failed", description: error.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const saveGTMPlaybook = async () => {
-    if (!icp || !selectedCompany) {
-      toast({
-        title: "Nothing to Save",
-        description: "Please generate a GTM playbook first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('gtm_playbooks')
-        .insert({
-          user_id: user.id,
-          company_name: selectedCompany.companyName || selectedCompany.company_name,
-          company_url: selectedCompany.companyUrl,
-          icp_data: JSON.stringify(icp),
-          playbook_type: playbookType,
-          created_at: new Date().toISOString(),
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Playbook Saved",
-        description: "Your GTM playbook has been saved successfully!",
-      });
-
-      // Refresh the list
-      getCompanyAnalysis({ userId: user.id }).then((data) => {
-        setRecentReports(data);
-        hasFetchedReports.current = true;
-      });
-    } catch (error) {
-      console.error('Error saving GTM playbook:', error);
-      toast({
-        title: "Save Failed",
-        description: "Failed to save GTM playbook. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -585,7 +528,7 @@ const ICPGenerator = () => {
       {/* Generate Button */}
       <div className="flex gap-4">
         <Button 
-          onClick={generateGTMPlaybook} 
+          onClick={handleSubmit} 
           disabled={!selectedCompany || loading}
           className="flex-1"
         >
@@ -602,7 +545,7 @@ const ICPGenerator = () => {
           )}
         </Button>
         {icp && (
-          <Button onClick={saveGTMPlaybook} variant="outline">
+          <Button onClick={handleSubmit} variant="outline">
             <FileText className="mr-2 h-4 w-4" />
             Save Playbook
           </Button>
