@@ -416,30 +416,6 @@ const ICPGenerator = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Company Selector */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Select Target Company</label>
-        <div className="flex flex-wrap gap-2">
-          {availableCompanies.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {availableCompanies.map((company) => (
-                <Button
-                  key={company.id}
-                  variant={selectedCompany?.id === company.id ? 'default' : 'outline'}
-                  onClick={() => setSelectedCompany(company)}
-                  className="flex items-center gap-2 px-3 py-1 text-sm"
-                  size="sm"
-                >
-                  <img src={`https://www.google.com/s2/favicons?domain=${company.companyUrl}`} alt="favicon" className="w-4 h-4 mr-1" />
-                  {company.companyName || company.company_name || company.companyUrl}
-                  {selectedCompany?.id === company.id && <CheckCircle className="h-3 w-3 ml-1" />}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* GTM Configuration Form */}
       <Card>
         <CardHeader>
