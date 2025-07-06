@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -772,7 +772,7 @@ const ICPGenerator = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-3">Buyer Personas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {icp.personas.map((persona, index) => (
+                  {icp.personas.map((persona: any, index: number) => (
                     <Card key={index}>
                       <CardContent className="p-4">
                         <h4 className="font-semibold">{persona.title}</h4>
@@ -781,7 +781,7 @@ const ICPGenerator = () => {
                           <div className="mt-2">
                             <span className="text-xs font-medium">Pain Points:</span>
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {persona.painPoints.map((point, i) => (
+                              {persona.painPoints.map((point: string, i: number) => (
                                 <Badge key={i} variant="secondary" className="text-xs">
                                   {point}
                                 </Badge>
@@ -826,7 +826,7 @@ const ICPGenerator = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-3">Messaging Angles</h3>
                 <div className="flex flex-wrap gap-2">
-                  {icp.messagingAngles.map((angle, index) => (
+                  {icp.messagingAngles.map((angle: string, index: number) => (
                     <Badge key={index} variant="outline">
                       {angle}
                     </Badge>
@@ -857,7 +857,7 @@ const ICPGenerator = () => {
                   <div>
                     <span className="text-sm font-medium text-muted-foreground">Titles</span>
                     <div className="flex flex-wrap gap-1">
-                      {icp.apolloSearchParams.titles.map((title, index) => (
+                      {icp.apolloSearchParams.titles.map((title: string, index: number) => (
                         <Badge key={index} variant="secondary" className="text-xs">
                           {title}
                         </Badge>
@@ -867,7 +867,7 @@ const ICPGenerator = () => {
                   <div>
                     <span className="text-sm font-medium text-muted-foreground">Industries</span>
                     <div className="flex flex-wrap gap-1">
-                      {icp.apolloSearchParams.industries.map((industry, index) => (
+                      {icp.apolloSearchParams.industries.map((industry: string, index: number) => (
                         <Badge key={index} variant="secondary" className="text-xs">
                           {industry}
                         </Badge>
@@ -877,7 +877,7 @@ const ICPGenerator = () => {
                   <div>
                     <span className="text-sm font-medium text-muted-foreground">Locations</span>
                     <div className="flex flex-wrap gap-1">
-                      {icp.apolloSearchParams.locations.map((location, index) => (
+                      {icp.apolloSearchParams.locations.map((location: string, index: number) => (
                         <Badge key={index} variant="secondary" className="text-xs">
                           {location}
                         </Badge>
