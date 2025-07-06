@@ -218,25 +218,30 @@ const LeadEnrichment = () => {
     setCompanies([]);
     setContacts([]);
     try {
+      const payload = {
+        icpId: searchQuery, // For now, use searchQuery as ICP ID or adapt as needed
+        intelReportId: intelReport?.id,
+        gtmPlaybookId: gtmPlaybook?.id,
+      };
+      console.log('[LeadEnrichment] Triggering pipeline with payload:', payload);
       const response = await fetch('/api/app/leads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({
-          icpId: searchQuery, // For now, use searchQuery as ICP ID or adapt as needed
-          intelReportId: intelReport?.id,
-          gtmPlaybookId: gtmPlaybook?.id,
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = await response.json();
+      console.log('[LeadEnrichment] Pipeline response status:', response.status);
+      const data = await response.json().catch(() => ({}));
+      console.log('[LeadEnrichment] Pipeline response data:', data);
       if (!response.ok) throw new Error(data.error || 'Pipeline failed');
       setPipelineId(data.pipelineId);
       setPipelineStatus(data.status);
       toast({ title: 'Pipeline Started', description: data.message || 'Pipeline started.' });
     } catch (error: any) {
-      toast({ title: 'Pipeline Error', description: error.message, variant: 'destructive' });
+      console.error('[LeadEnrichment] Pipeline Error:', error);
+      toast({ title: 'Pipeline Error', description: error.message || error.toString(), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
