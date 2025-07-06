@@ -20,6 +20,7 @@ import { capitalizeFirstLetter, getCache, setCache } from '../lib/utils';
 import { useDataPreload } from '@/context/DataPreloadProvider';
 import { getCompanyAnalysis } from '../lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
+import { GTMPlaybookModal } from './ui/GTMPlaybookModal';
 
 const SUPABASE_FUNCTIONS_BASE = 'https://hbogcsztrryrepudceww.functions.supabase.co';
 
@@ -83,6 +84,8 @@ const ICPGenerator = () => {
   const [showICPModal, setShowICPModal] = useState(false);
   const [modalICP, setModalICP] = useState<any>(null);
   const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
+  const [showPlaybookModal, setShowPlaybookModal] = useState(false);
+  const [playbookData, setPlaybookData] = useState(null);
 
   // Debug log for recentReports
   console.log('recentReports:', recentReports);
@@ -178,7 +181,8 @@ const ICPGenerator = () => {
       const result = await response.json();
       if (result.success) {
         toast({ title: "GTM Playbook Generated", description: "Your playbook is ready!" });
-        // Optionally: setICP(result.gtmPlaybook);
+        setPlaybookData(result);
+        setShowPlaybookModal(true);
       } else {
         toast({ title: "Generation Failed", description: result.error || "Unknown error", variant: "destructive" });
       }
@@ -688,6 +692,8 @@ const ICPGenerator = () => {
           </CardContent>
         </Card>
       )}
+
+      <GTMPlaybookModal open={showPlaybookModal} onClose={() => setShowPlaybookModal(false)} playbookData={playbookData} company={selectedCompany} />
     </div>
   );
 };
