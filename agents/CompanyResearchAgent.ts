@@ -254,7 +254,7 @@ IMPORTANT:
 }
 
 // Helper to get the first non-empty value from a list of possible keys
-function getFirst(obj, keys, fallback = '') {
+function getFirst(obj: Record<string, any>, keys: string[], fallback = '') {
   for (const key of keys) {
     if (obj && obj[key] && obj[key] !== '' && obj[key] !== 'Unknown') return obj[key];
   }
@@ -262,7 +262,7 @@ function getFirst(obj, keys, fallback = '') {
 }
 
 // Helper for arrays
-function getFirstArray(obj, keys) {
+function getFirstArray(obj: Record<string, any>, keys: string[]) {
   for (const key of keys) {
     if (obj && Array.isArray(obj[key]) && obj[key].length > 0) return obj[key];
   }
@@ -270,7 +270,7 @@ function getFirstArray(obj, keys) {
 }
 
 // Helper for objects
-function getFirstObject(obj, keys) {
+function getFirstObject(obj: Record<string, any>, keys: string[]) {
   for (const key of keys) {
     if (obj && typeof obj[key] === 'object' && !Array.isArray(obj[key]) && Object.keys(obj[key] || {}).length > 0) return obj[key];
   }
@@ -492,7 +492,7 @@ export async function runFullCompanyResearchPipeline(url: string, user_id: strin
       funding_status: getFirst(overview, ['funding_status', 'funding']),
       summary: getFirst(overview, ['summary', 'overview']),
       website: getFirst(overview, ['website', 'url']),
-      notable_clients: Array.isArray(sales.client_logos) ? sales.client_logos.map(c => c.category || c.logo_url || c.name || c.company || '') : [],
+      notable_clients: Array.isArray(sales.client_logos) ? sales.client_logos.map((c: any) => c.category || c.logo_url || c.name || c.company || '') : [],
       social_media: sales.social_media || overview.social_media || {}
     },
     market_intelligence: {
