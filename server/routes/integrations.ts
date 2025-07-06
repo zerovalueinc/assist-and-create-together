@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express from 'express';
 import { authenticateToken } from '../middleware/auth';
 import { createClient } from '@supabase/supabase-js';

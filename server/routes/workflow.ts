@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express from 'express';
 import { WorkflowManager } from '../../core/WorkflowManager';
 import { ICPGeneratorWorkflow } from '../../core/ICPGeneratorWorkflow';

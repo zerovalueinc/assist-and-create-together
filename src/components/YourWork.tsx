@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,21 +12,22 @@ import { getCompanyAnalysis } from '@/lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || window.location.origin;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
 export default function YourWork() {
   const user = useUser();
   const session = useSession();
-  const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
-  const [gtmWork, setGtmWork] = useState<any[]>([]);
+  const [analyzeWork, setAnalyzeWork] = useState<unknown[]>([]);
+  const [gtmWork, setGtmWork] = useState<unknown[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
   const [gtmLoading, setGtmLoading] = useState(true);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [gtmError, setGtmError] = useState<string | null>(null);
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<unknown[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [selectedCompany, setSelectedCompany] = useState<any | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<unknown | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -52,9 +54,10 @@ export default function YourWork() {
         if (error) throw error;
         setGtmWork(data || []);
         setCache('yourwork_gtm', data || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!cancelled) {
-          setGtmError(err.message || 'Failed to load GTM playbooks.');
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load GTM playbooks.';
+          setGtmError(errorMessage);
           console.error('Error fetching GTM playbooks:', err);
         }
       }
@@ -117,11 +120,11 @@ export default function YourWork() {
                 <div className="flex flex-wrap gap-2 mb-4">
                   {analyzeWork.map((report) => (
                     <CompanyReportCard
-                      key={report.id}
+                      key={(report as Record<string, unknown>).id as string}
                       report={report}
-                      selected={selectedReportId === report.id}
+                      selected={selectedReportId === (report as Record<string, unknown>).id as string}
                       onClick={() => {
-                        setSelectedReportId(report.id);
+                        setSelectedReportId((report as Record<string, unknown>).id as string);
                         setSelectedCompany(report);
                         // Add any other selection logic as needed
                       }}
@@ -158,13 +161,13 @@ export default function YourWork() {
                 <div className="flex flex-wrap gap-2 mb-4">
                   {gtmWork.map((item) => (
                     <Button
-                      key={item.id}
+                      key={(item as Record<string, unknown>).id as string}
                       variant="outline"
                       className="flex items-center gap-2 px-3 py-1 text-sm"
                       size="sm"
                     >
-                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-                      {item.companyName || 'Untitled GTM Playbook'}
+                      <img src={`https://www.google.com/s2/favicons?domain=${(item as Record<string, unknown>).companyUrl as string || (item as Record<string, unknown>).url as string || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+                      {(item as Record<string, unknown>).companyName as string || 'Untitled GTM Playbook'}
                     </Button>
                   ))}
                 </div>

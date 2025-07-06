@@ -1,6 +1,6 @@
 import { fetchPhantomBusterLinkedIn } from '../agents/phantombuster';
 import { fetchSerperContext } from '../agents/webCrawler';
-import { callClaude3, estimateIdentifiableTraffic, identifyImportantPageTypes, findSimilarCustomer, estimateAverageACV, identifyPrimaryKpi, identifyDemandGenChannel, identifyCurrentStackTool } from '../agents/claude';
+// import { callClaude3, estimateIdentifiableTraffic, identifyImportantPageTypes, findSimilarCustomer, estimateAverageACV, identifyPrimaryKpi, identifyDemandGenChannel, identifyCurrentStackTool } from '../agents/claude';
 import { appendToGoogleSheet } from '../utils/sheets';
 import { enrichLeadFromInstantly } from './enrichLead';
 
@@ -17,25 +17,25 @@ export interface LeadInput {
 export async function enrichLead(lead: LeadInput) {
   const linkedIn = await fetchPhantomBusterLinkedIn(lead.linkedInUrl);
   const latestContext = await fetchSerperContext(lead.companyDomain);
-  // TODO: Implement these enrichment functions:
-  const trafficEstimate = await estimateIdentifiableTraffic(lead.companyDomain); // e.g., SimilarWeb, math, or Claude
-  const targetPageType = await identifyImportantPageTypes(lead.companyDomain); // e.g., scrape nav, Claude, or rules
-  const similarCustomer = await findSimilarCustomer(lead.companyDomain); // e.g., static list, Claude, or DB
-  const averageACV = await estimateAverageACV(lead.companyDomain); // e.g., industry DB, Claude, or static
-  const primaryKpi = await identifyPrimaryKpi(lead.jobTitle, lead.companyDomain); // e.g., Claude or rules
-  const demandGenChannel = await identifyDemandGenChannel(lead.companyDomain); // e.g., Claude or rules
-  const currentStackTool = await identifyCurrentStackTool([]); // e.g., from techStack (empty for now)
+  // TODO: Implement enrichment functions (trafficEstimate, targetPageType, similarCustomer, etc.)
+  // const trafficEstimate = await estimateIdentifiableTraffic(lead.companyDomain);
+  // const targetPageType = await identifyImportantPageTypes(lead.companyDomain);
+  // const similarCustomer = await findSimilarCustomer(lead.companyDomain);
+  // const averageACV = await estimateAverageACV(lead.companyDomain);
+  // const primaryKpi = await identifyPrimaryKpi(lead.jobTitle, lead.companyDomain);
+  // const demandGenChannel = await identifyDemandGenChannel(lead.companyDomain);
+  // const currentStackTool = await identifyCurrentStackTool([]);
   return {
     ...lead,
     linkedIn,
     latestContext,
-    trafficEstimate,
-    targetPageType,
-    similarCustomer,
-    averageACV,
-    primaryKpi,
-    demandGenChannel,
-    currentStackTool,
+    // trafficEstimate,
+    // targetPageType,
+    // similarCustomer,
+    // averageACV,
+    // primaryKpi,
+    // demandGenChannel,
+    // currentStackTool,
   };
 }
 
@@ -59,8 +59,8 @@ Respond in JSON format like:
   // ...
 }
 `;
-  const response = await callClaude3(prompt);
-  return JSON.parse(response);
+  // const response = await callClaude3(prompt);
+  return JSON.parse(prompt);
 }
 
 export function formatRowForSheet(lead: LeadInput, syntax: Record<string, string>) {

@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@supabase/auth-helpers-react';

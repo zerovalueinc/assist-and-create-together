@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,29 +33,31 @@ function normalizeUrl(input: string): string {
 }
 
 // Helper to coerce a value to an array (supports comma-separated strings)
-function toArray(val: any): string[] {
+function toArray(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
   return [];
 }
 
 // Normalization function for LLM output
-function normalizeLLMOutput(llm: any) {
+function normalizeLLMOutput(llm: unknown) {
   if (!llm) return {};
   // If already in the expected format, return as is
-  if (llm.icp || llm.ibp) return llm;
+  if (typeof llm === 'object' && llm !== null && ('icp' in llm || 'ibp' in llm)) return llm;
   // If using the new icp_analysis format, map fields
-  if (llm.icp_analysis) {
+  if (typeof llm === 'object' && llm !== null && 'icp_analysis' in llm) {
+    const llmObj = llm as Record<string, unknown>;
+    const icpAnalysis = llmObj.icp_analysis as Record<string, unknown>;
     return {
       icp: {
-        painPoints: llm.icp_analysis.pain_points,
-        buyerPersonas: llm.icp_analysis.buyer_personas,
-        buyingTriggers: llm.icp_analysis.buying_triggers,
-        valuePropositions: llm.icp_analysis.value_propositions,
-        techStack: llm.icp_analysis.tech_stack_alignment,
-        apolloSearchParameters: llm.icp_analysis.apollo_search_parameters,
-        targetingRecommendations: llm.icp_analysis.targeting_recommendations,
-        targetCompanyCharacteristics: llm.icp_analysis.target_company_characteristics,
+        painPoints: icpAnalysis.pain_points,
+        buyerPersonas: icpAnalysis.buyer_personas,
+        buyingTriggers: icpAnalysis.buying_triggers,
+        valuePropositions: icpAnalysis.value_propositions,
+        techStack: icpAnalysis.tech_stack_alignment,
+        apolloSearchParameters: icpAnalysis.apollo_search_parameters,
+        targetingRecommendations: icpAnalysis.targeting_recommendations,
+        targetCompanyCharacteristics: icpAnalysis.target_company_characteristics,
       },
       // Add other mappings as needed
     };
@@ -63,7 +66,7 @@ function normalizeLLMOutput(llm: any) {
 }
 
 // Helper to safely render any field
-function renderField(field: any) {
+function renderField(field: unknown) {
   if (field == null) return 'N/A';
   if (typeof field === 'string') return field;
   if (Array.isArray(field)) return field.join(', ');
@@ -81,17 +84,27 @@ const renderValue = (val: unknown): string => {
 };
 
 // Helper to normalize company name for pills
-function normalizeReportCompanyName(report: any) {
-  let name = report.company_name;
-  if (!name && report.company_overview) name = report.company_overview.company_name;
-  if (!name && report.llm_output) {
-    let canonical = report.llm_output;
-    if (typeof canonical === 'string') {
-      try { canonical = JSON.parse(canonical); } catch {}
-    }
-    name = canonical?.company_name || canonical?.company_overview?.company_name;
+function normalizeReportCompanyName(report: unknown) {
+  const reportObj = report as Record<string, unknown>;
+  let name = reportObj.company_name as string;
+  if (!name && reportObj.company_overview) {
+    const overview = reportObj.company_overview as Record<string, unknown>;
+    name = overview.company_name as string;
   }
-  return { ...report, company_name: name || 'Untitled' };
+  if (!name && reportObj.llm_output) {
+    let canonical = reportObj.llm_output;
+    if (typeof canonical === 'string') {
+      try { canonical = JSON.parse(canonical); } catch {
+        // Ignore parse errors
+      }
+    }
+    if (typeof canonical === 'object' && canonical !== null) {
+      const canonicalObj = canonical as Record<string, unknown>;
+      name = (canonicalObj.company_name as string) || 
+             ((canonicalObj.company_overview as Record<string, unknown>)?.company_name as string);
+    }
+  }
+  return { ...reportObj, company_name: name || 'Untitled' };
 }
 
 const CompanyAnalyzer = () => {
@@ -103,12 +116,12 @@ const CompanyAnalyzer = () => {
   const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
 
   // Use direct result from getCompanyAnalysis for pills
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<unknown[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState(null);
+  const [analysis, setAnalysis] = useState<unknown>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState<string>('');
-  const [researchSteps, setResearchSteps] = useState<any[]>([]);
+  const [researchSteps, setResearchSteps] = useState<unknown[]>([]);
   const [stepsLoading, setStepsLoading] = useState(false);
   const [expandedStepIndexes, setExpandedStepIndexes] = useState<number[]>([]);
 
@@ -117,7 +130,7 @@ const CompanyAnalyzer = () => {
     getCompanyAnalysis({ userId: user.id }).then((data) => {
       setReports(data);
       if (data.length > 0) {
-        setSelectedReportId(data[0].id);
+        setSelectedReportId(data[0].id as string);
       }
     });
   }, [user?.id]);
@@ -129,8 +142,13 @@ const CompanyAnalyzer = () => {
         setResearchSteps([]);
         return;
       }
-      const analysisAny = analysis as any;
-      const companyUrl = analysisAny.company_url || analysisAny.companyUrl || (analysisAny.llm_output && (typeof analysisAny.llm_output === 'string' ? JSON.parse(analysisAny.llm_output).company_url : analysisAny.llm_output.company_url));
+      const analysisObj = analysis as Record<string, unknown>;
+      const companyUrl = analysisObj.company_url as string || 
+                        analysisObj.companyUrl as string || 
+                        (analysisObj.llm_output && 
+                         (typeof analysisObj.llm_output === 'string' ? 
+                          JSON.parse(analysisObj.llm_output).company_url : 
+                          (analysisObj.llm_output as Record<string, unknown>).company_url as string));
       if (!companyUrl) {
         setResearchSteps([]);
         return;
@@ -150,7 +168,7 @@ const CompanyAnalyzer = () => {
 
   const handleDeleteReport = async (id: string) => {
     const prevReports = reports;
-    setReports(reports.filter(r => r.id !== id));
+    setReports(reports.filter(r => (r as Record<string, unknown>).id !== id));
     if (selectedReportId === id) {
       setAnalysis(null);
       setSelectedReportId(null);
@@ -190,7 +208,7 @@ const CompanyAnalyzer = () => {
     setCurrentStep('Company Overview...');
 
     // Realistic step progression based on backend logs
-    const stepTimeouts: NodeJS.Timeout[] = [];
+    const stepTimeouts: ReturnType<typeof setTimeout>[] = [];
     stepTimeouts.push(setTimeout(() => setCurrentStep('Market Intelligence...'), 4000)); // after 4s
     stepTimeouts.push(setTimeout(() => setCurrentStep('Tech Stack Analysis...'), 13000)); // after 13s
     stepTimeouts.push(setTimeout(() => setCurrentStep('Sales & GTM Research...'), 33000)); // after 33s
@@ -214,7 +232,9 @@ const CompanyAnalyzer = () => {
         try {
           const errJson = await response.json();
           errorMsg = errJson.error || errorMsg;
-        } catch {}
+        } catch {
+          // Ignore parse errors
+        }
         throw new Error(errorMsg);
       }
       const data = await response.json();
@@ -253,7 +273,7 @@ const CompanyAnalyzer = () => {
           }
         }
         setAnalysis(canonical);
-        setReports(prev => [canonical, ...prev.filter(r => r.id !== reportObj.id)]);
+        setReports(prev => [canonical, ...prev.filter(r => (r as Record<string, unknown>).id !== (reportObj as Record<string, unknown>).id)]);
         setSelectedReportId(reportObj.id || null);
         setResearch({
           companyAnalysis: canonical,
@@ -312,7 +332,7 @@ const CompanyAnalyzer = () => {
               reports={reports}
               selectedId={selectedReportId}
               onSelect={(report) => {
-                setSelectedReportId(report.id);
+                setSelectedReportId(report.id as string);
                 setAnalysis(report);
               }}
             />

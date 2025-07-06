@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import reportWireframe from './reportWireframe';

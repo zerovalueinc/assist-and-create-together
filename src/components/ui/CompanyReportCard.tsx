@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Button } from './button';
 import { CheckCircle } from 'lucide-react';
 

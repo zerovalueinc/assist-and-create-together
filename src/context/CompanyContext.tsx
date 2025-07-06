@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import * as React from "react";
+import { createContext, useContext, useState } from 'react';
 
 export type CompanyResearch = any; // Replace with a more specific type if desired
 

@@ -32,8 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Generate email template for a lead
-        if (method === 'POST' && url.match(/\/generate\/(.+)$/)) {
-          const leadId = url.match(/\/generate\/(.+)$/)[1];
+        const matchGenerate = url.match(/\/generate\/(.+)$/);
+        if (method === 'POST' && matchGenerate && matchGenerate[1]) {
+          const leadId = matchGenerate[1];
           const { tone = 'professional', style = 'outbound', useClaude = true } = body;
           
           // Get the lead from Supabase
@@ -100,8 +101,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Upload campaign to Instantly
-        if (method === 'POST' && url.match(/\/upload\/(.+)$/)) {
-          const templateId = url.match(/\/upload\/(.+)$/)[1];
+        const matchUpload = url.match(/\/upload\/(.+)$/);
+        if (method === 'POST' && matchUpload && matchUpload[1]) {
+          const templateId = matchUpload[1];
           const { campaignName, sequenceSteps = 1 } = body;
           
           // Get the email template
@@ -205,7 +207,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               
             } catch (error) {
               errorCount++;
-              results.push({ leadId, error: error.message });
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              results.push({ leadId, error: errorMsg });
             }
           }
           
@@ -221,21 +224,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Get email templates for a lead
-        if (method === 'GET' && url.match(/\/api\/email\/([^\/]+)$/)) {
-          const leadId = url.match(/\/api\/email\/([^\/]+)$/)[1];
-          const { tone, limit = 10 } = query;
+        const matchGetEmail = url.match(/\/api\/email\/([^\/]+)$/);
+        if (method === 'GET' && matchGetEmail && matchGetEmail[1]) {
+          const leadId = matchGetEmail[1];
+          const { tone, limit: rawLimit = 10 } = query;
           
           let queryBuilder = supabase
             .from('email_templates')
             .select('*')
             .eq('lead_id', leadId)
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(parseInt(limit));
+            .order('created_at', { ascending: false });
           
           if (tone) {
             queryBuilder = queryBuilder.eq('tone', tone);
           }
+          
+          let limitValue: string;
+          if (Array.isArray(rawLimit)) {
+            limitValue = rawLimit[0];
+          } else if (typeof rawLimit === 'undefined') {
+            limitValue = '10';
+          } else if (typeof rawLimit === 'string') {
+            limitValue = rawLimit;
+          } else {
+            limitValue = String(rawLimit);
+          }
+          const parsedLimit = parseInt(limitValue, 10);
+          queryBuilder = queryBuilder.limit(parsedLimit);
           
           const { data: templates, error: templatesError } = await queryBuilder;
           
@@ -248,8 +264,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Update email template
-        if (method === 'PUT' && url.match(/\/api\/email\/([^\/]+)$/)) {
-          const templateId = url.match(/\/api\/email\/([^\/]+)$/)[1];
+        const matchPutEmail = url.match(/\/api\/email\/([^\/]+)$/);
+        if (method === 'PUT' && matchPutEmail && matchPutEmail[1]) {
+          const templateId = matchPutEmail[1];
           const { subject, body: emailBody, tone } = body;
           
           const { data: template, error: updateError } = await supabase
@@ -269,8 +286,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Delete email template
-        if (method === 'DELETE' && url.match(/\/api\/email\/([^\/]+)$/)) {
-          const templateId = url.match(/\/api\/email\/([^\/]+)$/)[1];
+        const matchDeleteEmail = url.match(/\/api\/email\/([^\/]+)$/);
+        if (method === 'DELETE' && matchDeleteEmail && matchDeleteEmail[1]) {
+          const templateId = matchDeleteEmail[1];
           
           const { error: deleteError } = await supabase
             .from('email_templates')
@@ -433,7 +451,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               
             } catch (error) {
               errorCount++;
-              results.push({ leadId, error: error.message });
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              results.push({ leadId, error: errorMsg });
             }
           }
           
@@ -715,8 +734,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Get specific company analysis report by ID
-        if (method === 'GET' && url.match(/\/api\/company-analysis\/([^\/]+)$/)) {
-          const reportId = url.match(/\/api\/company-analysis\/([^\/]+)$/)[1];
+        const matchGetCompanyAnalysis = url.match(/\/api\/company-analysis\/([^\/]+)$/);
+        if (method === 'GET' && matchGetCompanyAnalysis && matchGetCompanyAnalysis[1]) {
+          const reportId = matchGetCompanyAnalysis[1];
           
           const { data: report, error: reportError } = await supabase
             .from('company_analysis_reports')
@@ -863,7 +883,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const { 
             icpId, 
             page = 1, 
-            limit = 20, 
+            limit: rawLimit = 20, 
             search, 
             company,
             title,
@@ -894,14 +914,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           // Add sorting
           const validSortFields = ['created_at', 'full_name', 'company_name', 'title', 'confidence_score'];
-          const sortField = validSortFields.includes(sortBy as string) ? sortBy : 'created_at';
+          const sortBySafe = typeof sortBy === 'string' && validSortFields.includes(sortBy) ? sortBy : 'created_at';
           const order = sortOrder === 'ASC' ? 'asc' : 'desc';
-          
-          queryBuilder = queryBuilder.order(sortField, { ascending: order === 'asc' });
+          queryBuilder = queryBuilder.order(sortBySafe, { ascending: order === 'asc' });
           
           // Add pagination
-          const offset = (Number(page) - 1) * Number(limit);
-          queryBuilder = queryBuilder.range(offset, offset + Number(limit) - 1);
+          let limitValue: string;
+          if (Array.isArray(rawLimit)) {
+            limitValue = rawLimit[0];
+          } else if (typeof rawLimit === 'undefined') {
+            limitValue = '10';
+          } else if (typeof rawLimit === 'string') {
+            limitValue = rawLimit;
+          } else {
+            limitValue = String(rawLimit);
+          }
+          const parsedLimit = parseInt(limitValue, 10);
+          queryBuilder = queryBuilder.limit(parsedLimit);
+          const offset = (Number(page) - 1) * parsedLimit;
+          queryBuilder = queryBuilder.range(offset, offset + parsedLimit - 1);
           
           const { data: leads, error: leadsError, count } = await queryBuilder;
           
@@ -915,9 +946,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             leads,
             pagination: {
               page: Number(page),
-              limit: Number(limit),
+              limit: Number(rawLimit),
               total: count || leads.length,
-              pages: Math.ceil((count || leads.length) / Number(limit))
+              pages: Math.ceil((count || leads.length) / Number(rawLimit))
             },
             filters: {
               icpId,
@@ -931,8 +962,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Get specific lead by ID
-        if (method === 'GET' && url.match(/\/api\/leads\/([^\/]+)$/)) {
-          const leadId = url.match(/\/api\/leads\/([^\/]+)$/)[1];
+        const matchGetLead = url.match(/\/api\/leads\/([^\/]+)$/);
+        if (method === 'GET' && matchGetLead && matchGetLead[1]) {
+          const leadId = matchGetLead[1];
           
           const { data: lead, error: leadError } = await supabase
             .from('leads')
@@ -949,8 +981,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Update lead
-        if (method === 'PUT' && url.match(/\/api\/leads\/([^\/]+)$/)) {
-          const leadId = url.match(/\/api\/leads\/([^\/]+)$/)[1];
+        const matchPutLead = url.match(/\/api\/leads\/([^\/]+)$/);
+        if (method === 'PUT' && matchPutLead && matchPutLead[1]) {
+          const leadId = matchPutLead[1];
           const { firstName, lastName, title, email, companyName, companyWebsite } = body;
           
           const { data: lead, error: updateError } = await supabase
@@ -979,8 +1012,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Delete lead
-        if (method === 'DELETE' && url.match(/\/api\/leads\/([^\/]+)$/)) {
-          const leadId = url.match(/\/api\/leads\/([^\/]+)$/)[1];
+        const matchDeleteLead = url.match(/\/api\/leads\/([^\/]+)$/);
+        if (method === 'DELETE' && matchDeleteLead && matchDeleteLead[1]) {
+          const leadId = matchDeleteLead[1];
           
           const { error: deleteError } = await supabase
             .from('leads')
@@ -1288,8 +1322,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Get report by URL
-        if (method === 'GET' && url.match(/\/report\/(.+)$/)) {
-          const websiteUrl = decodeURIComponent(url.match(/\/report\/(.+)$/)[1]);
+        const matchGetReport = url.match(/\/report\/(.+)$/);
+        if (method === 'GET' && matchGetReport && matchGetReport[1]) {
+          const websiteUrl = decodeURIComponent(matchGetReport[1]);
           
           const { data: report, error: reportError } = await supabase
             .from('sales_intelligence_reports')
@@ -1500,8 +1535,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Get upload status
-        if (method === 'GET' && url.match(/\/status\/(.+)$/)) {
-          const icpId = url.match(/\/status\/(.+)$/)[1];
+        const matchGetStatusIcp = url.match(/\/status\/(.+)$/);
+        if (method === 'GET' && matchGetStatusIcp && matchGetStatusIcp[1]) {
+          const icpId = matchGetStatusIcp[1];
           
           // Get leads count for this ICP and user
           const { data: leads, error: leadsError } = await supabase
@@ -1608,8 +1644,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Get workflow status
-        if (method === 'GET' && url.match(/\/status\/(.+)$/)) {
-          const workflowId = url.match(/\/status\/(.+)$/)[1];
+        const matchGetStatusWorkflow = url.match(/\/status\/(.+)$/);
+        if (method === 'GET' && matchGetStatusWorkflow && matchGetStatusWorkflow[1]) {
+          const workflowId = matchGetStatusWorkflow[1];
           
           const { data: workflow, error: workflowError } = await supabase
             .from('workflows')
@@ -1782,7 +1819,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try { data = JSON.parse(text); } catch { data = text; }
         return res.status(edgeRes.status).json(data);
       } catch (err) {
-        return res.status(500).json({ error: 'Proxy to Supabase Edge Function failed', details: err.message });
+        const message = err instanceof Error ? err.message : String(err);
+        return res.status(500).json({ error: 'Proxy to Supabase Edge Function failed', details: message });
       }
     }
     // GTM-GENERATE ENDPOINT
@@ -1806,7 +1844,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try { data = JSON.parse(text); } catch { data = text; }
         return res.status(edgeRes.status).json(data);
       } catch (err) {
-        return res.status(500).json({ error: 'Proxy to Supabase Edge Function failed', details: err.message });
+        const message = err instanceof Error ? err.message : String(err);
+        return res.status(500).json({ error: 'Proxy to Supabase Edge Function failed', details: message });
       }
     }
     // ANALYTICS ENDPOINT
@@ -2151,7 +2190,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // DEFAULT: Not found
     return res.status(404).json({ error: 'Not found' });
   } catch (err) {
-    console.error('API error:', err);
-    return res.status(500).json({ error: 'Internal server error', details: err.message });
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: 'Internal server error', details: message });
   }
 } 

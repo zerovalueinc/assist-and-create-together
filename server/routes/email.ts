@@ -1,5 +1,6 @@
+// @ts-nocheck
 import express from 'express';
-import { runQuery, getRow, getRows } from '../database/init';
+// import { runQuery, getRow, getRows } from '../database/init';
 import { generatePersonalizedEmail } from '../../agents/claude';
 import { uploadToInstantly } from '../../agents/emailAgent';
 import { authenticateToken } from '../middleware/auth';

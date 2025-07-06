@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from "react";
 
 // Universal recursive renderer for any value (string, number, array, {key, value}[])
 export function renderValue(value: any, keyPrefix = ''): React.ReactNode {

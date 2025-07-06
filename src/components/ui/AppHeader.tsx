@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useUser } from '@supabase/auth-helpers-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';

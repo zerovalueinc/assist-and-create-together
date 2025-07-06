@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from './card';
 import { Badge } from './badge';
 import { Users, Building2, MessageSquare, Rocket, FileText } from 'lucide-react';

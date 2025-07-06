@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import * as React from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCache, setCache } from '@/lib/utils';
 import { useUser, useSession } from '@supabase/auth-helpers-react';

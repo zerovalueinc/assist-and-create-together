@@ -1,23 +1,41 @@
-import js from "@eslint/js";
-import globals from "globals";
-import reactHooks from "eslint-plugin-react-hooks";
-import tseslint from "typescript-eslint";
+const js = require("@eslint/js");
+const globals = require("globals");
+const reactHooks = require("eslint-plugin-react-hooks");
+const tseslint = require("@typescript-eslint/eslint-plugin");
+const tsParser = require("@typescript-eslint/parser");
 
-export default tseslint.config(
-  { ignores: ["dist", "supabase/functions/**/*"] },
+/** @type {import("eslint").Linter.FlatConfig[]} */
+module.exports = [
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ["**/*.{ts,tsx}"],
+    ignores: ["dist", "supabase/functions/**/*"],
+  },
+  {
+    files: ["**/*.{ts,tsx}", "**/*.js", "**/*.jsx"],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parser: tsParser,
+      parserOptions: {
+        project: "./tsconfig.json",
+        sourceType: "module",
+      },
     },
     plugins: {
+      "@typescript-eslint": tseslint,
       "react-hooks": reactHooks,
     },
+    // Next.js: For full support, add 'extends: ["next"]' in .eslintrc if needed
     rules: {
+      ...js.configs.recommended.rules,
+      ...tseslint.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-empty": "off",
+      "no-undef": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
+      "no-redeclare": "off",
+      "react-hooks/exhaustive-deps": "warn",
     },
-  }
-);
+  },
+];

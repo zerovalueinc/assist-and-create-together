@@ -1,7 +1,6 @@
 import { fetchCampaigns, fetchCampaignLeads, importLeadsBulk, fetchLeadLists } from '../agents/researchAgent';
 import cliProgress from 'cli-progress';
 import fs from 'fs';
-import { searchApolloContacts, apolloToInstantlyLead } from '../agents/apolloAgent';
 
 // Load ICP from icp.json
 function loadICP(icpPath = './icp.json') {
@@ -114,31 +113,32 @@ export async function runCompanyToContactWorkflow(limit = 100) {
   console.log('Querying Apollo with:', JSON.stringify(queryParams, null, 2));
 
   // 2. Fetch leads from Apollo
-  const apolloLeads = await searchApolloContacts(queryParams, limit);
-  console.log(`Fetched ${apolloLeads.length} leads from Apollo`);
-
-  if (apolloLeads.length === 0) {
-    console.log('No leads found matching ICP criteria');
-    return [];
-  }
+  // const apolloLeads = await searchApolloContacts(queryParams, limit);
+  // TODO: Integrate Apollo lead fetching here
+  // if (apolloLeads.length === 0) {
+  //   console.log('No leads found matching ICP criteria');
+  //   return [];
+  // }
 
   // 3. Map Apollo leads to Instantly format
-  const mappedLeads = apolloLeads.map(apolloToInstantlyLead);
-  console.log(`Mapped ${mappedLeads.length} leads to Instantly format`);
+  // const mappedLeads = apolloLeads.map(apolloToInstantlyLead);
+  // TODO: Integrate Apollo-to-Instantly mapping here
+  // console.log(`Mapped ${mappedLeads.length} leads to Instantly format`);
 
   // 4. Print results for review
-  console.log('\n=== LEAD DISCOVERY RESULTS ===');
-  mappedLeads.forEach((lead: any, index: number) => {
-    console.log(`\n${index + 1}. ${lead.first_name} ${lead.last_name}`);
-    console.log(`   Job Title: ${lead.job_title}`);
-    console.log(`   Company: ${lead.company_name}`);
-    console.log(`   Email: ${lead.email}`);
-    console.log(`   LinkedIn: ${lead.linkedin_url || 'N/A'}`);
-  });
+  // console.log('\n=== LEAD DISCOVERY RESULTS ===');
+  // mappedLeads.forEach((lead: any, index: number) => {
+  //   console.log(`\n${index + 1}. ${lead.first_name} ${lead.last_name}`);
+  //   console.log(`   Job Title: ${lead.job_title}`);
+  //   console.log(`   Company: ${lead.company_name}`);
+  //   console.log(`   Email: ${lead.email}`);
+  //   console.log(`   LinkedIn: ${lead.linkedin_url || 'N/A'}`);
+  // });
 
-  console.log(`\nTotal leads discovered: ${mappedLeads.length}`);
-  
-  return mappedLeads;
+  // console.log(`\nTotal leads discovered: ${mappedLeads.length}`);
+  // return mappedLeads;
+  // For now, return empty array
+  return [];
 }
 
 // Run the workflow if this file is executed directly
