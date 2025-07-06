@@ -53,12 +53,12 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
           <Card>
             <CardHeader className="flex items-center gap-2"><TrendingUp className="h-5 w-5" />Market Analysis</CardHeader>
             <CardContent>
-              <div><b>TAM:</b> {gtmPlaybook.marketAnalysis.totalAddressableMarket}</div>
-              <div><b>SAM:</b> {gtmPlaybook.marketAnalysis.servicableAddressableMarket}</div>
-              <div className="mt-2"><b>Target Segments:</b> {gtmPlaybook.marketAnalysis.targetMarketSegments.join(', ')}</div>
-              <div className="mt-2"><b>Competitors:</b> {gtmPlaybook.marketAnalysis.competitiveLandscape.join(', ')}</div>
+              <div><b>TAM:</b> {gtmPlaybook.marketAnalysis?.totalAddressableMarket || 'N/A'}</div>
+              <div><b>SAM:</b> {gtmPlaybook.marketAnalysis?.servicableAddressableMarket || 'N/A'}</div>
+              <div className="mt-2"><b>Target Segments:</b> {gtmPlaybook.marketAnalysis?.targetMarketSegments?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Competitors:</b> {gtmPlaybook.marketAnalysis?.competitiveLandscape?.join(', ') || 'N/A'}</div>
               <div className="flex flex-wrap gap-2 mt-2">
-                {gtmPlaybook.marketAnalysis.marketTrends.map((trend, i) => (
+                {(gtmPlaybook.marketAnalysis?.marketTrends || []).map((trend, i) => (
                   <Badge key={i}>{trend}</Badge>
                 ))}
               </div>
@@ -67,12 +67,12 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
           <Card>
             <CardHeader className="flex items-center gap-2"><Users className="h-5 w-5" />Ideal Customer Profile</CardHeader>
             <CardContent>
-              <div className="mb-2"><b>Industries:</b> {gtmPlaybook.idealCustomerProfile.firmographics.industry.join(', ')}</div>
-              <div className="mb-2"><b>Geography:</b> {gtmPlaybook.idealCustomerProfile.firmographics.geography.join(', ')}</div>
-              <div className="mb-2"><b>Company Size:</b> {gtmPlaybook.idealCustomerProfile.firmographics.companySize}</div>
-              <div className="mb-2"><b>Revenue Range:</b> {gtmPlaybook.idealCustomerProfile.firmographics.revenueRange}</div>
+              <div className="mb-2"><b>Industries:</b> {gtmPlaybook.idealCustomerProfile?.firmographics?.industry?.join(', ') || 'N/A'}</div>
+              <div className="mb-2"><b>Geography:</b> {gtmPlaybook.idealCustomerProfile?.firmographics?.geography?.join(', ') || 'N/A'}</div>
+              <div className="mb-2"><b>Company Size:</b> {gtmPlaybook.idealCustomerProfile?.firmographics?.companySize || 'N/A'}</div>
+              <div className="mb-2"><b>Revenue Range:</b> {gtmPlaybook.idealCustomerProfile?.firmographics?.revenueRange || 'N/A'}</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                {gtmPlaybook.idealCustomerProfile.personas.map((persona, i) => (
+                {gtmPlaybook.idealCustomerProfile?.personas?.map((persona, i) => (
                   <Card key={i} className="bg-muted/50">
                     <CardContent className="flex flex-col gap-2 p-4">
                       {/* TODO: Use avatar/logo if available */}
@@ -81,9 +81,9 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
                         <span className="font-semibold">{persona.title}</span>
                         <span className="text-xs text-muted-foreground">({persona.role})</span>
                       </div>
-                      <div><b>Pain Points:</b> {persona.painPoints.join(', ')}</div>
-                      <div><b>Responsibilities:</b> {persona.responsibilities.join(', ')}</div>
-                      <div><b>Buying Influence:</b> {persona.buyingInfluence}</div>
+                      <div><b>Pain Points:</b> {persona.painPoints?.join(', ') || 'N/A'}</div>
+                      <div><b>Responsibilities:</b> {persona.responsibilities?.join(', ') || 'N/A'}</div>
+                      <div><b>Buying Influence:</b> {persona.buyingInfluence || 'N/A'}</div>
                     </CardContent>
                   </Card>
                 ))}
@@ -93,30 +93,30 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
           <Card>
             <CardHeader>Value Proposition</CardHeader>
             <CardContent>
-              <div><b>Primary Value:</b> {gtmPlaybook.valueProposition.primaryValue}</div>
-              <div className="mt-2"><b>Key Differentiators:</b> {gtmPlaybook.valueProposition.keyDifferentiators.join(', ')}</div>
-              <div className="mt-2"><b>Competitive Advantages:</b> {gtmPlaybook.valueProposition.competitiveAdvantages.join(', ')}</div>
+              <div><b>Primary Value:</b> {gtmPlaybook.valueProposition?.primaryValue || 'N/A'}</div>
+              <div className="mt-2"><b>Key Differentiators:</b> {gtmPlaybook.valueProposition?.keyDifferentiators?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Competitive Advantages:</b> {gtmPlaybook.valueProposition?.competitiveAdvantages?.join(', ') || 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>Go-to-Market Strategy</CardHeader>
             <CardContent>
-              <div><b>Channel:</b> {gtmPlaybook.goToMarketStrategy.channel}</div>
-              <div><b>Sales Motion:</b> {gtmPlaybook.goToMarketStrategy.salesMotion}</div>
-              <div><b>Pricing Strategy:</b> {gtmPlaybook.goToMarketStrategy.pricingStrategy}</div>
-              <div><b>Sales Cycle Length:</b> {gtmPlaybook.goToMarketStrategy.salesCycleLength}</div>
-              <div><b>Customer Acquisition Cost:</b> {gtmPlaybook.goToMarketStrategy.customerAcquisitionCost}</div>
+              <div><b>Channel:</b> {gtmPlaybook.goToMarketStrategy?.channel || 'N/A'}</div>
+              <div><b>Sales Motion:</b> {gtmPlaybook.goToMarketStrategy?.salesMotion || 'N/A'}</div>
+              <div><b>Pricing Strategy:</b> {gtmPlaybook.goToMarketStrategy?.pricingStrategy || 'N/A'}</div>
+              <div><b>Sales Cycle Length:</b> {gtmPlaybook.goToMarketStrategy?.salesCycleLength || 'N/A'}</div>
+              <div><b>Customer Acquisition Cost:</b> {gtmPlaybook.goToMarketStrategy?.customerAcquisitionCost || 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex items-center gap-2"><MessageSquare className="h-5 w-5" />Messaging Framework</CardHeader>
             <CardContent>
-              <div><b>Primary Message:</b> {gtmPlaybook.messagingFramework.primaryMessage}</div>
-              <div className="mt-2"><b>Secondary Messages:</b> {gtmPlaybook.messagingFramework.secondaryMessages.join(', ')}</div>
+              <div><b>Primary Message:</b> {gtmPlaybook.messagingFramework?.primaryMessage || 'N/A'}</div>
+              <div className="mt-2"><b>Secondary Messages:</b> {gtmPlaybook.messagingFramework?.secondaryMessages?.join(', ') || 'N/A'}</div>
               <div className="mt-2"><b>Objection Handling:</b>
                 <ul className="list-disc ml-6">
-                  {gtmPlaybook.messagingFramework.objectionHandling.map((o, i) => (
-                    <li key={i}><b>{o.objection}:</b> {o.response}</li>
+                  {gtmPlaybook.messagingFramework?.objectionHandling?.map((o, i) => (
+                    <li key={i}><b>{o.objection}:</b> {o.response || 'N/A'}</li>
                   ))}
                 </ul>
               </div>
@@ -125,32 +125,32 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
           <Card>
             <CardHeader>Sales Enablement</CardHeader>
             <CardContent>
-              <div><b>Talk Tracks:</b> {gtmPlaybook.salesEnablement.talkTracks.join(', ')}</div>
-              <div className="mt-2"><b>Battle Cards:</b> {gtmPlaybook.salesEnablement.battleCards.join(', ')}</div>
-              <div className="mt-2"><b>Case Studies:</b> {gtmPlaybook.salesEnablement.caseStudies.join(', ')}</div>
-              <div className="mt-2"><b>Demo Scripts:</b> {gtmPlaybook.salesEnablement.demoScripts.join(', ')}</div>
+              <div><b>Talk Tracks:</b> {gtmPlaybook.salesEnablement?.talkTracks?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Battle Cards:</b> {gtmPlaybook.salesEnablement?.battleCards?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Case Studies:</b> {gtmPlaybook.salesEnablement?.caseStudies?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Demo Scripts:</b> {gtmPlaybook.salesEnablement?.demoScripts?.join(', ') || 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>Demand Generation</CardHeader>
             <CardContent>
-              <div><b>Channels:</b> {gtmPlaybook.demandGeneration.channels.join(', ')}</div>
-              <div className="mt-2"><b>Lead Magnets:</b> {gtmPlaybook.demandGeneration.leadMagnets.join(', ')}</div>
-              <div className="mt-2"><b>Campaign Ideas:</b> {gtmPlaybook.demandGeneration.campaignIdeas.join(', ')}</div>
-              <div className="mt-2"><b>Content Strategy:</b> {gtmPlaybook.demandGeneration.contentStrategy.join(', ')}</div>
+              <div><b>Channels:</b> {gtmPlaybook.demandGeneration?.channels?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Lead Magnets:</b> {gtmPlaybook.demandGeneration?.leadMagnets?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Campaign Ideas:</b> {gtmPlaybook.demandGeneration?.campaignIdeas?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Content Strategy:</b> {gtmPlaybook.demandGeneration?.contentStrategy?.join(', ') || 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex items-center gap-2"><BarChart2 className="h-5 w-5" />Metrics & KPIs</CardHeader>
             <CardContent>
-              <div><b>Success Metrics:</b> {gtmPlaybook.metricsAndKPIs.successMetrics.join(', ')}</div>
-              <div className="mt-2"><b>Leading Indicators:</b> {gtmPlaybook.metricsAndKPIs.leadingIndicators.join(', ')}</div>
-              <div className="mt-2"><b>Lagging Indicators:</b> {gtmPlaybook.metricsAndKPIs.laggingIndicators.join(', ')}</div>
+              <div><b>Success Metrics:</b> {gtmPlaybook.metricsAndKPIs?.successMetrics?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Leading Indicators:</b> {gtmPlaybook.metricsAndKPIs?.leadingIndicators?.join(', ') || 'N/A'}</div>
+              <div className="mt-2"><b>Lagging Indicators:</b> {gtmPlaybook.metricsAndKPIs?.laggingIndicators?.join(', ') || 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>Research Summary</CardHeader>
-            <CardContent>{researchSummary}</CardContent>
+            <CardContent>{researchSummary || 'N/A'}</CardContent>
           </Card>
         </div>
       </DialogContent>

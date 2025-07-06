@@ -694,6 +694,10 @@ const ICPGenerator = () => {
       )}
 
       <GTMPlaybookModal open={showPlaybookModal} onClose={() => setShowPlaybookModal(false)} playbookData={playbookData} company={selectedCompany} />
+
+      <Button className="mt-8 w-full" variant="default" onClick={() => playbookData && setShowPlaybookModal(true)} disabled={!playbookData}>
+        Saved GTM Playbooks
+      </Button>
     </div>
   );
 };
