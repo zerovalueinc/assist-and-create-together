@@ -9,6 +9,7 @@ import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { SectionLabel } from "./ui/section-label";
 import { getCache, setCache } from '../lib/utils';
 import { useUserData } from '../hooks/useUserData';
+import { supabase } from '../lib/supabase';
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,41 +106,43 @@ const LeadEnrichment = () => {
     if (cachedLeads.length > 0) setLeads(cachedLeads);
   }, []);
 
-  // Fetch available Intel and GTM reports for selection
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        // Fetch Intel reports
-        const intelResponse = await fetch('/api/company-analysis', {
-          method: 'GET',
-          headers: {
-            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-          },
-        });
-        if (intelResponse.ok) {
-          const intelData = await intelResponse.json();
-          setAvailableIntelReports(intelData.reports || []);
-        }
-
-        // Fetch GTM playbooks
-        const gtmResponse = await fetch('/api/gtm-playbooks', {
-          method: 'GET',
-          headers: {
-            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-          },
-        });
-        if (gtmResponse.ok) {
-          const gtmData = await gtmResponse.json();
-          setAvailableGtmPlaybooks(gtmData.playbooks || []);
-        }
-      } catch (error) {
-        console.error('Error fetching reports:', error);
-      }
-    };
-    if (session?.access_token) {
-      fetchReports();
+  // Fetch available Intel and GTM reports for selection (client-side, instant)
+  const fetchIntelReports = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('company_analyzer_outputs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAvailableIntelReports(data || []);
+    } catch (error) {
+      console.error('Error fetching Intel reports:', error);
+      setAvailableIntelReports([]);
     }
-  }, [session?.access_token]);
+  };
+
+  const fetchGtmPlaybooks = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('gtm_playbooks')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAvailableGtmPlaybooks(data || []);
+    } catch (error) {
+      console.error('Error fetching GTM playbooks:', error);
+      setAvailableGtmPlaybooks([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchIntelReports();
+    fetchGtmPlaybooks();
+  }, [session?.user?.id]);
 
   // Poll for pipeline results
   useEffect(() => {
@@ -277,7 +280,10 @@ const LeadEnrichment = () => {
           {/* Intel and GTM Selection Dropdowns */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium">Intel Report (Optional)</label>
+              <label className="text-sm font-medium flex items-center gap-2">
+                Intel Report (Optional)
+                <Button size="sm" variant="outline" onClick={fetchIntelReports}>Refresh</Button>
+              </label>
               <select
                 value={intelReport?.id || ''}
                 onChange={(e) => {
@@ -287,15 +293,21 @@ const LeadEnrichment = () => {
                 className="w-full mt-1 p-2 border rounded-md"
               >
                 <option value="">Select Intel Report</option>
+                {availableIntelReports.length === 0 && (
+                  <option disabled>No reports found. Generate one in the Intel tab.</option>
+                )}
                 {availableIntelReports.map((report) => (
                   <option key={report.id} value={report.id}>
-                    {report.company_name || report.id}
+                    {report.company_name || report.companyName || report.id}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium">GTM Playbook (Optional)</label>
+              <label className="text-sm font-medium flex items-center gap-2">
+                GTM Playbook (Optional)
+                <Button size="sm" variant="outline" onClick={fetchGtmPlaybooks}>Refresh</Button>
+              </label>
               <select
                 value={gtmPlaybook?.id || ''}
                 onChange={(e) => {
@@ -305,9 +317,12 @@ const LeadEnrichment = () => {
                 className="w-full mt-1 p-2 border rounded-md"
               >
                 <option value="">Select GTM Playbook</option>
+                {availableGtmPlaybooks.length === 0 && (
+                  <option disabled>No playbooks found. Generate one in the GTM tab.</option>
+                )}
                 {availableGtmPlaybooks.map((playbook) => (
                   <option key={playbook.id} value={playbook.id}>
-                    {playbook.company_name || playbook.id}
+                    {playbook.company_name || playbook.companyName || playbook.id}
                   </option>
                 ))}
               </select>
