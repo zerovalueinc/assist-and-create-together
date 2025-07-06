@@ -36,6 +36,7 @@ module.exports = [
       "@typescript-eslint/no-empty-object-type": "off",
       "no-redeclare": "off",
       "react-hooks/exhaustive-deps": "warn",
+      "@typescript-eslint/ban-ts-comment": "off",
     },
   },
 ];
