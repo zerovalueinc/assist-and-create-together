@@ -268,19 +268,12 @@ const GTMGenerator = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    console.log('[GTMGenerator] Fetching GTM playbooks for user:', user.id);
     supabase
       .from('gtm_playbooks')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        console.log('[GTMGenerator] GTM playbooks query result:', { data, error });
-        setGtmPlaybooks(data || []);
-        if (data) {
-          console.log('[GTMGenerator] Full GTM playbooks array:', JSON.stringify(data, null, 2));
-        }
-      });
+      .then(({ data }) => setGtmPlaybooks(data || []));
   }, [user?.id]);
 
   useEffect(() => {
@@ -343,6 +336,10 @@ const GTMGenerator = () => {
       </div>
     </div>
   );
+
+  if (!user?.id) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
