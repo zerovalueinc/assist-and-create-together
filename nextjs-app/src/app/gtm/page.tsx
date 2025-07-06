@@ -1,5 +1,5 @@
 'use client';
-import ICPGenerator from '../../../../src/components/ICPGenerator';
+import ICPGenerator from '../../components/ICPGenerator';
 
 export default function GTMPage() {
   return <ICPGenerator />;
