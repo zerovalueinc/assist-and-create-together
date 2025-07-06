@@ -4,29 +4,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Target, Users, DollarSign, Calendar } from "lucide-react";
 import { SectionLabel } from "./ui/section-label";
-import { useUser, useSession } from '@supabase/auth-helpers-react';
+import { useUser } from '@supabase/auth-helpers-react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCache, setCache } from '@/lib/utils';
-import { useCompany } from '../context/CompanyContext';
 
 const SalesIntelligence = () => {
-  const [reports, setReports] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [reports, setReports] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const user = useUser();
-  const session = useSession();
-  const { research } = useCompany();
   const workspaceId = user?.id; // Use user ID as workspace ID for now
   const hasFetched = useRef(false);
 
   useEffect(() => {
     // Show cached reports instantly
-    const cachedReports = getCache<any[]>('salesintel_reports', []);
+    const cachedReports = getCache<Record<string, unknown>[]>('salesintel_reports', []);
     if (cachedReports.length > 0) setReports(cachedReports);
     if (!user || !workspaceId || hasFetched.current) return;
     hasFetched.current = true;
-    setLoading(true);
-    setError(null);
     const fetchReports = async () => {
       try {
         const { data, error } = await supabase
@@ -37,11 +31,10 @@ const SalesIntelligence = () => {
         if (error) throw error;
         setReports(data || []);
         setCache('salesintel_reports', data || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch sales intelligence reports.');
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch sales intelligence reports.';
+        setError(errorMessage);
         console.error('Failed to fetch reports:', err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchReports();

@@ -39,7 +39,7 @@ const EmailVerification: React.FC = () => {
           setStatus('error');
           setMessage(data.error || 'Email verification failed. Please try again.');
         }
-      } catch (error) {
+      } catch {
         setStatus('error');
         setMessage('An error occurred during verification. Please try again.');
       }

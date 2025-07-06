@@ -1,27 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/lib/supabaseClient';
 import { useCompany } from "@/context/CompanyContext";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
-import { supabase } from '@/lib/supabaseClient';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { CheckCircle } from 'lucide-react';
-import { prettifyLabel, getCache, setCache } from '@/lib/utils';
-import { Skeleton } from './ui/skeleton';
 import { useDataPreload } from '@/context/DataPreloadProvider';
-import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '@/lib/supabase/edgeClient';
-import { CompanyReportCard } from './ui/CompanyReportCard';
-import ICPProfileDisplay from './ui/ICPProfileDisplay';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
-import { SectionLabel } from './ui/section-label';
+import { getCompanyAnalysis, getCompanyResearchSteps } from '@/lib/supabase/edgeClient';
 import CanonicalReportRenderer from './ui/CanonicalReportRenderer';
 import { CompanyReportPills } from './ui/CompanyReportPills';
-
-
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();
@@ -32,29 +21,30 @@ function normalizeUrl(input: string): string {
 }
 
 // Helper to coerce a value to an array (supports comma-separated strings)
-function toArray(val: any): string[] {
+function toArray(val: unknown): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
   return [];
 }
 
 // Normalization function for LLM output
-function normalizeLLMOutput(llm: any) {
+function normalizeLLMOutput(llm: unknown) {
   if (!llm) return {};
   // If already in the expected format, return as is
-  if (llm.icp || llm.ibp) return llm;
+  if (typeof llm === 'object' && llm !== null && ('icp' in llm || 'ibp' in llm)) return llm;
   // If using the new icp_analysis format, map fields
-  if (llm.icp_analysis) {
+  if (typeof llm === 'object' && llm !== null && 'icp_analysis' in llm) {
+    const llmObj = llm as { icp_analysis: Record<string, unknown> };
     return {
       icp: {
-        painPoints: llm.icp_analysis.pain_points,
-        buyerPersonas: llm.icp_analysis.buyer_personas,
-        buyingTriggers: llm.icp_analysis.buying_triggers,
-        valuePropositions: llm.icp_analysis.value_propositions,
-        techStack: llm.icp_analysis.tech_stack_alignment,
-        apolloSearchParameters: llm.icp_analysis.apollo_search_parameters,
-        targetingRecommendations: llm.icp_analysis.targeting_recommendations,
-        targetCompanyCharacteristics: llm.icp_analysis.target_company_characteristics,
+        painPoints: llmObj.icp_analysis.pain_points,
+        buyerPersonas: llmObj.icp_analysis.buyer_personas,
+        buyingTriggers: llmObj.icp_analysis.buying_triggers,
+        valuePropositions: llmObj.icp_analysis.value_propositions,
+        techStack: llmObj.icp_analysis.tech_stack_alignment,
+        apolloSearchParameters: llmObj.icp_analysis.apollo_search_parameters,
+        targetingRecommendations: llmObj.icp_analysis.targeting_recommendations,
+        targetCompanyCharacteristics: llmObj.icp_analysis.target_company_characteristics,
       },
       // Add other mappings as needed
     };
@@ -63,7 +53,7 @@ function normalizeLLMOutput(llm: any) {
 }
 
 // Helper to safely render any field
-function renderField(field: any) {
+function renderField(field: unknown) {
   if (field == null) return 'N/A';
   if (typeof field === 'string') return field;
   if (Array.isArray(field)) return field.join(', ');
@@ -81,15 +71,22 @@ const renderValue = (val: unknown): string => {
 };
 
 // Helper to normalize company name for pills
-function normalizeReportCompanyName(report: any) {
-  let name = report.company_name;
-  if (!name && report.company_overview) name = report.company_overview.company_name;
+function normalizeReportCompanyName(report: Record<string, unknown>) {
+  let name = report.company_name as string;
+  if (!name && report.company_overview) {
+    const overview = report.company_overview as Record<string, unknown>;
+    name = overview.company_name as string;
+  }
   if (!name && report.llm_output) {
     let canonical = report.llm_output;
     if (typeof canonical === 'string') {
       try { canonical = JSON.parse(canonical); } catch {}
     }
-    name = canonical?.company_name || canonical?.company_overview?.company_name;
+    if (typeof canonical === 'object' && canonical !== null) {
+      const canonicalObj = canonical as Record<string, unknown>;
+      name = canonicalObj.company_name as string || 
+             (canonicalObj.company_overview as Record<string, unknown>)?.company_name as string;
+    }
   }
   return { ...report, company_name: name || 'Untitled' };
 }
@@ -100,24 +97,20 @@ const CompanyAnalyzer = () => {
   const { setResearch } = useCompany();
   const user = useUser();
   const session = useSession();
-  const { data: preloadData, loading: preloadLoading, retry: refreshData } = useDataPreload();
 
   // Use direct result from getCompanyAnalysis for pills
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Record<string, unknown>[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState(null);
+  const [analysis, setAnalysis] = useState<unknown>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState<string>('');
-  const [researchSteps, setResearchSteps] = useState<any[]>([]);
-  const [stepsLoading, setStepsLoading] = useState(false);
-  const [expandedStepIndexes, setExpandedStepIndexes] = useState<number[]>([]);
 
   useEffect(() => {
     if (!user?.id) return;
     getCompanyAnalysis({ userId: user.id }).then((data) => {
       setReports(data);
       if (data.length > 0) {
-        setSelectedReportId(data[0].id);
+        setSelectedReportId(data[0].id as string);
       }
     });
   }, [user?.id]);
@@ -126,43 +119,26 @@ const CompanyAnalyzer = () => {
   useEffect(() => {
     async function fetchSteps() {
       if (!analysis || !selectedReportId || !user?.id) {
-        setResearchSteps([]);
         return;
       }
-      const analysisAny = analysis as any;
-      const companyUrl = analysisAny.company_url || analysisAny.companyUrl || (analysisAny.llm_output && (typeof analysisAny.llm_output === 'string' ? JSON.parse(analysisAny.llm_output).company_url : analysisAny.llm_output.company_url));
+      const analysisAny = analysis as Record<string, unknown>;
+      const companyUrl = analysisAny.company_url as string || 
+                        analysisAny.companyUrl as string || 
+                        (analysisAny.llm_output && 
+                         (typeof analysisAny.llm_output === 'string' ? 
+                          JSON.parse(analysisAny.llm_output).company_url : 
+                          (analysisAny.llm_output as Record<string, unknown>).company_url as string));
       if (!companyUrl) {
-        setResearchSteps([]);
         return;
       }
-      setStepsLoading(true);
       try {
-        const steps = await getCompanyResearchSteps({ companyUrl, userId: user.id });
-        setResearchSteps(steps);
-      } catch (err) {
-        setResearchSteps([]);
-      } finally {
-        setStepsLoading(false);
+        await getCompanyResearchSteps({ companyUrl, userId: user.id });
+      } catch {
+        // Silently handle error
       }
     }
     fetchSteps();
   }, [analysis, selectedReportId, user?.id]);
-
-  const handleDeleteReport = async (id: string) => {
-    const prevReports = reports;
-    setReports(reports.filter(r => r.id !== id));
-    if (selectedReportId === id) {
-      setAnalysis(null);
-      setSelectedReportId(null);
-    }
-    const { error } = await supabase.from('company_analyzer_outputs_unrestricted').delete().eq('id', id);
-    if (error) {
-      toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
-      setReports(prevReports); // Rollback UI
-    } else {
-      toast({ title: 'Report Deleted', description: 'The report was deleted successfully.' });
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -260,8 +236,6 @@ const CompanyAnalyzer = () => {
           isCached: false,
           timestamp: new Date().toISOString()
         });
-        // Refresh the DataPreloadProvider to update all components
-        refreshData();
         toast({
           title: "Analysis Complete",
           description: `Successfully analyzed ${canonical.company_name || canonical.companyName}`,
@@ -311,8 +285,8 @@ const CompanyAnalyzer = () => {
             <CompanyReportPills
               reports={reports}
               selectedId={selectedReportId}
-              onSelect={(report) => {
-                setSelectedReportId(report.id);
+              onSelect={(report: Record<string, unknown>) => {
+                setSelectedReportId(report.id as string);
                 setAnalysis(report);
               }}
             />

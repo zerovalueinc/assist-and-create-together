@@ -1,12 +1,11 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Zap, Target, Users, BarChart3, Mail } from "lucide-react";
+import { Shield, Target, Users, BarChart3, Mail } from "lucide-react";
 import { useUserData } from "@/hooks/useUserData";
 
 const AccountHeader = () => {
-  const { user, loading } = useUserData() as { user: any, loading: boolean };
+  const { user } = useUserData() as { user: any, loading: boolean };
   const fullName = user?.user_metadata?.fullName || user?.user_metadata?.name || user?.email || '';
   const company = user?.user_metadata?.company || '';
   const initials = fullName ? fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '';

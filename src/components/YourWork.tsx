@@ -1,31 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
+import { FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/lib/supabaseClient';
-import { capitalizeFirstLetter, getCache, setCache } from '@/lib/utils';
-import { Skeleton } from './ui/skeleton';
-import { useCompany } from '@/context/CompanyContext';
+import { getCache, setCache } from '@/lib/utils';
 import { getCompanyAnalysis } from '@/lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
   const user = useUser();
   const session = useSession();
-  const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
-  const [gtmWork, setGtmWork] = useState<any[]>([]);
+  const [analyzeWork, setAnalyzeWork] = useState<Record<string, unknown>[]>([]);
+  const [gtmWork, setGtmWork] = useState<Record<string, unknown>[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
-  const [gtmLoading, setGtmLoading] = useState(true);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [gtmError, setGtmError] = useState<string | null>(null);
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
-  const [reports, setReports] = useState<any[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [selectedCompany, setSelectedCompany] = useState<any | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -52,9 +45,10 @@ export default function YourWork() {
         if (error) throw error;
         setGtmWork(data || []);
         setCache('yourwork_gtm', data || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!cancelled) {
-          setGtmError(err.message || 'Failed to load GTM playbooks.');
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load GTM playbooks.';
+          setGtmError(errorMessage);
           console.error('Error fetching GTM playbooks:', err);
         }
       }
@@ -62,27 +56,6 @@ export default function YourWork() {
     fetchGTMPlaybooks();
     return () => { cancelled = true; };
   }, [user?.id]);
-
-  const fetchReports = async () => {
-    if (!user) return;
-    
-    try {
-      const { data: reports, error } = await supabase
-        .from('company_analyzer_outputs_unrestricted')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching reports:', error);
-        return;
-      }
-
-      setReports(reports || []);
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-    }
-  };
 
   if (!user) {
     return <div className="min-h-[80vh] w-full flex flex-col items-center justify-center bg-slate-50 py-12"><span>Please log in to view your work.</span></div>;
@@ -117,12 +90,11 @@ export default function YourWork() {
                 <div className="flex flex-wrap gap-2 mb-4">
                   {analyzeWork.map((report) => (
                     <CompanyReportCard
-                      key={report.id}
+                      key={report.id as string}
                       report={report}
                       selected={selectedReportId === report.id}
                       onClick={() => {
-                        setSelectedReportId(report.id);
-                        setSelectedCompany(report);
+                        setSelectedReportId(report.id as string);
                         // Add any other selection logic as needed
                       }}
                     />
@@ -158,13 +130,13 @@ export default function YourWork() {
                 <div className="flex flex-wrap gap-2 mb-4">
                   {gtmWork.map((item) => (
                     <Button
-                      key={item.id}
+                      key={item.id as string}
                       variant="outline"
                       className="flex items-center gap-2 px-3 py-1 text-sm"
                       size="sm"
                     >
-                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-                      {item.companyName || 'Untitled GTM Playbook'}
+                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl as string || item.url as string || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+                      {item.companyName as string || 'Untitled GTM Playbook'}
                     </Button>
                   ))}
                 </div>

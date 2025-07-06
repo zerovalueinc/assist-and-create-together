@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
-import { CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 const ForgotPassword: React.FC = () => {
@@ -30,7 +30,7 @@ const ForgotPassword: React.FC = () => {
         setStatus('success');
         setMessage('If an account with that email exists, a password reset link has been sent.');
       }
-    } catch (error: any) {
+    } catch {
       setStatus('error');
       setMessage('An error occurred. Please try again.');
     }
@@ -53,7 +53,7 @@ const ForgotPassword: React.FC = () => {
             Forgot Password
           </CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you a link to reset your password
+            Enter your email address and we&apos;ll send you a link to reset your password
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,7 +67,7 @@ const ForgotPassword: React.FC = () => {
               </Alert>
               <div className="text-sm text-gray-600 text-center">
                 <p>Check your email for a password reset link.</p>
-                <p className="mt-2">Didn't receive the email? Check your spam folder or try again.</p>
+                <p className="mt-2">Didn&apos;t receive the email? Check your spam folder or try again.</p>
               </div>
               <div className="flex flex-col space-y-2">
                 <Button onClick={handleTryAgain} variant="outline" className="w-full">
@@ -124,7 +124,6 @@ const ForgotPassword: React.FC = () => {
                   onClick={handleBackToLogin}
                   className="text-sm"
                 >
-                  <ArrowLeft className="mr-1 h-4 w-4" />
                   Back to Login
                 </Button>
               </div>
