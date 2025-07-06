@@ -43,6 +43,58 @@ function normalizeReportCompanyName(report: any) {
   return { ...report, company_name: name || 'Untitled' };
 }
 
+// GTM Playbook Pills Components
+function getPlaybookDomain(playbook: any): string {
+  return playbook.companyUrl || playbook.website || '';
+}
+
+function getPlaybookName(playbook: any): string {
+  return playbook.companyName || playbook.company_name || 'Untitled Playbook';
+}
+
+function formatDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString();
+}
+
+function GTMPlaybookCard({ playbook, selected, onClick }: { playbook: any, selected: boolean, onClick: () => void }) {
+  const name = getPlaybookName(playbook);
+  const domain = getPlaybookDomain(playbook);
+  const date = formatDate(playbook.created_at || playbook.createdAt);
+  return (
+    <Button
+      variant={selected ? 'default' : 'outline'}
+      onClick={onClick}
+      className={`flex items-center gap-2 px-3 py-1 text-sm ${selected ? 'ring-2 ring-primary' : ''}`}
+      size="sm"
+    >
+      {domain && (
+        <img src={`https://www.google.com/s2/favicons?domain=${domain}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+      )}
+      <span>{name}</span>
+      {date && <span className="text-xs text-muted-foreground ml-2">{date}</span>}
+      {selected && <CheckCircle className="h-3 w-3 ml-1" />}
+    </Button>
+  );
+}
+
+function GTMPlaybookPills({ playbooks, selectedId, onSelect }: { playbooks: any[], selectedId: string | null, onSelect: (playbook: any) => void }) {
+  if (!playbooks.length) return null;
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {playbooks.map((playbook) => (
+        <GTMPlaybookCard
+          key={playbook.id}
+          playbook={playbook}
+          selected={selectedId === playbook.id}
+          onClick={() => onSelect(playbook)}
+        />
+      ))}
+    </div>
+  );
+}
+
 const GTMGenerator = () => {
   const [url, setUrl] = useState('');
   const [gtmPlaybook, setGtmPlaybook] = useState(null);
@@ -689,6 +741,8 @@ const GTMGenerator = () => {
       ) : (
         <div className="text-center text-muted-foreground py-8">Select a GTM playbook to view details.</div>
       )}
+
+      <GTMPlaybookPills playbooks={availablePlaybooks} selectedId={selectedPlaybookId} onSelect={handleSelectPlaybook} />
     </div>
   );
 };
