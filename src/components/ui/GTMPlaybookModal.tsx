@@ -137,27 +137,27 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
           <Card>
             <CardHeader>Sales Enablement</CardHeader>
             <CardContent>
-              <div><b>Talk Tracks:</b> {gtmPlaybook.salesEnablement?.talkTracks?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Battle Cards:</b> {gtmPlaybook.salesEnablement?.battleCards?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Case Studies:</b> {gtmPlaybook.salesEnablement?.caseStudies?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Demo Scripts:</b> {gtmPlaybook.salesEnablement?.demoScripts?.join(', ') || 'N/A'}</div>
+              <div><b>Talk Tracks:</b> {Array.isArray(gtmPlaybook.salesEnablement?.talkTracks) && gtmPlaybook.salesEnablement.talkTracks.length > 0 ? gtmPlaybook.salesEnablement.talkTracks.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Battle Cards:</b> {Array.isArray(gtmPlaybook.salesEnablement?.battleCards) && gtmPlaybook.salesEnablement.battleCards.length > 0 ? gtmPlaybook.salesEnablement.battleCards.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Case Studies:</b> {Array.isArray(gtmPlaybook.salesEnablement?.caseStudies) && gtmPlaybook.salesEnablement.caseStudies.length > 0 ? gtmPlaybook.salesEnablement.caseStudies.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Demo Scripts:</b> {Array.isArray(gtmPlaybook.salesEnablement?.demoScripts) && gtmPlaybook.salesEnablement.demoScripts.length > 0 ? gtmPlaybook.salesEnablement.demoScripts.join(', ') : 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>Demand Generation</CardHeader>
             <CardContent>
-              <div><b>Channels:</b> {gtmPlaybook.demandGeneration?.channels?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Lead Magnets:</b> {gtmPlaybook.demandGeneration?.leadMagnets?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Campaign Ideas:</b> {gtmPlaybook.demandGeneration?.campaignIdeas?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Content Strategy:</b> {gtmPlaybook.demandGeneration?.contentStrategy?.join(', ') || 'N/A'}</div>
+              <div><b>Channels:</b> {Array.isArray(gtmPlaybook.demandGeneration?.channels) && gtmPlaybook.demandGeneration.channels.length > 0 ? gtmPlaybook.demandGeneration.channels.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Lead Magnets:</b> {Array.isArray(gtmPlaybook.demandGeneration?.leadMagnets) && gtmPlaybook.demandGeneration.leadMagnets.length > 0 ? gtmPlaybook.demandGeneration.leadMagnets.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Campaign Ideas:</b> {Array.isArray(gtmPlaybook.demandGeneration?.campaignIdeas) && gtmPlaybook.demandGeneration.campaignIdeas.length > 0 ? gtmPlaybook.demandGeneration.campaignIdeas.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Content Strategy:</b> {Array.isArray(gtmPlaybook.demandGeneration?.contentStrategy) && gtmPlaybook.demandGeneration.contentStrategy.length > 0 ? gtmPlaybook.demandGeneration.contentStrategy.join(', ') : 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex items-center gap-2"><BarChart2 className="h-5 w-5" />Metrics & KPIs</CardHeader>
             <CardContent>
-              <div><b>Success Metrics:</b> {gtmPlaybook.metricsAndKPIs?.successMetrics?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Leading Indicators:</b> {gtmPlaybook.metricsAndKPIs?.leadingIndicators?.join(', ') || 'N/A'}</div>
-              <div className="mt-2"><b>Lagging Indicators:</b> {gtmPlaybook.metricsAndKPIs?.laggingIndicators?.join(', ') || 'N/A'}</div>
+              <div><b>Success Metrics:</b> {Array.isArray(gtmPlaybook.metricsAndKPIs?.successMetrics) && gtmPlaybook.metricsAndKPIs.successMetrics.length > 0 ? gtmPlaybook.metricsAndKPIs.successMetrics.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Leading Indicators:</b> {Array.isArray(gtmPlaybook.metricsAndKPIs?.leadingIndicators) && gtmPlaybook.metricsAndKPIs.leadingIndicators.length > 0 ? gtmPlaybook.metricsAndKPIs.leadingIndicators.join(', ') : 'N/A'}</div>
+              <div className="mt-2"><b>Lagging Indicators:</b> {Array.isArray(gtmPlaybook.metricsAndKPIs?.laggingIndicators) && gtmPlaybook.metricsAndKPIs.laggingIndicators.length > 0 ? gtmPlaybook.metricsAndKPIs.laggingIndicators.join(', ') : 'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
