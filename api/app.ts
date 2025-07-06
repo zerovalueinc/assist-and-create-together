@@ -778,9 +778,9 @@ export default async function handler(req, res) {
           return res.status(401).json({ error: 'Invalid token' });
         }
         
-        // Search leads
-        if (method === 'POST' && url.includes('/search')) {
-          const { icpId, limit = 15, forceRefresh = false } = body;
+        // Search leads (NEW PIPELINE INTEGRATION)
+        if (method === 'POST' && (url.includes('/search') || url === '/api/leads')) {
+          const { icpId, intelReportId, gtmPlaybookId, limit = 15, forceRefresh = false } = body;
           
           if (!icpId) {
             return res.status(400).json({ error: 'ICP ID is required' });
@@ -797,97 +797,60 @@ export default async function handler(req, res) {
           if (icpError || !icp) {
             return res.status(404).json({ error: 'ICP not found' });
           }
-          
-          // Parse ICP data
-          const icpData = {
-            ...icp,
-            painPoints: icp.pain_points ? JSON.parse(icp.pain_points) : [],
-            technologies: icp.technologies ? JSON.parse(icp.technologies) : [],
-            companySize: icp.company_size ? JSON.parse(icp.company_size) : [],
-            jobTitles: icp.job_titles ? JSON.parse(icp.job_titles) : [],
-            locationCountry: icp.location_country ? JSON.parse(icp.location_country) : [],
-            industries: icp.industries ? JSON.parse(icp.industries) : []
-          };
-          
-          // Prepare search parameters (placeholder - would integrate with Apollo agent)
-          const queryParams = {
-            organization_num_employees: icpData.companySize || [],
-            title: icpData.jobTitles || [],
-            country: icpData.locationCountry || [],
-            industry: icpData.industries || [],
-          };
-          
-          // Mock Apollo search results (placeholder)
-          const mockLeads = [
-            {
-              firstName: 'John',
-              lastName: 'Doe',
-              fullName: 'John Doe',
-              title: 'CTO',
-              email: 'john.doe@example.com',
-              linkedInUrl: 'https://linkedin.com/in/johndoe',
-              companyName: 'Tech Corp',
-              companyWebsite: 'https://techcorp.com',
-              confidenceScore: 0.8
-            },
-            {
-              firstName: 'Jane',
-              lastName: 'Smith',
-              fullName: 'Jane Smith',
-              title: 'VP Engineering',
-              email: 'jane.smith@example.com',
-              linkedInUrl: 'https://linkedin.com/in/janesmith',
-              companyName: 'Tech Corp',
-              companyWebsite: 'https://techcorp.com',
-              confidenceScore: 0.7
-            }
-          ].slice(0, limit);
-          
-          // Store leads in database
-          const storedLeads: any[] = [];
-          for (const lead of mockLeads) {
-            // Check if lead already exists
-            const { data: existingLead } = await supabase
-              .from('leads')
-              .select('id')
-              .eq('email', lead.email)
-              .eq('icp_id', icpId)
+
+          // Optionally get Intel report and GTM playbook
+          let intelReport = null;
+          let gtmPlaybook = null;
+          if (intelReportId) {
+            const { data: report } = await supabase
+              .from('company_analyzer_outputs')
+              .select('*')
+              .eq('id', intelReportId)
               .eq('user_id', user.id)
               .single();
-            
-            if (existingLead && !forceRefresh) {
-              continue; // Skip duplicate
-            }
-            
-            // Store lead
-            const { data: storedLead, error: leadError } = await supabase
-              .from('leads')
-              .insert({
-                first_name: lead.firstName,
-                last_name: lead.lastName,
-                full_name: lead.fullName,
-                title: lead.title,
-                email: lead.email,
-                linkedin_url: lead.linkedInUrl,
-                company_name: lead.companyName,
-                company_website: lead.companyWebsite,
-                confidence_score: lead.confidenceScore,
-                icp_id: icpId,
-                user_id: user.id
-              })
-              .select()
-              .single();
-            
-            if (!leadError) {
-              storedLeads.push(storedLead);
-            }
+            intelReport = report;
           }
-          
+          if (gtmPlaybookId) {
+            const { data: playbook } = await supabase
+              .from('gtm_playbooks')
+              .select('*')
+              .eq('id', gtmPlaybookId)
+              .eq('user_id', user.id)
+              .single();
+            gtmPlaybook = playbook;
+          }
+
+          // Call the pipeline orchestrator Edge Function
+          const PIPELINE_URL = process.env.PIPELINE_ORCHESTRATOR_URL || 'https://hbogcsztrryrepudceww.functions.supabase.co/pipeline-orchestrator';
+          const pipelineRes = await fetch(PIPELINE_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authHeader.replace('Bearer ', '')}`,
+            },
+            body: JSON.stringify({
+              action: 'start',
+              config: {
+                icp,
+                intelReport,
+                gtmPlaybook,
+                limit,
+                forceRefresh
+              }
+            })
+          });
+          const pipelineData = await pipelineRes.json();
+          if (!pipelineRes.ok) {
+            return res.status(500).json({ error: 'Pipeline orchestrator failed', details: pipelineData });
+          }
+
+          // Optionally, poll for results or return pipelineId for frontend polling
+          // For now, return pipelineId and status
           return res.json({
             success: true,
-            leads: storedLeads,
-            count: storedLeads.length,
-            searchParams: queryParams
+            pipelineId: pipelineData.pipelineId,
+            status: pipelineData.status,
+            message: pipelineData.message
           });
         }
         
@@ -1027,6 +990,197 @@ export default async function handler(req, res) {
           }
           
           return res.json({ success: true });
+        }
+        
+        // PIPELINE STATUS ENDPOINTS
+        if (url.startsWith('/api/pipeline-status')) {
+          const authHeader = headers.authorization;
+          if (!authHeader) {
+            return res.status(401).json({ error: 'Authorization header required' });
+          }
+          
+          try {
+            const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+            if (authError || !user) {
+              return res.status(401).json({ error: 'Invalid token' });
+            }
+            
+            if (method === 'POST') {
+              const { pipelineId } = body;
+              
+              if (!pipelineId) {
+                return res.status(400).json({ error: 'Pipeline ID is required' });
+              }
+              
+              // Get pipeline status from Supabase
+              const { data: pipelineState, error: pipelineError } = await supabase
+                .from('pipeline_states')
+                .select('*')
+                .eq('id', pipelineId)
+                .eq('user_id', user.id)
+                .single();
+              
+              if (pipelineError || !pipelineState) {
+                return res.status(404).json({ error: 'Pipeline not found' });
+              }
+              
+              return res.json({
+                success: true,
+                status: pipelineState.status,
+                currentPhase: pipelineState.current_phase,
+                progress: pipelineState.progress,
+                companiesProcessed: pipelineState.companies_processed,
+                contactsFound: pipelineState.contacts_found,
+                emailsGenerated: pipelineState.emails_generated,
+                error: pipelineState.error
+              });
+            }
+            
+            return res.status(404).json({ error: 'Pipeline status endpoint not found' });
+            
+          } catch (err) {
+            console.error('Pipeline status API error:', err);
+            return res.status(500).json({ error: 'Pipeline status API failed' });
+          }
+        }
+
+        // COMPANIES ENDPOINTS
+        if (url.startsWith('/api/companies')) {
+          const authHeader = headers.authorization;
+          if (!authHeader) {
+            return res.status(401).json({ error: 'Authorization header required' });
+          }
+          
+          try {
+            const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+            if (authError || !user) {
+              return res.status(401).json({ error: 'Invalid token' });
+            }
+            
+            if (method === 'GET') {
+              const { pipelineId, limit = 50 } = query;
+              
+              let queryBuilder = supabase
+                .from('discovered_companies')
+                .select('*')
+                .eq('user_id', user.id);
+              
+              if (pipelineId) {
+                queryBuilder = queryBuilder.eq('pipeline_id', pipelineId);
+              }
+              
+              queryBuilder = queryBuilder.order('created_at', { ascending: false }).limit(Number(limit));
+              
+              const { data: companies, error: companiesError } = await queryBuilder;
+              
+              if (companiesError) {
+                console.error('Companies fetch error:', companiesError);
+                return res.status(500).json({ error: 'Failed to fetch companies' });
+              }
+              
+              return res.json({
+                success: true,
+                companies: companies || []
+              });
+            }
+            
+            return res.status(404).json({ error: 'Companies endpoint not found' });
+            
+          } catch (err) {
+            console.error('Companies API error:', err);
+            return res.status(500).json({ error: 'Companies API failed' });
+          }
+        }
+
+        // CONTACTS ENDPOINTS
+        if (url.startsWith('/api/contacts')) {
+          const authHeader = headers.authorization;
+          if (!authHeader) {
+            return res.status(401).json({ error: 'Authorization header required' });
+          }
+          
+          try {
+            const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+            if (authError || !user) {
+              return res.status(401).json({ error: 'Invalid token' });
+            }
+            
+            if (method === 'GET') {
+              const { pipelineId, companyId, limit = 100 } = query;
+              
+              let queryBuilder = supabase
+                .from('discovered_contacts')
+                .select('*')
+                .eq('user_id', user.id);
+              
+              if (pipelineId) {
+                queryBuilder = queryBuilder.eq('pipeline_id', pipelineId);
+              }
+              
+              if (companyId) {
+                queryBuilder = queryBuilder.eq('company_id', companyId);
+              }
+              
+              queryBuilder = queryBuilder.order('created_at', { ascending: false }).limit(Number(limit));
+              
+              const { data: contacts, error: contactsError } = await queryBuilder;
+              
+              if (contactsError) {
+                console.error('Contacts fetch error:', contactsError);
+                return res.status(500).json({ error: 'Failed to fetch contacts' });
+              }
+              
+              return res.json({
+                success: true,
+                contacts: contacts || []
+              });
+            }
+            
+            return res.status(404).json({ error: 'Contacts endpoint not found' });
+            
+          } catch (err) {
+            console.error('Contacts API error:', err);
+            return res.status(500).json({ error: 'Contacts API failed' });
+          }
+        }
+
+        // GTM PLAYBOOKS ENDPOINTS
+        if (url.startsWith('/api/gtm-playbooks')) {
+          const authHeader = headers.authorization;
+          if (!authHeader) {
+            return res.status(401).json({ error: 'Authorization header required' });
+          }
+          
+          try {
+            const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+            if (authError || !user) {
+              return res.status(401).json({ error: 'Invalid token' });
+            }
+            
+            if (method === 'GET') {
+              const { data: playbooks, error: playbooksError } = await supabase
+                .from('gtm_playbooks')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+              
+              if (playbooksError) {
+                console.error('GTM playbooks fetch error:', playbooksError);
+                return res.status(500).json({ error: 'Failed to fetch GTM playbooks' });
+              }
+              
+              return res.json({
+                success: true,
+                playbooks: playbooks || []
+              });
+            }
+            
+            return res.status(404).json({ error: 'GTM playbooks endpoint not found' });
+            
+          } catch (err) {
+            console.error('GTM playbooks API error:', err);
+            return res.status(500).json({ error: 'GTM playbooks API failed' });
+          }
         }
         
         return res.status(404).json({ error: 'Leads endpoint not found' });

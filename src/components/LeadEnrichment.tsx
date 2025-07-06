@@ -15,8 +15,16 @@ const LeadEnrichment = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { email } = useUserData();
   const session = useSession();
+  const [pipelineId, setPipelineId] = useState<string | null>(null);
+  const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [intelReport, setIntelReport] = useState<any>(null);
+  const [gtmPlaybook, setGtmPlaybook] = useState<any>(null);
+  const [availableIntelReports, setAvailableIntelReports] = useState<any[]>([]);
+  const [availableGtmPlaybooks, setAvailableGtmPlaybooks] = useState<any[]>([]);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   const searchLeads = async () => {
     if (!searchQuery) {
@@ -97,6 +105,140 @@ const LeadEnrichment = () => {
     if (cachedLeads.length > 0) setLeads(cachedLeads);
   }, []);
 
+  // Fetch available Intel and GTM reports for selection
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        // Fetch Intel reports
+        const intelResponse = await fetch('/api/app/company-analyze', {
+          method: 'GET',
+          headers: {
+            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+          },
+        });
+        if (intelResponse.ok) {
+          const intelData = await intelResponse.json();
+          setAvailableIntelReports(intelData.reports || []);
+        }
+
+        // Fetch GTM playbooks
+        const gtmResponse = await fetch('/api/app/gtm-playbooks', {
+          method: 'GET',
+          headers: {
+            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+          },
+        });
+        if (gtmResponse.ok) {
+          const gtmData = await gtmResponse.json();
+          setAvailableGtmPlaybooks(gtmData.playbooks || []);
+        }
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+      }
+    };
+    if (session?.access_token) {
+      fetchReports();
+    }
+  }, [session?.access_token]);
+
+  // Poll for pipeline results
+  useEffect(() => {
+    if (pipelineId && pipelineStatus === 'running') {
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch('/api/app/pipeline-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({ pipelineId }),
+          });
+          const data = await response.json();
+          if (response.ok) {
+            setPipelineStatus(data.status);
+            if (data.status === 'completed') {
+              // Fetch results
+              await fetchPipelineResults();
+              setPollingInterval(null);
+            } else if (data.status === 'failed') {
+              toast({ title: 'Pipeline Failed', description: data.error || 'Pipeline failed', variant: 'destructive' });
+              setPollingInterval(null);
+            }
+          }
+        } catch (error) {
+          console.error('Error polling pipeline:', error);
+        }
+      }, 2000); // Poll every 2 seconds
+      setPollingInterval(interval);
+    }
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pipelineId, pipelineStatus, session?.access_token]);
+
+  const fetchPipelineResults = async () => {
+    try {
+      // Fetch companies and contacts from Supabase
+      const companiesResponse = await fetch('/api/app/companies', {
+        method: 'GET',
+        headers: {
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
+      });
+      if (companiesResponse.ok) {
+        const companiesData = await companiesResponse.json();
+        setCompanies(companiesData.companies || []);
+      }
+
+      const contactsResponse = await fetch('/api/app/contacts', {
+        method: 'GET',
+        headers: {
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
+      });
+      if (contactsResponse.ok) {
+        const contactsData = await contactsResponse.json();
+        setContacts(contactsData.contacts || []);
+      }
+    } catch (error) {
+      console.error('Error fetching results:', error);
+    }
+  };
+
+  const triggerPipeline = async () => {
+    setLoading(true);
+    setPipelineStatus(null);
+    setPipelineId(null);
+    setCompanies([]);
+    setContacts([]);
+    try {
+      const response = await fetch('/api/app/leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          icpId: searchQuery, // For now, use searchQuery as ICP ID or adapt as needed
+          intelReportId: intelReport?.id,
+          gtmPlaybookId: gtmPlaybook?.id,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Pipeline failed');
+      setPipelineId(data.pipelineId);
+      setPipelineStatus(data.status);
+      toast({ title: 'Pipeline Started', description: data.message || 'Pipeline started.' });
+    } catch (error: any) {
+      toast({ title: 'Pipeline Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -109,51 +251,84 @@ const LeadEnrichment = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Search Section */}
-        <div className="flex space-x-2">
-          <Input
-            placeholder="Search for leads (e.g., 'SaaS companies in SF with 50+ employees')"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
-          />
-          <Button onClick={searchLeads} disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Searching...
-              </>
-            ) : (
-              <>
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-between items-center">
+        {/* Pipeline Trigger Section */}
+        <div className="space-y-4">
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Import CSV
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export Leads
+            <Input
+              placeholder="Enter ICP ID or search criteria"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={triggerPipeline} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Running Pipeline...
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4 mr-2" />
+                  Run Pipeline
+                </>
+              )}
             </Button>
           </div>
-          <Badge variant="secondary">
-            {leads.length} leads found
-          </Badge>
+          {/* Intel and GTM Selection Dropdowns */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Intel Report (Optional)</label>
+              <select
+                value={intelReport?.id || ''}
+                onChange={(e) => {
+                  const selected = availableIntelReports.find(r => r.id === e.target.value);
+                  setIntelReport(selected || null);
+                }}
+                className="w-full mt-1 p-2 border rounded-md"
+              >
+                <option value="">Select Intel Report</option>
+                {availableIntelReports.map((report) => (
+                  <option key={report.id} value={report.id}>
+                    {report.company_name || report.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">GTM Playbook (Optional)</label>
+              <select
+                value={gtmPlaybook?.id || ''}
+                onChange={(e) => {
+                  const selected = availableGtmPlaybooks.find(p => p.id === e.target.value);
+                  setGtmPlaybook(selected || null);
+                }}
+                className="w-full mt-1 p-2 border rounded-md"
+              >
+                <option value="">Select GTM Playbook</option>
+                {availableGtmPlaybooks.map((playbook) => (
+                  <option key={playbook.id} value={playbook.id}>
+                    {playbook.company_name || playbook.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
-
-        {/* Leads Table */}
-        {leads.length > 0 && (
-          <Card>
+        {/* Pipeline Status */}
+        {pipelineStatus && (
+          <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-md">
+            <Loader2 className={`h-4 w-4 ${pipelineStatus === 'running' ? 'animate-spin' : ''}`} />
+            <span className="text-sm font-medium">Pipeline Status: {pipelineStatus}</span>
+            {pipelineStatus === 'running' && (
+              <span className="text-xs text-muted-foreground">Polling for results...</span>
+            )}
+          </div>
+        )}
+        {/* Results Section: Companies and Contacts */}
+        {companies.length > 0 && (
+          <Card className="mt-4">
             <CardHeader>
-              <CardTitle className="text-lg">Lead Results</CardTitle>
+              <CardTitle className="text-lg">Discovered Companies ({companies.length})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -161,38 +336,68 @@ const LeadEnrichment = () => {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-2">Name</th>
-                      <th className="text-left p-2">Company</th>
-                      <th className="text-left p-2">Title</th>
-                      <th className="text-left p-2">Email</th>
-                      <th className="text-left p-2">Status</th>
-                      <th className="text-left p-2">Actions</th>
+                      <th className="text-left p-2">Domain</th>
+                      <th className="text-left p-2">Industry</th>
+                      <th className="text-left p-2">Employees</th>
+                      <th className="text-left p-2">Location</th>
+                      <th className="text-left p-2">Intel Report</th>
+                      <th className="text-left p-2">GTM Playbook</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Mock data - will be replaced with real data from your backend */}
-                    {[
-                      { id: 1, name: 'John Smith', company: 'TechCorp', title: 'VP Sales', email: 'john@techcorp.com', status: 'New' },
-                      { id: 2, name: 'Sarah Johnson', company: 'SaaS Inc', title: 'Head of Marketing', email: 'sarah@saas.com', status: 'Qualified' },
-                      { id: 3, name: 'Mike Chen', company: 'StartupXYZ', title: 'CEO', email: 'mike@startupxyz.com', status: 'Enriched' },
-                    ].map((lead) => (
-                      <tr key={lead.id} className="border-b hover:bg-gray-50">
-                        <td className="p-2 font-medium">{lead.name}</td>
-                        <td className="p-2">{lead.company}</td>
-                        <td className="p-2">{lead.title}</td>
-                        <td className="p-2 text-blue-600">{lead.email}</td>
+                    {companies.map((company) => (
+                      <tr key={company.id || company.domain} className="border-b hover:bg-gray-50">
+                        <td className="p-2 font-medium">{company.name}</td>
+                        <td className="p-2">{company.domain}</td>
+                        <td className="p-2">{company.industry}</td>
+                        <td className="p-2">{company.employees}</td>
+                        <td className="p-2">{company.location}</td>
                         <td className="p-2">
-                          <Badge variant={lead.status === 'New' ? 'secondary' : 'default'}>
-                            {lead.status}
-                          </Badge>
+                          {company.intelReportId && (
+                            <a href={`/intel/${company.intelReportId}`} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">View</a>
+                          )}
                         </td>
                         <td className="p-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => enrichLead(lead.id)}
-                          >
-                            Enrich
-                          </Button>
+                          {company.gtmPlaybookId && (
+                            <a href={`/gtm/${company.gtmPlaybookId}`} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">View</a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {contacts.length > 0 && (
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-lg">Discovered Contacts ({contacts.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">Title</th>
+                      <th className="text-left p-2">Email</th>
+                      <th className="text-left p-2">Company</th>
+                      <th className="text-left p-2">LinkedIn</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contacts.map((contact) => (
+                      <tr key={contact.id || contact.email} className="border-b hover:bg-gray-50">
+                        <td className="p-2 font-medium">{contact.firstName} {contact.lastName}</td>
+                        <td className="p-2">{contact.title}</td>
+                        <td className="p-2 text-blue-600">{contact.email}</td>
+                        <td className="p-2">{contact.companyName}</td>
+                        <td className="p-2">
+                          {contact.linkedinUrl && (
+                            <a href={contact.linkedinUrl} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                          )}
                         </td>
                       </tr>
                     ))}
