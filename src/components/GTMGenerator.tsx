@@ -215,55 +215,6 @@ const GTMGenerator = () => {
     }
   };
 
-  const renderCompanyPills = () => {
-    if (!reports.length) {
-      return <p className="text-gray-500 mt-2">No companies analyzed yet. Use Company Analyzer first.</p>;
-    }
-    return (
-      <div className="flex flex-wrap gap-2 mb-4">
-        {reports.map((report) => (
-          <CompanyReportCard
-            key={report.id}
-            report={report}
-            selected={selectedReportId === report.id}
-            onClick={() => {
-              setSelectedReportId(report.id);
-              setSelectedCompany(report);
-              setSelectedAnalysisId(report.id);
-              setUrl(report.company_url || report.companyUrl || report.url || '');
-              setUseExistingAnalysis(true);
-            }}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const renderICPPills = () => {
-    if (!reportsWithICP.length) {
-      return <p className="text-gray-500 mt-2">No ICPs found. Generate an ICP first.</p>;
-    }
-
-    return (
-      <div className="flex flex-wrap gap-2 mt-2">
-        {reportsWithICP.map((report: any) => (
-          <button
-            key={report.id}
-            onClick={() => {
-              console.log("Selected ICP:", report);
-              setSelectedICP(report);
-            }}
-            className={`rounded-full px-4 py-1 text-sm border ${
-              selectedICP?.id === report.id ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-          >
-            {report.companyName || report.company_name || report.companyname || 'Untitled ICP'}
-          </button>
-        ))}
-      </div>
-    );
-  };
-
   const [selectedPlaybookId, setSelectedPlaybookId] = useState<string | null>(null);
   const [selectedPlaybook, setSelectedPlaybook] = useState<any>(null);
 
@@ -289,32 +240,6 @@ const GTMGenerator = () => {
       try { playbookData = JSON.parse(playbookData); } catch {}
     }
     setSelectedPlaybook({ ...item, gtmPlaybook: playbookData || item.gtmPlaybook });
-  };
-
-  const renderGTMPlaybookPills = () => {
-    if (!availablePlaybooks.length) {
-      return <p className="text-gray-500 mt-2">No GTM playbooks found. Generate a playbook first.</p>;
-    }
-    return (
-      <div className="flex flex-wrap gap-2 mt-2">
-        {availablePlaybooks.map((item: any) => {
-          const name = item.companyName || item.company_name || item.companyname || 'Untitled Playbook';
-          return (
-            <Button
-              key={item.id}
-              variant={selectedPlaybookId === item.id ? 'default' : 'outline'}
-              onClick={() => handleSelectPlaybook(item)}
-              className="flex items-center gap-2 px-3 py-1 text-sm"
-              size="sm"
-            >
-              <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-              {name}
-              {selectedPlaybookId === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
-            </Button>
-          );
-        })}
-      </div>
-    );
   };
 
   const renderICPSection = (icp: any) => (
@@ -403,12 +328,48 @@ const GTMGenerator = () => {
 
           <div className="mb-4">
             <div className="font-semibold text-base mb-1">Available GTM Playbooks</div>
-            {availablePlaybooks.length > 0 && renderGTMPlaybookPills()}
+            {availablePlaybooks.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {availablePlaybooks.map((item: any) => {
+                  const name = item.companyName || item.company_name || item.companyname || 'Untitled Playbook';
+                  return (
+                    <Button
+                      key={item.id}
+                      variant={selectedPlaybookId === item.id ? 'default' : 'outline'}
+                      onClick={() => handleSelectPlaybook(item)}
+                      className="flex items-center gap-2 px-3 py-1 text-sm"
+                      size="sm"
+                    >
+                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+                      {name}
+                      {selectedPlaybookId === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="mb-4">
             <div className="font-semibold text-base mb-1">Select ICP Profile</div>
-            {reportsWithICP.length > 0 && renderICPPills()}
+            {reportsWithICP.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {reportsWithICP.map((report: any) => (
+                  <button
+                    key={report.id}
+                    onClick={() => {
+                      console.log("Selected ICP:", report);
+                      setSelectedICP(report);
+                    }}
+                    className={`rounded-full px-4 py-1 text-sm border ${
+                      selectedICP?.id === report.id ? 'bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    {report.companyName || report.company_name || report.companyname || 'Untitled ICP'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* GTM Strategy Form Fields */}
