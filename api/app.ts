@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method, url, headers, body, query } = req;
+  if (!url) {
+    return res.status(400).json({ error: 'Missing URL in request' });
+  }
   // TODO: Centralize auth logic here if needed
   // const userId = headers['x-user-id'] || body?.user_id || query?.user_id;
 
