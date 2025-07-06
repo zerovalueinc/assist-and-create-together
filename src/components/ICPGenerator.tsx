@@ -86,6 +86,8 @@ const ICPGenerator = () => {
   const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
   const [showPlaybookModal, setShowPlaybookModal] = useState(false);
   const [playbookData, setPlaybookData] = useState(null);
+  const [savedPlaybooks, setSavedPlaybooks] = useState<any[]>([]);
+  const [showSavedPlaybooksModal, setShowSavedPlaybooksModal] = useState(false);
 
   // Debug log for recentReports (only when it changes)
   useEffect(() => {
@@ -101,6 +103,42 @@ const ICPGenerator = () => {
     });
   };
 
+  // Add a refresh function for saved playbooks
+  const handleRefreshPlaybooks = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('gtm_playbooks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error refreshing playbooks:', error);
+        toast({
+          title: "Error",
+          description: "Failed to refresh playbooks",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setSavedPlaybooks(data || []);
+      toast({
+        title: "Refreshed",
+        description: "Updated saved playbooks",
+      });
+    } catch (error) {
+      console.error('Error refreshing playbooks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh playbooks",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Fetch recent/generated reports with embedded ICP profiles
   const hasFetchedReports = useRef(false);
 
@@ -112,6 +150,33 @@ const ICPGenerator = () => {
       hasFetchedReports.current = true;
     });
   }, [user]);
+
+  // Fetch saved GTM playbooks
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const fetchSavedPlaybooks = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('gtm_playbooks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching saved playbooks:', error);
+          return;
+        }
+        
+        setSavedPlaybooks(data || []);
+        console.log('Loaded saved playbooks:', data);
+      } catch (error) {
+        console.error('Error fetching saved playbooks:', error);
+      }
+    };
+
+    fetchSavedPlaybooks();
+  }, [user?.id]);
 
   // Auto-select company when reports are loaded
   useEffect(() => {
@@ -193,6 +258,17 @@ const ICPGenerator = () => {
         console.log('Setting playbook data for modal:', modalData);
         setPlaybookData(modalData);
         setShowPlaybookModal(true);
+        
+        // Refresh the saved playbooks list
+        const { data: updatedPlaybooks, error } = await supabase
+          .from('gtm_playbooks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (!error) {
+          setSavedPlaybooks(updatedPlaybooks || []);
+        }
       } else {
         toast({ title: "Generation Failed", description: result.error || "Unknown error", variant: "destructive" });
       }
@@ -206,6 +282,26 @@ const ICPGenerator = () => {
   const openICPModal = (report: any) => {
     setModalICP(report.icp_profile);
     setShowICPModal(true);
+  };
+
+  const openSavedPlaybook = (playbook: any) => {
+    console.log('Opening saved playbook:', playbook);
+    // Map the saved playbook data to the expected modal structure
+    const modalData = {
+      gtmPlaybook: playbook.playbook?.gtmPlaybook || playbook.playbook,
+      researchSummary: playbook.playbook?.researchSummary || 'Saved GTM Playbook',
+      confidence: playbook.playbook?.confidence || 85,
+      sources: playbook.playbook?.sources || ['Saved Analysis'],
+    };
+    // Create a company object for the modal
+    const companyData = {
+      companyName: playbook.companyName,
+      website: playbook.website,
+      companyUrl: playbook.website,
+    };
+    setPlaybookData(modalData);
+    setSelectedCompany(companyData);
+    setShowPlaybookModal(true);
   };
 
   return (
@@ -245,6 +341,50 @@ const ICPGenerator = () => {
                   selected={selectedCompany?.id === report.id}
                   onClick={() => setSelectedCompany(report)}
                 />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Saved GTM Playbooks */}
+      {savedPlaybooks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Rocket className="h-5 w-5" />
+                  Saved GTM Playbooks
+                </CardTitle>
+                <CardDescription>
+                  Your previously generated GTM playbooks
+                </CardDescription>
+              </div>
+              <Button onClick={handleRefreshPlaybooks} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {savedPlaybooks.map((playbook) => (
+                <Button
+                  key={playbook.id}
+                  variant="outline"
+                  onClick={() => openSavedPlaybook(playbook)}
+                  className="flex items-center gap-2 px-3 py-1 text-sm"
+                  size="sm"
+                >
+                  <img 
+                    src={`https://www.google.com/s2/favicons?domain=${playbook.website || ''}`} 
+                    alt="favicon" 
+                    className="w-4 h-4 mr-1" 
+                    onError={e => { e.currentTarget.src = '/favicon.ico'; }} 
+                  />
+                  {playbook.companyName || 'Untitled Playbook'}
+                </Button>
               ))}
             </div>
           </CardContent>
@@ -704,10 +844,6 @@ const ICPGenerator = () => {
       )}
 
       <GTMPlaybookModal open={showPlaybookModal} onClose={() => setShowPlaybookModal(false)} playbookData={playbookData} company={selectedCompany} />
-
-      <Button className="mt-8 w-full" variant="default" onClick={() => playbookData && setShowPlaybookModal(true)} disabled={!playbookData}>
-        Saved GTM Playbooks
-      </Button>
     </div>
   );
 };
