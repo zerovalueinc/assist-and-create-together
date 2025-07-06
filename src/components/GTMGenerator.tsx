@@ -267,13 +267,23 @@ const GTMGenerator = () => {
 
   useEffect(() => {
     if (!user?.id) return;
+    console.log('[GTMGenerator] Fetching GTM playbooks for user:', user.id);
     supabase
       .from('gtm_playbooks')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .then(({ data }) => setGtmPlaybooks(data || []));
+      .then(({ data, error }) => {
+        console.log('[GTMGenerator] GTM playbooks query result:', { data, error });
+        setGtmPlaybooks(data || []);
+      });
   }, [user?.id]);
+
+  useEffect(() => {
+    if (selectedPlaybook) {
+      console.log('[GTMGenerator] selectedPlaybook changed:', selectedPlaybook);
+    }
+  }, [selectedPlaybook]);
 
   const renderICPSection = (icp: any) => (
     <div className="space-y-4">
@@ -366,7 +376,10 @@ const GTMGenerator = () => {
                 <button
                   key={pb.id}
                   className="rounded-full border px-4 py-1 text-sm bg-blue-100 hover:bg-blue-200"
-                  onClick={() => setSelectedPlaybook(pb)}
+                  onClick={() => {
+                    console.log('[GTMGenerator] Clicked GTM playbook pill:', pb);
+                    setSelectedPlaybook(pb);
+                  }}
                 >
                   {pb.company_name}
                 </button>
