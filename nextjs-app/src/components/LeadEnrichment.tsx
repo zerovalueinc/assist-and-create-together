@@ -5,20 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Upload, Download, Search, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser, useSession } from '@supabase/auth-helpers-react';
+import { useAuth } from "@/context/AuthContext";
 import { SectionLabel } from "./ui/section-label";
 import { getCache, setCache } from '@/lib/utils';
 import { useUserData } from '@/hooks/useUserData';
 import { supabase } from '@/lib/supabaseClient';
+import { useDataPreload } from '@/context/DataPreloadProvider';
 
 const LeadEnrichment = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const session = useSession();
+  const { session } = useAuth();
   const [pipelineId, setPipelineId] = useState<string | null>(null);
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
+  const { data: preloadData } = useDataPreload();
   const [companies, setCompanies] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
   const [intelReport, setIntelReport] = useState<any>(null);

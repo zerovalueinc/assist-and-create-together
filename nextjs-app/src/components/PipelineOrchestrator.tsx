@@ -1,15 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Play, Pause, RotateCcw, CheckCircle, AlertCircle, Clock, Zap, Target, Users, Mail, Building2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from '@/lib/supabaseClient';
+import { getCache, setCache } from '@/lib/utils';
+import { useDataPreload } from '@/context/DataPreloadProvider';
 import { ApiKeySetup } from './ApiKeySetup';
 import { PipelineForm } from './pipeline/PipelineForm';
 import { PipelineStatus } from './pipeline/PipelineStatus';
 import { usePipelineOperations } from './pipeline/usePipelineOperations';
 import { PipelineState } from './pipeline/types';
-import { getCache, setCache } from '@/lib/utils';
 import { useUserData } from '@/hooks/useUserData';
 
-export default function PipelineOrchestrator() {
+const PipelineOrchestrator = () => {
+  const [pipelines, setPipelines] = useState<any[]>([]);
+  const [activePipeline, setActivePipeline] = useState<any>(null);
+  const [pipelineStatus, setPipelineStatus] = useState<any>({});
   const [url, setUrl] = useState('');
   const [userInput, setUserInput] = useState('');
   const [batchSize, setBatchSize] = useState(10);
@@ -18,6 +28,8 @@ export default function PipelineOrchestrator() {
   const [results, setResults] = useState<any>(null);
   const [showApiSetup, setShowApiSetup] = useState(false);
   const { toast } = useToast();
+  const { session } = useAuth();
+  const { data: preloadData } = useDataPreload();
   const { startPipeline, pollPipelineStatus, fetchResults } = usePipelineOperations();
   const { user, loading } = useUserData() as { user: any, loading: boolean };
   const email = user?.email || '';
@@ -132,3 +144,5 @@ export default function PipelineOrchestrator() {
     </div>
   );
 }
+
+export default PipelineOrchestrator;

@@ -1,12 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Bell, Mail, MessageSquare, Zap } from "lucide-react";
 
 const NotificationsTab = () => {
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(false);
+  const [smsNotifications, setSmsNotifications] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     smsNotifications: false,
