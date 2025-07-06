@@ -10,19 +10,21 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
   let gtmPlaybook, researchSummary, confidence, sources;
   
   if (playbookData) {
-    // Handle data from gtm_playbooks table (playbook field)
-    if (playbookData.playbook) {
-      gtmPlaybook = playbookData.playbook.gtmPlaybook || playbookData.playbook;
-      researchSummary = playbookData.playbook.researchSummary || playbookData.research_summary;
-      confidence = playbookData.playbook.confidence || playbookData.confidence;
-      sources = playbookData.playbook.sources || playbookData.sources;
-    }
-    // Handle legacy playbook_data structure (for backward compatibility)
-    else if (playbookData.playbook_data) {
+    // Log the full playbookData for debugging
+    console.log('[GTMPlaybookModal] Received playbookData:', JSON.stringify(playbookData, null, 2));
+    // Handle legacy playbook_data structure
+    if (playbookData.playbook_data) {
       gtmPlaybook = playbookData.playbook_data.gtmPlaybook || playbookData.playbook_data;
       researchSummary = playbookData.playbook_data.researchSummary || playbookData.research_summary;
       confidence = playbookData.playbook_data.confidence || playbookData.confidence;
       sources = playbookData.playbook_data.sources || playbookData.sources;
+    }
+    // Handle new playbook structure
+    else if (playbookData.playbook) {
+      gtmPlaybook = playbookData.playbook.gtmPlaybook || playbookData.playbook;
+      researchSummary = playbookData.playbook.researchSummary || playbookData.research_summary;
+      confidence = playbookData.playbook.confidence || playbookData.confidence;
+      sources = playbookData.playbook.sources || playbookData.sources;
     }
     // Handle direct gtmPlaybook structure (for backward compatibility)
     else if (playbookData.gtmPlaybook) {

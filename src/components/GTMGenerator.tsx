@@ -276,6 +276,9 @@ const GTMGenerator = () => {
       .then(({ data, error }) => {
         console.log('[GTMGenerator] GTM playbooks query result:', { data, error });
         setGtmPlaybooks(data || []);
+        if (data) {
+          console.log('[GTMGenerator] Full GTM playbooks array:', JSON.stringify(data, null, 2));
+        }
       });
   }, [user?.id]);
 
