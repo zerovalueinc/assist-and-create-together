@@ -6,11 +6,30 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Users, TrendingUp, MessageSquare, Rocket, FileText, BarChart2, Share2, Download, Copy } from 'lucide-react';
 
 export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
-  if (!playbookData || !playbookData.gtmPlaybook) {
-    console.log('GTMPlaybookModal: No playbook data available', { playbookData });
+  // Handle different data structures from database
+  let gtmPlaybook, researchSummary, confidence, sources;
+  
+  if (playbookData) {
+    // Handle data from gtm_playbooks table (playbook_data field)
+    if (playbookData.playbook_data) {
+      gtmPlaybook = playbookData.playbook_data.gtmPlaybook || playbookData.playbook_data;
+      researchSummary = playbookData.playbook_data.researchSummary || playbookData.research_summary;
+      confidence = playbookData.playbook_data.confidence || playbookData.confidence;
+      sources = playbookData.playbook_data.sources || playbookData.sources;
+    }
+    // Handle direct gtmPlaybook structure (for backward compatibility)
+    else if (playbookData.gtmPlaybook) {
+      gtmPlaybook = playbookData.gtmPlaybook;
+      researchSummary = playbookData.researchSummary;
+      confidence = playbookData.confidence;
+      sources = playbookData.sources;
+    }
+  }
+
+  if (!playbookData || !gtmPlaybook) {
+    console.log('GTMPlaybookModal: No playbook data available', { playbookData, gtmPlaybook });
     return null;
   }
-  const { gtmPlaybook, researchSummary, confidence, sources } = playbookData;
   
   // Defensive check for gtmPlaybook structure
   if (!gtmPlaybook || typeof gtmPlaybook !== 'object') {

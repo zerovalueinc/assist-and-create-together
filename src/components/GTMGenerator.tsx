@@ -14,6 +14,7 @@ import { useCompany } from '../context/CompanyContext';
 import { invokeEdgeFunction, getCompanyAnalysis } from '../lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import { CompanyReportPills } from './ui/CompanyReportPills';
+import { GTMPlaybookModal } from './ui/GTMPlaybookModal';
 
 // Set this to true to use the backend proxy for GTM Playbook
 const USE_GTM_PROXY = true;
@@ -261,68 +262,18 @@ const GTMGenerator = () => {
     }
   };
 
-  const [playbooks, setPlaybooks] = useState<any[]>([]);
-  const [selectedPlaybookId, setSelectedPlaybookId] = useState<string | null>(null);
-  const [selectedPlaybook, setSelectedPlaybook] = useState<any>(null);
-  const [showPlaybookModal, setShowPlaybookModal] = useState(false);
+  const [gtmPlaybooks, setGtmPlaybooks] = useState<any[]>([]);
+  const [selectedPlaybook, setSelectedPlaybook] = useState<any | null>(null);
 
-  // Fetch and subscribe to all GTM playbooks for the current user in real time
   useEffect(() => {
-    let subscription: any;
-    async function fetchAndSubscribe() {
-      if (!user?.id) return;
-      // Initial fetch
-      const { data, error } = await supabase
-        .from('gtm_playbooks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setPlaybooks(data);
-        if (data.length > 0 && !selectedPlaybookId) {
-          setSelectedPlaybookId(data[0].id);
-          let playbookData = data[0].playbook_data;
-          if (typeof playbookData === 'string') {
-            try { playbookData = JSON.parse(playbookData); } catch {}
-          }
-          setSelectedPlaybook({ ...data[0], gtmPlaybook: playbookData || data[0].gtmPlaybook });
-        }
-      }
-      // Real-time subscription
-      subscription = supabase
-        .channel('public:gtm_playbooks')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'gtm_playbooks', filter: `user_id=eq.${user.id}` },
-          async () => {
-            const { data, error } = await supabase
-              .from('gtm_playbooks')
-              .select('*')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false });
-            if (!error && data) {
-              setPlaybooks(data);
-            }
-          }
-        )
-        .subscribe();
-    }
-    fetchAndSubscribe();
-    return () => {
-      if (subscription) supabase.removeChannel(subscription);
-    };
+    if (!user?.id) return;
+    supabase
+      .from('gtm_playbooks')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setGtmPlaybooks(data || []));
   }, [user?.id]);
-
-  // When a pill is clicked, set selectedPlaybookId and selectedPlaybook, and open modal
-  const handleSelectPlaybook = (item: any) => {
-    setSelectedPlaybookId(item.id);
-    let playbookData = item.playbook_data;
-    if (typeof playbookData === 'string') {
-      try { playbookData = JSON.parse(playbookData); } catch {}
-    }
-    setSelectedPlaybook({ ...item, gtmPlaybook: playbookData.gtmPlaybook || playbookData });
-    setShowPlaybookModal(true);
-  };
 
   const renderICPSection = (icp: any) => (
     <div className="space-y-4">
@@ -408,9 +359,19 @@ const GTMGenerator = () => {
             )}
           </div>
 
-          <div className="mb-4">
+          <div className="mt-8">
             <div className="font-semibold text-base mb-1">Saved GTM Playbooks</div>
-            <GTMPlaybookPills playbooks={playbooks} selectedId={selectedPlaybookId} onSelect={handleSelectPlaybook} />
+            <div className="flex flex-wrap gap-2 mb-4">
+              {gtmPlaybooks.map(pb => (
+                <button
+                  key={pb.id}
+                  className="rounded-full border px-4 py-1 text-sm bg-blue-100 hover:bg-blue-200"
+                  onClick={() => setSelectedPlaybook(pb)}
+                >
+                  {pb.company_name}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mb-4">
@@ -461,308 +422,31 @@ const GTMGenerator = () => {
         </CardContent>
       </Card>
 
-      {selectedPlaybook && showPlaybookModal && selectedPlaybook.gtmPlaybook ? (
-        <GTMPlaybookModal open={showPlaybookModal} onClose={() => setShowPlaybookModal(false)} playbookData={selectedPlaybook} company={selectedPlaybook} />
-      ) : selectedPlaybook && showPlaybookModal ? (
-        <div className="p-8 text-center text-red-600 font-semibold">Unable to display this GTM playbook. The data is missing or malformed.</div>
-      ) : null}
+      {selectedPlaybook && (
+        <GTMPlaybookModal
+          open={!!selectedPlaybook}
+          onClose={() => setSelectedPlaybook(null)}
+          playbookData={selectedPlaybook}
+          company={selectedPlaybook.company_name}
+        />
+      )}
 
-      {playbooks.length === 0 ? (
-        <div className="text-center text-muted-foreground py-8">No GTM playbooks found. Generate a playbook first.</div>
-      ) : selectedPlaybook && selectedPlaybook.gtmPlaybook ? (
+      {reportsWithICP.length === 0 ? (
+        <div className="text-center text-muted-foreground py-8">No ICPs found. Generate a playbook first.</div>
+      ) : selectedICP ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              GTM Playbook
+              <Users className="h-5 w-5" />
+              Ideal Customer Profile
             </CardTitle>
-            <CardDescription>
-              Comprehensive go-to-market intelligence and strategy
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-7">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="market">Market</TabsTrigger>
-                <TabsTrigger value="icp">ICP</TabsTrigger>
-                <TabsTrigger value="strategy">Strategy</TabsTrigger>
-                <TabsTrigger value="messaging">Messaging</TabsTrigger>
-                <TabsTrigger value="enablement">Enablement</TabsTrigger>
-                <TabsTrigger value="metrics">Metrics</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Executive Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm leading-relaxed">
-                      {selectedPlaybook.gtmPlaybook?.executiveSummary || 'Executive summary not available'}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Value Proposition</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <h4 className="font-medium mb-2">Primary Value</h4>
-                      <p className="text-sm">{selectedPlaybook.gtmPlaybook?.valueProposition?.primaryValue || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2">Key Differentiators</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.valueProposition?.keyDifferentiators?.map((diff: string, index: number) => (
-                          <Badge key={index} variant="outline">{diff}</Badge>
-                        )) || <span className="text-muted-foreground">None specified</span>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="market" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Market Analysis
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Total Addressable Market</label>
-                        <p className="font-medium text-lg">{selectedPlaybook.gtmPlaybook?.marketAnalysis?.totalAddressableMarket || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Serviceable Addressable Market</label>
-                        <p className="font-medium text-lg">{selectedPlaybook.gtmPlaybook?.marketAnalysis?.servicableAddressableMarket || 'N/A'}</p>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-2">Market Trends</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.marketAnalysis?.marketTrends?.map((trend: string, index: number) => (
-                          <Badge key={index} variant="secondary">{trend}</Badge>
-                        )) || <span className="text-muted-foreground">No trends identified</span>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Competitive Landscape</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.marketAnalysis?.competitiveLandscape?.map((competitor: string, index: number) => (
-                          <Badge key={index} variant="outline">{competitor}</Badge>
-                        )) || <span className="text-muted-foreground">No competitors identified</span>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="icp" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Ideal Customer Profile
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedICP ? (
-                      renderICPSection(selectedICP)
-                    ) : (
-                      <p className="text-gray-500">Select an ICP from the pills above to view details.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="strategy" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Go-to-Market Strategy</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Channel Strategy</label>
-                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.channel || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Sales Motion</label>
-                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.salesMotion || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Pricing Strategy</label>
-                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.pricingStrategy || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Sales Cycle Length</label>
-                        <p className="font-medium">{selectedPlaybook.gtmPlaybook?.goToMarketStrategy?.salesCycleLength || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="messaging" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
-                      Messaging Framework
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Primary Message</h4>
-                      <p className="text-sm bg-blue-50 p-3 rounded-md">{selectedPlaybook.gtmPlaybook?.messagingFramework?.primaryMessage || 'N/A'}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-2">Secondary Messages</h4>
-                      <div className="space-y-2">
-                        {selectedPlaybook.gtmPlaybook?.messagingFramework?.secondaryMessages?.map((message: string, index: number) => (
-                          <p key={index} className="text-sm bg-gray-50 p-2 rounded-md">• {message}</p>
-                        )) || <p className="text-muted-foreground">No secondary messages</p>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Objection Handling</h4>
-                      <div className="space-y-3">
-                        {selectedPlaybook.gtmPlaybook?.messagingFramework?.objectionHandling?.map((item: any, index: number) => (
-                          <div key={index} className="border-l-2 border-orange-200 pl-3">
-                            <p className="text-sm font-medium text-orange-800">"{item.objection}"</p>
-                            <p className="text-sm text-gray-600 mt-1">{item.response}</p>
-                          </div>
-                        )) || <p className="text-muted-foreground">No objection handling defined</p>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="enablement" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5" />
-                      Sales Enablement
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Battle Cards</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.salesEnablement?.battleCards?.map((card: string, index: number) => (
-                          <Badge key={index} variant="outline">{card}</Badge>
-                        )) || <span className="text-muted-foreground">No battle cards</span>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Talk Tracks</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.salesEnablement?.talkTracks?.map((track: string, index: number) => (
-                          <Badge key={index} variant="secondary">{track}</Badge>
-                        )) || <span className="text-muted-foreground">No talk tracks</span>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Demo Scripts</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.salesEnablement?.demoScripts?.map((script: string, index: number) => (
-                          <Badge key={index} variant="outline">{script}</Badge>
-                        )) || <span className="text-muted-foreground">No demo scripts</span>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Lightbulb className="h-5 w-5" />
-                      Demand Generation
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Channels</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.demandGeneration?.channels?.map((channel: string, index: number) => (
-                          <Badge key={index} variant="secondary">{channel}</Badge>
-                        )) || <span className="text-muted-foreground">No channels defined</span>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Campaign Ideas</h4>
-                      <div className="space-y-2">
-                        {selectedPlaybook.gtmPlaybook?.demandGeneration?.campaignIdeas?.map((idea: string, index: number) => (
-                          <p key={index} className="text-sm bg-green-50 p-2 rounded-md">• {idea}</p>
-                        )) || <p className="text-muted-foreground">No campaign ideas</p>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="metrics" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart className="h-5 w-5" />
-                      Metrics & KPIs
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Leading Indicators</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.metricsAndKPIs?.leadingIndicators?.map((metric: string, index: number) => (
-                          <Badge key={index} variant="outline">{metric}</Badge>
-                        )) || <span className="text-muted-foreground">No leading indicators</span>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Lagging Indicators</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPlaybook.gtmPlaybook?.metricsAndKPIs?.laggingIndicators?.map((metric: string, index: number) => (
-                          <Badge key={index} variant="secondary">{metric}</Badge>
-                        )) || <span className="text-muted-foreground">No lagging indicators</span>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Success Metrics</h4>
-                      <div className="space-y-2">
-                        {selectedPlaybook.gtmPlaybook?.metricsAndKPIs?.successMetrics?.map((metric: string, index: number) => (
-                          <p key={index} className="text-sm bg-blue-50 p-2 rounded-md flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            {metric}
-                          </p>
-                        )) || <p className="text-muted-foreground">No success metrics defined</p>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+            {renderICPSection(selectedICP)}
           </CardContent>
         </Card>
       ) : (
-        <div className="text-center text-muted-foreground py-8">Select a GTM playbook to view details.</div>
+        <div className="text-center text-muted-foreground py-8">Select an ICP from the pills above to view details.</div>
       )}
     </div>
   );

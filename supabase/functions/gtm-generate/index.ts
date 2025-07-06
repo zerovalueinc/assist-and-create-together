@@ -228,22 +228,36 @@ serve(async (req) => {
         responsibilities: p.responsibilities || []
       })),
       firmographics: {
-        industry: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry.join(', '),
+        industry: Array.isArray(finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry)
+          ? finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry.join(', ')
+          : (finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry || ''),
         companySize: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.companySize,
         revenueRange: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.revenueRange,
-        region: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography.join(', ')
+        region: Array.isArray(finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography)
+          ? finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography.join(', ')
+          : (finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography || ''),
       },
       messagingAngles: finalPlaybook.gtmPlaybook.messagingFramework.secondaryMessages || [],
       gtmRecommendations: finalPlaybook.gtmPlaybook.executiveSummary,
-      competitivePositioning: finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages.join(', '),
-      objectionHandling: finalPlaybook.gtmPlaybook.messagingFramework.objectionHandling.map((o: any) => o.objection),
+      competitivePositioning: Array.isArray(finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages)
+        ? finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages.join(', ')
+        : (finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages || ''),
+      objectionHandling: Array.isArray(finalPlaybook.gtmPlaybook.messagingFramework.objectionHandling)
+        ? finalPlaybook.gtmPlaybook.messagingFramework.objectionHandling.map((o: any) => o.objection)
+        : [],
       campaignIdeas: finalPlaybook.gtmPlaybook.demandGeneration.campaignIdeas || [],
       metricsToTrack: finalPlaybook.gtmPlaybook.metricsAndKPIs.leadingIndicators || [],
       filmReviews: finalPlaybook.researchSummary || '',
       crossFunctionalAlignment: finalPlaybook.gtmPlaybook.goToMarketStrategy.channel,
-      demandGenFramework: finalPlaybook.gtmPlaybook.demandGeneration.channels.join(', '),
-      iterativeMeasurement: finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators.join(', '),
-      trainingEnablement: finalPlaybook.gtmPlaybook.salesEnablement.talkTracks.join(', '),
+      demandGenFramework: Array.isArray(finalPlaybook.gtmPlaybook.demandGeneration.channels)
+        ? finalPlaybook.gtmPlaybook.demandGeneration.channels.join(', ')
+        : (finalPlaybook.gtmPlaybook.demandGeneration.channels || ''),
+      iterativeMeasurement: Array.isArray(finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators)
+        ? finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators.join(', ')
+        : (finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators || ''),
+      trainingEnablement: Array.isArray(finalPlaybook.gtmPlaybook.salesEnablement.talkTracks)
+        ? finalPlaybook.gtmPlaybook.salesEnablement.talkTracks.join(', ')
+        : (finalPlaybook.gtmPlaybook.salesEnablement.talkTracks || ''),
       apolloSearchParams: {
         employeeCount: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.companySize,
         titles: finalPlaybook.gtmPlaybook.idealCustomerProfile.personas.map((p: any) => p.title),
