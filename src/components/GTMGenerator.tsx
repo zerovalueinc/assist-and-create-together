@@ -317,24 +317,10 @@ const GTMGenerator = () => {
   const handleSelectPlaybook = (item: any) => {
     setSelectedPlaybookId(item.id);
     let playbookData = item.playbook_data;
-    let parsed = null;
-    if (!playbookData) {
-      toast({ title: 'Error', description: 'No playbook data found for this report.', variant: 'destructive' });
-      return;
-    }
     if (typeof playbookData === 'string') {
-      try { parsed = JSON.parse(playbookData); } catch (e) {
-        toast({ title: 'Error', description: 'Malformed playbook data. Cannot open report.', variant: 'destructive' });
-        return;
-      }
-    } else if (typeof playbookData === 'object') {
-      parsed = playbookData;
+      try { playbookData = JSON.parse(playbookData); } catch {}
     }
-    if (!parsed || !parsed.gtmPlaybook) {
-      toast({ title: 'Error', description: 'No GTM playbook found in this report.', variant: 'destructive' });
-      return;
-    }
-    setSelectedPlaybook({ ...item, gtmPlaybook: parsed.gtmPlaybook });
+    setSelectedPlaybook({ ...item, gtmPlaybook: playbookData.gtmPlaybook || playbookData });
     setShowPlaybookModal(true);
   };
 
