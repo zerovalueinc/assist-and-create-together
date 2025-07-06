@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
@@ -10,7 +9,7 @@ export function ApiKeySetup() {
         <CardHeader>
           <CardTitle>API Configuration Required</CardTitle>
           <CardDescription>
-            To use the pipeline system, you'll need to configure your API keys in Supabase Edge Function Secrets.
+            To use the pipeline system, you&apos;ll need to configure your API keys in Supabase Edge Function Secrets.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
