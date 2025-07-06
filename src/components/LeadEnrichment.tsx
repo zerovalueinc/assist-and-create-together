@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Upload, Download, Search } from "lucide-react";
+import { Loader2, Users, Upload, Download, Search, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { SectionLabel } from "./ui/section-label";
@@ -294,28 +294,32 @@ const LeadEnrichment = () => {
           {/* Intel and GTM Selection Dropdowns */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium flex items-center gap-2">
+              <label className="text-sm font-medium flex items-center gap-2 mb-2">
                 Intel Report
                 <Button size="sm" variant="outline" onClick={fetchIntelReports}>Refresh</Button>
               </label>
-              <select
-                value={intelReport?.id || ''}
-                onChange={(e) => {
-                  const selected = availableIntelReports.find(r => r.id === e.target.value);
-                  setIntelReport(selected || null);
-                }}
-                className="w-full mt-1 p-2 border rounded-md"
-              >
-                <option value="">Select Intel Report</option>
+              <div className="flex flex-wrap gap-2 mb-4">
                 {availableIntelReports.length === 0 && (
-                  <option disabled>No Intel reports found. Generate one in the ICP tab.</option>
+                  <span className="text-muted-foreground">No Intel reports found. Generate one in the ICP tab.</span>
                 )}
                 {availableIntelReports.map((report) => (
-                  <option key={report.id} value={report.id}>
-                    {report.company_name || report.companyName || report.id}
-                  </option>
+                  <Button
+                    key={report.id}
+                    variant={intelReport?.id === report.id ? "default" : "outline"}
+                    onClick={() => setIntelReport(report)}
+                    className="flex items-center gap-2 px-3 py-1 text-sm"
+                    size="sm"
+                  >
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${report.website?.replace(/^https?:\/\//, '') || ''}`}
+                      alt="favicon"
+                      className="w-4 h-4 mr-1"
+                      onError={e => { e.currentTarget.src = '/favicon.ico'; }}
+                    />
+                    {report.company_name || report.companyName || 'Untitled Intel Report'}
+                  </Button>
                 ))}
-              </select>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium flex items-center gap-2">
