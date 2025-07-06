@@ -286,13 +286,44 @@ const ICPGenerator = () => {
 
   const openSavedPlaybook = (playbook: any) => {
     console.log('Opening saved playbook:', playbook);
+    console.log('Playbook structure:', {
+      id: playbook.id,
+      companyName: playbook.companyName,
+      website: playbook.website,
+      playbook: playbook.playbook,
+      playbookKeys: playbook.playbook ? Object.keys(playbook.playbook) : 'No playbook field'
+    });
+    
+    // The playbook.playbook field contains the full GTM playbook structure
+    // We need to extract the gtmPlaybook from it
+    let gtmPlaybookData = null;
+    let researchSummary = 'Saved GTM Playbook';
+    let confidence = 85;
+    let sources = ['Saved Analysis'];
+    
+    if (playbook.playbook) {
+      // The playbook field contains the full structure with gtmPlaybook nested inside
+      if (playbook.playbook.gtmPlaybook) {
+        gtmPlaybookData = playbook.playbook.gtmPlaybook;
+        researchSummary = playbook.playbook.researchSummary || researchSummary;
+        confidence = playbook.playbook.confidence || confidence;
+        sources = playbook.playbook.sources || sources;
+      } else {
+        // If no gtmPlaybook field, the playbook itself might be the gtmPlaybook
+        gtmPlaybookData = playbook.playbook;
+      }
+    }
+    
+    console.log('Extracted gtmPlaybook data:', gtmPlaybookData);
+    
     // Map the saved playbook data to the expected modal structure
     const modalData = {
-      gtmPlaybook: playbook.playbook?.gtmPlaybook || playbook.playbook,
-      researchSummary: playbook.playbook?.researchSummary || 'Saved GTM Playbook',
-      confidence: playbook.playbook?.confidence || 85,
-      sources: playbook.playbook?.sources || ['Saved Analysis'],
+      gtmPlaybook: gtmPlaybookData,
+      researchSummary: researchSummary,
+      confidence: confidence,
+      sources: sources,
     };
+    
     // Create a company object for the modal
     const companyData = {
       companyName: playbook.companyName,
@@ -378,7 +409,7 @@ const ICPGenerator = () => {
                   size="sm"
                 >
                   <img 
-                    src={`https://www.google.com/s2/favicons?domain=${playbook.website || ''}`} 
+                    src={`https://www.google.com/s2/favicons?domain=${playbook.website?.replace(/^https?:\/\//, '') || ''}`} 
                     alt="favicon" 
                     className="w-4 h-4 mr-1" 
                     onError={e => { e.currentTarget.src = '/favicon.ico'; }} 
