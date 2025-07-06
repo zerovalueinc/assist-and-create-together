@@ -293,6 +293,8 @@ const ICPGenerator = () => {
       playbook: playbook.playbook,
       playbookKeys: playbook.playbook ? Object.keys(playbook.playbook) : 'No playbook field'
     });
+    console.log('Full playbook object:', JSON.stringify(playbook, null, 2));
+    console.log('Playbook.playbook field:', JSON.stringify(playbook.playbook, null, 2));
     
     // The playbook.playbook field contains the full GTM playbook structure
     // We need to extract the gtmPlaybook from it
@@ -308,10 +310,25 @@ const ICPGenerator = () => {
         researchSummary = playbook.playbook.researchSummary || researchSummary;
         confidence = playbook.playbook.confidence || confidence;
         sources = playbook.playbook.sources || sources;
+      } else if (playbook.playbook.executiveSummary) {
+        // If it has executiveSummary, it's already a gtmPlaybook structure
+        gtmPlaybookData = playbook.playbook;
       } else {
         // If no gtmPlaybook field, the playbook itself might be the gtmPlaybook
         gtmPlaybookData = playbook.playbook;
       }
+    }
+    
+    // Also check for other possible field names
+    if (!gtmPlaybookData && playbook.playbook_data) {
+      gtmPlaybookData = playbook.playbook_data.gtmPlaybook || playbook.playbook_data;
+      researchSummary = playbook.playbook_data.researchSummary || researchSummary;
+      confidence = playbook.playbook_data.confidence || confidence;
+      sources = playbook.playbook_data.sources || sources;
+    }
+    
+    if (!gtmPlaybookData && playbook.icp_data) {
+      gtmPlaybookData = playbook.icp_data;
     }
     
     console.log('Extracted gtmPlaybook data:', gtmPlaybookData);
