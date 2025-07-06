@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
@@ -7,7 +7,7 @@ import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 const EmailVerification: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
 
@@ -49,11 +49,11 @@ const EmailVerification: React.FC = () => {
   }, [searchParams]);
 
   const handleLogin = () => {
-    navigate('/login');
+    router.push('/login');
   };
 
   const handleResend = () => {
-    navigate('/register');
+    router.push('/register');
   };
 
   return (

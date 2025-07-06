@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Loader2, Mail, Lock, User, Building } from "lucide-react";
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 
 const Auth = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
   const supabase = useSupabaseClient();
@@ -39,7 +39,7 @@ const Auth = () => {
       if (redirectTo) {
         window.location.href = redirectTo;
       } else {
-        navigate('/');
+        router.push('/');
       }
     }
   };
@@ -120,7 +120,7 @@ const Auth = () => {
                   <Button
                     type="button"
                     variant="link"
-                    onClick={() => navigate('/forgot-password')}
+                    onClick={() => router.push('/forgot-password')}
                     className="text-sm"
                   >
                     Forgot your password?

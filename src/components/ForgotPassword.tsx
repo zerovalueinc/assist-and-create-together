@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -10,7 +10,7 @@ import { CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 const ForgotPassword: React.FC = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
@@ -38,7 +38,7 @@ const ForgotPassword: React.FC = () => {
   };
 
   const handleBackToLogin = () => {
-    navigate('/auth');
+    router.push('/auth');
   };
 
   const handleTryAgain = () => {

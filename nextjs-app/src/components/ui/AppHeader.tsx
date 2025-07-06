@@ -1,5 +1,5 @@
 import { useUser } from '@supabase/auth-helpers-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,13 +20,13 @@ export default function AppHeader() {
   const fullName = userData?.full_name || userData?.fullName || '';
   const company = userData?.company || '';
   const initials = userData?.initials || '';
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const location = usePathname();
 
   const handleLogout = async () => {
     const { supabase } = await import('@/lib/supabaseClient');
     await supabase.auth.signOut();
-    navigate('/auth');
+    router.push('/auth');
   };
 
   return (
@@ -34,7 +34,7 @@ export default function AppHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/') }>
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => router.push('/') }>
               <Zap className="h-8 w-8 text-blue-600" />
               <h1 className="text-2xl font-bold text-slate-900">PersonaOps</h1>
             </div>
@@ -44,11 +44,11 @@ export default function AppHeader() {
           </div>
           <nav className="flex items-center space-x-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = location === item.path;
               return (
                 <div key={item.label} className="relative group">
                   <button
-                    onClick={() => navigate(item.path)}
+                    onClick={() => router.push(item.path)}
                     className={`flex items-center justify-center p-3 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                       isActive 
                         ? 'bg-blue-50 text-blue-700' 
@@ -98,7 +98,7 @@ export default function AppHeader() {
                       )}
                     </div>
                   </div>
-                  <DropdownMenuItem onClick={() => navigate('/account')} className="cursor-pointer hover:bg-slate-50">
+                  <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer hover:bg-slate-50">
                     <User className="mr-2 h-4 w-4" />
                     <span>Account Settings</span>
                   </DropdownMenuItem>
@@ -109,7 +109,7 @@ export default function AppHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="outline" className="ml-4" onClick={() => navigate('/auth')}>
+              <Button variant="outline" className="ml-4" onClick={() => router.push('/auth')}>
                 Sign In
               </Button>
             )}

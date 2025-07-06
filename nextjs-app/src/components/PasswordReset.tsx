@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 const PasswordReset: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -66,11 +66,11 @@ const PasswordReset: React.FC = () => {
   };
 
   const handleLogin = () => {
-    navigate('/auth');
+    router.push('/auth');
   };
 
   const handleForgotPassword = () => {
-    navigate('/forgot-password');
+    router.push('/forgot-password');
   };
 
   if (status === 'error' && message.includes('Invalid reset link')) {
