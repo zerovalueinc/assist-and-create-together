@@ -15,6 +15,10 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
+  output: 'standalone',
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+  },
   webpack: (config: any) => {
     config.resolve.alias['@'] = path.resolve(__dirname, 'src');
     return config;

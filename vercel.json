@@ -1,5 +1,9 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "buildCommand": "cd nextjs-app && npm run build",
+  "outputDirectory": "nextjs-app/.next",
+  "installCommand": "cd nextjs-app && npm install",
+  "framework": "nextjs"
 } 
