@@ -374,26 +374,7 @@ const GTMGenerator = () => {
 
           <div className="mb-4">
             <div className="font-semibold text-base mb-1">Available GTM Playbooks</div>
-            {availablePlaybooks.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {availablePlaybooks.map((item: any) => {
-                  const name = item.companyName || item.company_name || item.companyname || 'Untitled Playbook';
-                  return (
-                    <Button
-                      key={item.id}
-                      variant={selectedPlaybookId === item.id ? 'default' : 'outline'}
-                      onClick={() => handleSelectPlaybook(item)}
-                      className="flex items-center gap-2 px-3 py-1 text-sm"
-                      size="sm"
-                    >
-                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-                      {name}
-                      {selectedPlaybookId === item.id && <CheckCircle className="h-3 w-3 ml-1" />}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
+            <GTMPlaybookPills playbooks={availablePlaybooks} selectedId={selectedPlaybookId} onSelect={handleSelectPlaybook} />
           </div>
 
           <div className="mb-4">
@@ -741,8 +722,6 @@ const GTMGenerator = () => {
       ) : (
         <div className="text-center text-muted-foreground py-8">Select a GTM playbook to view details.</div>
       )}
-
-      <GTMPlaybookPills playbooks={availablePlaybooks} selectedId={selectedPlaybookId} onSelect={handleSelectPlaybook} />
     </div>
   );
 };
