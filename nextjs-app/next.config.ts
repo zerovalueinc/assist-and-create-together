@@ -1,8 +1,10 @@
-import type { NextConfig } from "next";
-import path from 'path';
+const path = require('path');
 
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    appDir: true,
+  },
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
@@ -13,10 +15,13 @@ const nextConfig: NextConfig = {
     // your project has TypeScript errors.
     ignoreBuildErrors: true,
   },
-  webpack: (config) => {
+  images: {
+    domains: ['localhost'],
+  },
+  webpack: (config: any) => {
     config.resolve.alias['@'] = path.resolve(__dirname, 'src');
     return config;
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

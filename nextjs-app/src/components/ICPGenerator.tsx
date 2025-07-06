@@ -384,7 +384,7 @@ const ICPGenerator = () => {
             <div className="flex flex-wrap gap-2 mb-4">
               {recentReports.map((report) => (
                 <CompanyReportCard
-                  key={report.id}
+                  key={report.id as string}
                   report={report}
                   selected={selectedCompany?.id === report.id}
                   onClick={() => setSelectedCompany(report)}
@@ -419,19 +419,19 @@ const ICPGenerator = () => {
             <div className="flex flex-wrap gap-2 mb-4">
               {savedPlaybooks.map((playbook) => (
                 <Button
-                  key={playbook.id}
+                  key={playbook.id as string}
                   variant="outline"
                   onClick={() => openSavedPlaybook(playbook)}
                   className="flex items-center gap-2 px-3 py-1 text-sm"
                   size="sm"
                 >
                   <img 
-                    src={`https://www.google.com/s2/favicons?domain=${playbook.website?.replace(/^https?:\/\//, '') || ''}`} 
+                    src={`https://www.google.com/s2/favicons?domain=${(playbook.website as string)?.replace(/^https?:\/\//, '') || ''}`} 
                     alt="favicon" 
                     className="w-4 h-4 mr-1" 
                     onError={e => { e.currentTarget.src = '/favicon.ico'; }} 
                   />
-                  {playbook.companyName || 'Untitled Playbook'}
+                  {playbook.companyName as string || 'Untitled Playbook'}
                 </Button>
               ))}
             </div>
@@ -457,19 +457,19 @@ const ICPGenerator = () => {
                   <CardTitle className="text-lg">Buyer Personas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {modalICP.personas ? (
+                  {modalICP.personas && Array.isArray(modalICP.personas) ? (
                     <div className="space-y-3">
-                      {modalICP.personas.map((persona: any, index: number) => (
+                      {modalICP.personas.map((persona: Record<string, unknown>, index: number) => (
                         <div key={index} className="border rounded-lg p-3">
-                          <h4 className="font-semibold">{persona.title}</h4>
-                          <p className="text-sm text-gray-600">{persona.role}</p>
-                          {persona.painPoints && (
+                          <h4 className="font-semibold">{persona.title as string}</h4>
+                          <p className="text-sm text-gray-600">{persona.role as string}</p>
+                          {persona.painPoints && Array.isArray(persona.painPoints) && (
                             <div className="mt-2">
                               <span className="text-xs font-medium text-gray-500">Pain Points:</span>
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {persona.painPoints.map((point: string, i: number) => (
+                                {persona.painPoints.map((point: unknown, i: number) => (
                                   <Badge key={i} variant="secondary" className="text-xs">
-                                    {point}
+                                    {point as string}
                                   </Badge>
                                 ))}
                               </div>
@@ -489,23 +489,23 @@ const ICPGenerator = () => {
                   <CardTitle className="text-lg">Firmographics</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {modalICP.firmographics ? (
+                  {modalICP.firmographics && typeof modalICP.firmographics === 'object' ? (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <span className="text-xs font-medium text-gray-500">Industry</span>
-                        <p className="text-sm">{modalICP.firmographics.industry}</p>
+                        <p className="text-sm">{(modalICP.firmographics as Record<string, unknown>).industry as string}</p>
                       </div>
                       <div>
                         <span className="text-xs font-medium text-gray-500">Company Size</span>
-                        <p className="text-sm">{modalICP.firmographics.companySize}</p>
+                        <p className="text-sm">{(modalICP.firmographics as Record<string, unknown>).companySize as string}</p>
                       </div>
                       <div>
                         <span className="text-xs font-medium text-gray-500">Revenue Range</span>
-                        <p className="text-sm">{modalICP.firmographics.revenueRange}</p>
+                        <p className="text-sm">{(modalICP.firmographics as Record<string, unknown>).revenueRange as string}</p>
                       </div>
                       <div>
                         <span className="text-xs font-medium text-gray-500">Region</span>
-                        <p className="text-sm">{modalICP.firmographics.region}</p>
+                        <p className="text-sm">{(modalICP.firmographics as Record<string, unknown>).region as string}</p>
                       </div>
                     </div>
                   ) : <div className="text-xs text-gray-400">No firmographics available.</div>}
@@ -519,7 +519,7 @@ const ICPGenerator = () => {
                   <CardTitle className="text-lg">Messaging Angles</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {modalICP.messagingAngles ? (
+                  {modalICP.messagingAngles && Array.isArray(modalICP.messagingAngles) ? (
                     <div className="flex flex-wrap gap-2">
                       {modalICP.messagingAngles.map((angle: string, index: number) => (
                         <Badge key={index} variant="outline">
