@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 const EmailVerification: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
