@@ -302,23 +302,26 @@ const LeadEnrichment = () => {
                 {availableIntelReports.length === 0 && (
                   <span className="text-muted-foreground">No Intel reports found. Generate one in the ICP tab.</span>
                 )}
-                {availableIntelReports.map((report) => (
-                  <Button
-                    key={report.id}
-                    variant={intelReport?.id === report.id ? "default" : "outline"}
-                    onClick={() => setIntelReport(report)}
-                    className="flex items-center gap-2 px-3 py-1 text-sm"
-                    size="sm"
-                  >
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${report.website?.replace(/^https?:\/\//, '') || ''}`}
-                      alt="favicon"
-                      className="w-4 h-4 mr-1"
-                      onError={e => { e.currentTarget.src = '/favicon.ico'; }}
-                    />
-                    {report.company_name || report.companyName || 'Untitled Intel Report'}
-                  </Button>
-                ))}
+                {availableIntelReports.map((report) => {
+                  console.log('[LeadEnrichment] Intel report row:', report);
+                  return (
+                    <Button
+                      key={report.id}
+                      variant={intelReport?.id === report.id ? "default" : "outline"}
+                      onClick={() => setIntelReport(report)}
+                      className="flex items-center gap-2 px-3 py-1 text-sm"
+                      size="sm"
+                    >
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${report.website?.replace(/^https?:\/\//, '') || ''}`}
+                        alt="favicon"
+                        className="w-4 h-4 mr-1"
+                        onError={e => { e.currentTarget.src = '/favicon.ico'; }}
+                      />
+                      {report.company_name || report.companyName || report.website || report.id}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
             <div>
