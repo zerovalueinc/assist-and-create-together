@@ -82,24 +82,10 @@ const ICPGenerator = () => {
   const [recentPlaybooks, setRecentPlaybooks] = useState<any[]>([]);
   const [showICPModal, setShowICPModal] = useState(false);
   const [modalICP, setModalICP] = useState<any>(null);
+  const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
 
   // Debug log for recentReports
   console.log('recentReports:', recentReports);
-
-  // Use preloaded company analyses for pills or fallback to cache
-  let availableCompanies = preloadData?.companyAnalyzer || [];
-  if (!availableCompanies.length) {
-    availableCompanies = getCache('yourwork_analyze', []);
-  }
-  // Normalize company name for all analyses
-  availableCompanies = availableCompanies.map((item: any) => {
-    const name = item.companyName || item.company_name || item.companyname || 'Untitled';
-    return { ...item, companyName: name, company_name: name, companyname: name };
-  });
-  console.log('[ICPGenerator] availableCompanies:', availableCompanies);
-
-  // Pills should show for all reports, not just those with icp_profile
-  // Only filter for ICP details in the modal/section
 
   // Add a refresh function for company analyses
   const handleRefreshCompanies = () => {
@@ -116,6 +102,7 @@ const ICPGenerator = () => {
   useEffect(() => {
     if (!user) return;
     getCompanyAnalysis({ userId: user.id }).then((data) => {
+      setAvailableCompanies(data);
       setRecentReports(data);
       hasFetchedReports.current = true;
     });
