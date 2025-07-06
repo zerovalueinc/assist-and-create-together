@@ -33,7 +33,6 @@
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",
-    "@radix-ui/react-breadcrumb": "^1.0.0",
     "@radix-ui/react-calendar": "^1.0.0",
     "@radix-ui/react-carousel": "^1.0.0",
     "@radix-ui/react-collapsible": "^1.0.3",
@@ -50,10 +49,8 @@
     "@radix-ui/react-scroll-area": "^1.0.5",
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-sheet": "^1.0.0",
-    "@radix-ui/react-sidebar": "^1.0.0",
     "@radix-ui/react-slider": "^1.1.2",
     "@radix-ui/react-switch": "^1.0.3",
-    "@radix-ui/react-table": "^1.0.0",
     "@radix-ui/react-textarea": "^1.0.0",
     "@radix-ui/react-toggle": "^1.0.3",
     "@radix-ui/react-toggle-group": "^1.0.4"
