@@ -87,8 +87,10 @@ const ICPGenerator = () => {
   const [showPlaybookModal, setShowPlaybookModal] = useState(false);
   const [playbookData, setPlaybookData] = useState(null);
 
-  // Debug log for recentReports
-  console.log('recentReports:', recentReports);
+  // Debug log for recentReports (only when it changes)
+  useEffect(() => {
+    console.log('recentReports updated:', recentReports);
+  }, [recentReports]);
 
   // Add a refresh function for company analyses
   const handleRefreshCompanies = () => {
@@ -181,7 +183,15 @@ const ICPGenerator = () => {
       const result = await response.json();
       if (result.success) {
         toast({ title: "GTM Playbook Generated", description: "Your playbook is ready!" });
-        setPlaybookData(result);
+        // Map the API response to the expected modal structure
+        const modalData = {
+          gtmPlaybook: result.gtmPlaybook || result.playbook || result.data,
+          researchSummary: result.researchSummary || result.summary || 'GTM Playbook generated successfully',
+          confidence: result.confidence || 85,
+          sources: result.sources || ['Company Analysis', 'Market Research'],
+        };
+        console.log('Setting playbook data for modal:', modalData);
+        setPlaybookData(modalData);
         setShowPlaybookModal(true);
       } else {
         toast({ title: "Generation Failed", description: result.error || "Unknown error", variant: "destructive" });

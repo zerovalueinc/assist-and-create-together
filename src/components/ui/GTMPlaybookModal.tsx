@@ -6,8 +6,20 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Users, TrendingUp, MessageSquare, Rocket, FileText, BarChart2, Share2, Download, Copy } from 'lucide-react';
 
 export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
-  if (!playbookData) return null;
+  if (!playbookData || !playbookData.gtmPlaybook) {
+    console.log('GTMPlaybookModal: No playbook data available', { playbookData });
+    return null;
+  }
   const { gtmPlaybook, researchSummary, confidence, sources } = playbookData;
+  
+  // Defensive check for gtmPlaybook structure
+  if (!gtmPlaybook || typeof gtmPlaybook !== 'object') {
+    console.error('GTMPlaybookModal: Invalid gtmPlaybook structure', { gtmPlaybook });
+    return null;
+  }
+  
+  // Debug log to see the actual data structure
+  console.log('GTMPlaybookModal: Rendering with data', { gtmPlaybook, researchSummary, confidence, sources });
 
   // Animation classes (Tailwind)
   const animation = 'animate-fade-in-up';
@@ -48,7 +60,7 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
         <div className="space-y-6 mt-4">
           <Card>
             <CardHeader>Executive Summary</CardHeader>
-            <CardContent>{gtmPlaybook.executiveSummary}</CardContent>
+            <CardContent>{gtmPlaybook.executiveSummary || 'Executive summary not available'}</CardContent>
           </Card>
           <Card>
             <CardHeader className="flex items-center gap-2"><TrendingUp className="h-5 w-5" />Market Analysis</CardHeader>
