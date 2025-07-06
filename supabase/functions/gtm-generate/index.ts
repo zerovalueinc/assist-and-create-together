@@ -206,9 +206,9 @@ serve(async (req) => {
       .from('gtm_playbooks')
       .insert({
         user_id: user.id,
-        company_name: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
-        website_url: gtmRequest.websiteUrl,
-        playbook_data: finalPlaybook,
+        companyName: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
+        website: gtmRequest.websiteUrl,
+        playbook: finalPlaybook,
         created_at: new Date().toISOString(),
       })
       .select()

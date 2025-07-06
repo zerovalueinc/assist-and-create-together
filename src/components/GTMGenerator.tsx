@@ -381,7 +381,7 @@ const GTMGenerator = () => {
                     setSelectedPlaybook(pb);
                   }}
                 >
-                  {pb.company_name}
+                  {pb.companyName || pb.company_name}
                 </button>
               ))}
             </div>
@@ -440,7 +440,7 @@ const GTMGenerator = () => {
           open={!!selectedPlaybook}
           onClose={() => setSelectedPlaybook(null)}
           playbookData={selectedPlaybook}
-          company={selectedPlaybook.company_name}
+          company={selectedPlaybook.companyName || selectedPlaybook.company_name}
         />
       )}
 
