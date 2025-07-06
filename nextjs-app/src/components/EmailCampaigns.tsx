@@ -2,20 +2,19 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Mail, Send, Users, BarChart3, ExternalLink, Bot, Zap, TrendingUp, Clock, Target, CheckCircle2, ArrowUpRight, Play, Pause, Settings, Brain, BookOpen, Download } from "lucide-react";
+import { Mail, ExternalLink, Clock, CheckCircle2, Play, Pause, Settings, Brain, BookOpen, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { getCache, setCache } from '@/lib/utils';
+import { getCache } from '@/lib/utils';
 import { useUserData } from '@/hooks/useUserData';
 
 const EmailCampaigns = () => {
-  const [selectedPlatform, setSelectedPlatform] = useState('instantly');
+  const [selectedPlatform] = useState('instantly');
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { session } = useAuth();
-  const { user, loading: userLoading } = useUserData() as { user: any, loading: boolean };
+  const { user } = useUserData() as { user: any, loading: boolean };
   const email = user?.email || '';
 
   // Mock real-time campaign data

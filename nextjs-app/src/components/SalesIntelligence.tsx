@@ -7,15 +7,11 @@ import { SectionLabel } from "./ui/section-label";
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCache, setCache } from '@/lib/utils';
-import { useCompany } from '../context/CompanyContext';
 
 const SalesIntelligence = () => {
   const [reports, setReports] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const user = useUser();
-  const session = useSession();
-  const { research } = useCompany();
   const workspaceId = user?.id; // Use user ID as workspace ID for now
   const hasFetched = useRef(false);
 
@@ -25,8 +21,6 @@ const SalesIntelligence = () => {
     if (cachedReports.length > 0) setReports(cachedReports);
     if (!user || !workspaceId || hasFetched.current) return;
     hasFetched.current = true;
-    setLoading(true);
-    setError(null);
     const fetchReports = async () => {
       try {
         const { data, error } = await supabase
@@ -40,8 +34,6 @@ const SalesIntelligence = () => {
       } catch (err: any) {
         setError(err.message || 'Failed to fetch sales intelligence reports.');
         console.error('Failed to fetch reports:', err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchReports();

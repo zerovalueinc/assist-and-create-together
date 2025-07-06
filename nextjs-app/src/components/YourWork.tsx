@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FolderOpen, Trash2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
+import { FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import { useUser, useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/lib/supabaseClient';
-import { capitalizeFirstLetter, getCache, setCache } from '@/lib/utils';
-import { Skeleton } from './ui/skeleton';
-import { useCompany } from '@/context/CompanyContext';
+import { getCache, setCache } from '@/lib/utils';
 import { getCompanyAnalysis } from '@/lib/supabase/edgeClient';
 import { CompanyReportCard } from './ui/CompanyReportCard';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || window.location.origin;
 
 export default function YourWork() {
   const user = useUser();
@@ -18,14 +14,12 @@ export default function YourWork() {
   const [analyzeWork, setAnalyzeWork] = useState<any[]>([]);
   const [gtmWork, setGtmWork] = useState<any[]>([]);
   const [analyzeLoading, setAnalyzeLoading] = useState(true);
-  const [gtmLoading, setGtmLoading] = useState(true);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [gtmError, setGtmError] = useState<string | null>(null);
   const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
   const [gtmExpanded, setGtmExpanded] = useState(true);
   const [reports, setReports] = useState<any[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const [selectedCompany, setSelectedCompany] = useState<any | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -122,7 +116,6 @@ export default function YourWork() {
                       selected={selectedReportId === report.id}
                       onClick={() => {
                         setSelectedReportId(report.id);
-                        setSelectedCompany(report);
                         // Add any other selection logic as needed
                       }}
                     />
