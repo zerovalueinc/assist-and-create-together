@@ -261,31 +261,81 @@ const GTMGenerator = () => {
     }
   };
 
+  const [playbooks, setPlaybooks] = useState<any[]>([]);
   const [selectedPlaybookId, setSelectedPlaybookId] = useState<string | null>(null);
   const [selectedPlaybook, setSelectedPlaybook] = useState<any>(null);
+  const [showPlaybookModal, setShowPlaybookModal] = useState(false);
 
-  // Select most recent playbook by default
+  // Fetch and subscribe to all GTM playbooks for the current user in real time
   useEffect(() => {
-    if (availablePlaybooks.length > 0 && !selectedPlaybookId) {
-      const mostRecent = availablePlaybooks[0];
-      setSelectedPlaybookId(mostRecent.id);
-      // Parse playbook_data if present
-      let playbookData = mostRecent.playbook_data;
-      if (typeof playbookData === 'string') {
-        try { playbookData = JSON.parse(playbookData); } catch {}
+    let subscription: any;
+    async function fetchAndSubscribe() {
+      if (!user?.id) return;
+      // Initial fetch
+      const { data, error } = await supabase
+        .from('gtm_playbooks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setPlaybooks(data);
+        if (data.length > 0 && !selectedPlaybookId) {
+          setSelectedPlaybookId(data[0].id);
+          let playbookData = data[0].playbook_data;
+          if (typeof playbookData === 'string') {
+            try { playbookData = JSON.parse(playbookData); } catch {}
+          }
+          setSelectedPlaybook({ ...data[0], gtmPlaybook: playbookData || data[0].gtmPlaybook });
+        }
       }
-      setSelectedPlaybook({ ...mostRecent, gtmPlaybook: playbookData || mostRecent.gtmPlaybook });
+      // Real-time subscription
+      subscription = supabase
+        .channel('public:gtm_playbooks')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'gtm_playbooks', filter: `user_id=eq.${user.id}` },
+          async () => {
+            const { data, error } = await supabase
+              .from('gtm_playbooks')
+              .select('*')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false });
+            if (!error && data) {
+              setPlaybooks(data);
+            }
+          }
+        )
+        .subscribe();
     }
-  }, [availablePlaybooks, selectedPlaybookId]);
+    fetchAndSubscribe();
+    return () => {
+      if (subscription) supabase.removeChannel(subscription);
+    };
+  }, [user?.id]);
 
-  // When a pill is clicked, set selectedPlaybookId and selectedPlaybook
+  // When a pill is clicked, set selectedPlaybookId and selectedPlaybook, and open modal
   const handleSelectPlaybook = (item: any) => {
     setSelectedPlaybookId(item.id);
     let playbookData = item.playbook_data;
-    if (typeof playbookData === 'string') {
-      try { playbookData = JSON.parse(playbookData); } catch {}
+    let parsed = null;
+    if (!playbookData) {
+      toast({ title: 'Error', description: 'No playbook data found for this report.', variant: 'destructive' });
+      return;
     }
-    setSelectedPlaybook({ ...item, gtmPlaybook: playbookData || item.gtmPlaybook });
+    if (typeof playbookData === 'string') {
+      try { parsed = JSON.parse(playbookData); } catch (e) {
+        toast({ title: 'Error', description: 'Malformed playbook data. Cannot open report.', variant: 'destructive' });
+        return;
+      }
+    } else if (typeof playbookData === 'object') {
+      parsed = playbookData;
+    }
+    if (!parsed || !parsed.gtmPlaybook) {
+      toast({ title: 'Error', description: 'No GTM playbook found in this report.', variant: 'destructive' });
+      return;
+    }
+    setSelectedPlaybook({ ...item, gtmPlaybook: parsed.gtmPlaybook });
+    setShowPlaybookModal(true);
   };
 
   const renderICPSection = (icp: any) => (
@@ -373,8 +423,8 @@ const GTMGenerator = () => {
           </div>
 
           <div className="mb-4">
-            <div className="font-semibold text-base mb-1">Available GTM Playbooks</div>
-            <GTMPlaybookPills playbooks={availablePlaybooks} selectedId={selectedPlaybookId} onSelect={handleSelectPlaybook} />
+            <div className="font-semibold text-base mb-1">Saved GTM Playbooks</div>
+            <GTMPlaybookPills playbooks={playbooks} selectedId={selectedPlaybookId} onSelect={handleSelectPlaybook} />
           </div>
 
           <div className="mb-4">
@@ -425,7 +475,13 @@ const GTMGenerator = () => {
         </CardContent>
       </Card>
 
-      {availablePlaybooks.length === 0 ? (
+      {selectedPlaybook && showPlaybookModal && selectedPlaybook.gtmPlaybook ? (
+        <GTMPlaybookModal open={showPlaybookModal} onClose={() => setShowPlaybookModal(false)} playbookData={selectedPlaybook} company={selectedPlaybook} />
+      ) : selectedPlaybook && showPlaybookModal ? (
+        <div className="p-8 text-center text-red-600 font-semibold">Unable to display this GTM playbook. The data is missing or malformed.</div>
+      ) : null}
+
+      {playbooks.length === 0 ? (
         <div className="text-center text-muted-foreground py-8">No GTM playbooks found. Generate a playbook first.</div>
       ) : selectedPlaybook && selectedPlaybook.gtmPlaybook ? (
         <Card>
