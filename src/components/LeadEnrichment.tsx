@@ -110,7 +110,7 @@ const LeadEnrichment = () => {
     const fetchReports = async () => {
       try {
         // Fetch Intel reports
-        const intelResponse = await fetch('/api/app/company-analyze', {
+        const intelResponse = await fetch('/api/company-analysis', {
           method: 'GET',
           headers: {
             ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
@@ -122,7 +122,7 @@ const LeadEnrichment = () => {
         }
 
         // Fetch GTM playbooks
-        const gtmResponse = await fetch('/api/app/gtm-playbooks', {
+        const gtmResponse = await fetch('/api/gtm-playbooks', {
           method: 'GET',
           headers: {
             ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
