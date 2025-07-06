@@ -37,13 +37,41 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
 
   if (!playbookData || !gtmPlaybook) {
     console.log('GTMPlaybookModal: No playbook data available', { playbookData, gtmPlaybook });
-    return null;
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>No Playbook Data</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p>No playbook data available to display.</p>
+            <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-x-auto">
+              {JSON.stringify({ playbookData, gtmPlaybook }, null, 2)}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
   
   // Defensive check for gtmPlaybook structure
   if (!gtmPlaybook || typeof gtmPlaybook !== 'object') {
     console.error('GTMPlaybookModal: Invalid gtmPlaybook structure', { gtmPlaybook });
-    return null;
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Invalid Playbook Data</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p>Invalid playbook data structure.</p>
+            <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-x-auto">
+              {JSON.stringify({ gtmPlaybook }, null, 2)}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
   
   // Debug log to see the actual data structure
@@ -67,9 +95,10 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
     // ...
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className={`max-w-5xl max-h-[90vh] overflow-y-auto ${animation}`}>
+  try {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className={`max-w-5xl max-h-[90vh] overflow-y-auto ${animation}`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl font-bold">
             <Rocket className="h-6 w-6 text-primary" />
@@ -196,4 +225,22 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
       </DialogContent>
     </Dialog>
   );
+  } catch (error) {
+    console.error('GTMPlaybookModal: Error rendering modal:', error);
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Error Loading Playbook</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p>An error occurred while loading the playbook data.</p>
+            <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-x-auto">
+              {error?.message || 'Unknown error'}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 } 
