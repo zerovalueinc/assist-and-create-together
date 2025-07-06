@@ -1,27 +1,21 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, AlertTriangle } from "lucide-react";
+import { Loader2, Search, AlertTriangle, Building2, Users, Target, TrendingUp, Globe, Zap, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useCompany } from "@/context/CompanyContext";
-import { useUser, useSession } from '@supabase/auth-helpers-react';
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from '@/lib/supabaseClient';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { CheckCircle } from 'lucide-react';
-import { prettifyLabel, getCache, setCache } from '@/lib/utils';
-import { Skeleton } from './ui/skeleton';
-import { useDataPreload } from '@/context/DataPreloadProvider';
-import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '@/lib/supabase/edgeClient';
+import { getCache, setCache } from '@/lib/utils';
+import { CompanyReportPills } from './ui/CompanyReportPills';
 import { CompanyReportCard } from './ui/CompanyReportCard';
 import ICPProfileDisplay from './ui/ICPProfileDisplay';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
 import { SectionLabel } from './ui/section-label';
+import { useCompany } from "@/context/CompanyContext";
+import { useUser, useSession } from '@supabase/auth-helpers-react';
+import { useDataPreload } from '@/context/DataPreloadProvider';
+import { getCompanyAnalysis, getCompanyAnalysisById, getCompanyResearchSteps } from '@/lib/supabase/edgeClient';
 import CanonicalReportRenderer from './ui/CanonicalReportRenderer';
-import { CompanyReportPills } from './ui/CompanyReportPills';
-
-
 
 function normalizeUrl(input: string): string {
   let url = input.trim().toLowerCase();

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +11,7 @@ const BillingTab = () => {
           <CardHeader>
             <CardTitle>Current Plan</CardTitle>
             <CardDescription>
-              You're currently on the Pro plan with unlimited access.
+              You&apos;re currently on the Pro plan with unlimited access.
             </CardDescription>
           </CardHeader>
           <CardContent>
