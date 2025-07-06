@@ -106,7 +106,7 @@ const LeadEnrichment = () => {
     if (cachedLeads.length > 0) setLeads(cachedLeads);
   }, []);
 
-  // Fetch available Intel and GTM reports for selection (client-side, instant)
+  // Fetch available Intel reports for selection (client-side, instant, GTM-style)
   const fetchIntelReports = async () => {
     if (!session?.user?.id) return;
     try {
@@ -117,6 +117,7 @@ const LeadEnrichment = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
       setAvailableIntelReports(data || []);
+      console.log('[LeadEnrichment] Fetched Intel reports for user:', session.user.id, data);
     } catch (error) {
       console.error('Error fetching Intel reports:', error);
       setAvailableIntelReports([]);
@@ -149,7 +150,7 @@ const LeadEnrichment = () => {
     if (pipelineId && pipelineStatus === 'running') {
       const interval = setInterval(async () => {
         try {
-          const response = await fetch('/api/app/pipeline-status', {
+          const response = await fetch('/api/pipeline-status', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -185,7 +186,7 @@ const LeadEnrichment = () => {
   const fetchPipelineResults = async () => {
     try {
       // Fetch companies and contacts from Supabase
-      const companiesResponse = await fetch('/api/app/companies', {
+      const companiesResponse = await fetch('/api/companies', {
         method: 'GET',
         headers: {
           ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
@@ -196,7 +197,7 @@ const LeadEnrichment = () => {
         setCompanies(companiesData.companies || []);
       }
 
-      const contactsResponse = await fetch('/api/app/contacts', {
+      const contactsResponse = await fetch('/api/contacts', {
         method: 'GET',
         headers: {
           ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
@@ -212,6 +213,14 @@ const LeadEnrichment = () => {
   };
 
   const triggerPipeline = async () => {
+    if (!intelReport || !intelReport.icp_id) {
+      toast({
+        title: 'Intel Report Required',
+        description: 'You must select a valid Intel Report before running the pipeline.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setLoading(true);
     setPipelineStatus(null);
     setPipelineId(null);
@@ -219,12 +228,12 @@ const LeadEnrichment = () => {
     setContacts([]);
     try {
       const payload = {
-        icpId: searchQuery, // For now, use searchQuery as ICP ID or adapt as needed
-        intelReportId: intelReport?.id,
+        icpId: intelReport.icp_id, // Use the correct icpId from the selected Intel Report
+        intelReportId: intelReport.id,
         gtmPlaybookId: gtmPlaybook?.id,
       };
       console.log('[LeadEnrichment] Triggering pipeline with payload:', payload);
-      const response = await fetch('/api/app/leads', {
+      const response = await fetch('/api/leads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -268,7 +277,7 @@ const LeadEnrichment = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1"
             />
-            <Button onClick={triggerPipeline} disabled={loading}>
+            <Button onClick={triggerPipeline} disabled={loading || !intelReport || !intelReport.icp_id}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -286,7 +295,7 @@ const LeadEnrichment = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium flex items-center gap-2">
-                Intel Report (Optional)
+                Intel Report
                 <Button size="sm" variant="outline" onClick={fetchIntelReports}>Refresh</Button>
               </label>
               <select
@@ -299,7 +308,7 @@ const LeadEnrichment = () => {
               >
                 <option value="">Select Intel Report</option>
                 {availableIntelReports.length === 0 && (
-                  <option disabled>No reports found. Generate one in the Intel tab.</option>
+                  <option disabled>No Intel reports found. Generate one in the ICP tab.</option>
                 )}
                 {availableIntelReports.map((report) => (
                   <option key={report.id} value={report.id}>
