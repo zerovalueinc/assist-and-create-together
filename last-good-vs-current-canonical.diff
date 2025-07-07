@@ -1,0 +1,19 @@
+diff --git a/src/components/ui/CanonicalReportRenderer.tsx b/src/components/ui/CanonicalReportRenderer.tsx
+index fe1729f..eba067d 100644
+--- a/src/components/ui/CanonicalReportRenderer.tsx
++++ b/src/components/ui/CanonicalReportRenderer.tsx
+@@ -334,11 +334,11 @@ const CanonicalReportRenderer: React.FC<CanonicalReportRendererProps> = ({ repor
+     const hasData = section.subsections.some((subsection: any) => {
+       const { fields } = subsection;
+       if (subsection.type === 'two_column_grid') {
+-        return fields.some((fieldGroup: any) => 
+-          fieldGroup.fields.some((field: string) => data[field])
++        return Array.isArray(fields) && fields.some((fieldGroup: any) => 
++          fieldGroup.fields && Array.isArray(fieldGroup.fields) && fieldGroup.fields.some((field: string) => data[field])
+         );
+       }
+-      return fields.some((field: string) => data[field]);
++      return Array.isArray(fields) && fields.some((field: string) => data[field]);
+     });
+ 
+     if (!hasData) return null;

@@ -1,0 +1,234 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+    --chart-1: 220 70% 50%;     
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 94.1%;
+    --sidebar-primary-foreground: 240 5.9% 10%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Enhanced accessibility and hover states */
+@layer components {
+  .hover-enhance {
+    @apply transition-all duration-200 hover:shadow-md hover:scale-[1.02];
+  }
+  
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-blue-200;
+  }
+  
+  .button-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95;
+  }
+  
+  /* Improved tooltip visibility */
+  .tooltip-content {
+    @apply bg-slate-900 text-white px-3 py-2 rounded-md text-sm font-medium shadow-lg border border-slate-700;
+  }
+  
+  /* Enhanced tab morphing effects */
+  .tab-morph {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .tab-active {
+    @apply bg-white shadow-sm border-blue-200 text-blue-700 font-semibold;
+  }
+  
+  .tab-inactive {
+    @apply text-slate-600 hover:text-slate-900 hover:bg-slate-50;
+  }
+  
+  /* Improved accessibility for links and buttons */
+  .accessible-link {
+    @apply underline decoration-2 underline-offset-4 decoration-blue-500 hover:decoration-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200;
+  }
+  
+  .accessible-button {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200;
+  }
+  
+  /* Enhanced contrast for better readability */
+  .high-contrast-text {
+    @apply text-slate-900 font-medium;
+  }
+  
+  .medium-contrast-text {
+    @apply text-slate-700;
+  }
+  
+  .low-contrast-text {
+    @apply text-slate-600;
+  }
+  
+  /* Improved status indicators */
+  .status-indicator {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .status-active {
+    @apply bg-green-100 text-green-800 border border-green-200;
+  }
+  
+  .status-inactive {
+    @apply bg-gray-100 text-gray-800 border border-gray-200;
+  }
+  
+  .status-warning {
+    @apply bg-yellow-100 text-yellow-800 border border-yellow-200;
+  }
+  
+  /* Loading states */
+  .loading-shimmer {
+    @apply animate-pulse bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:400%_100%];
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
+  
+  /* Enhanced data visualization */
+  .progress-bar {
+    @apply relative overflow-hidden bg-slate-200 rounded-full;
+  }
+  
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out;
+  }
+  
+  /* Improved form states */
+  .form-input {
+    @apply border-slate-300 focus:border-blue-500 focus:ring-blue-500 focus:ring-1 transition-colors duration-200;
+  }
+  
+  .form-input-error {
+    @apply border-red-500 focus:border-red-500 focus:ring-red-500 focus:ring-1;
+  }
+  
+  .form-input-success {
+    @apply border-green-500 focus:border-green-500 focus:ring-green-500 focus:ring-1;
+  }
+}
+
+/* Print styles for reports */
+@media print {
+  .no-print {
+    @apply hidden;
+  }
+  
+  .print-friendly {
+    @apply text-black bg-white shadow-none border border-gray-300;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card {
+    @apply border-2 border-slate-900;
+  }
+  
+  .button {
+    @apply border-2;
+  }
+  
+  .text-muted {
+    @apply text-slate-900;
+  }
+}

@@ -1,0 +1,600 @@
+// agents/companyAnalyze.ts
+// Research Agent: Full Instantly v2 API integration for lead management
+
+import OpenAI from 'openai';
+
+export class EnhancedResearchAgent {
+  private openai: OpenAI;
+  
+  constructor(apiKey?: string) {
+    const key = apiKey || process.env['OPENROUTER_API_KEY'];
+    this.openai = new OpenAI({ 
+      apiKey: key,
+      baseURL: 'https://openrouter.ai/api/v1' // Use OpenRouter's API endpoint
+    });
+  }
+
+  async enhanceICP(baseICP: any): Promise<any> {
+    console.log('🔬 Starting deep ICP research and enhancement...');
+    
+    // 1. Industry Analysis
+    const industryInsights = await this.researchIndustries(baseICP.company_criteria.industries);
+    
+    // 2. Persona Deep Dive  
+    const enrichedPersonas = await this.enrichPersonas(baseICP.target_personas);
+    
+    // 3. Company Criteria Enhancement
+    const enhancedCriteria = await this.enhanceCompanyCriteria(baseICP.company_criteria);
+    
+    // 4. Messaging Optimization
+    const optimizedMessaging = await this.optimizeMessaging(baseICP.messaging_angles);
+    
+    return {
+      ...baseICP,
+      enhanced_industry_insights: industryInsights,
+      enriched_personas: enrichedPersonas,
+      enhanced_criteria: enhancedCriteria,
+      optimized_messaging: optimizedMessaging,
+      apollo_search_params: this.generateApolloParams(enhancedCriteria),
+      research_timestamp: new Date().toISOString()
+    };
+  }
+
+  private async researchIndustries(industries: string[]): Promise<any> {
+    const prompt = `
+    As a senior market research analyst, analyze these industries for B2B SaaS lead generation.
+    Focus your analysis and recommendations on SMB and mid-market companies (typically 50–1000 employees, not large enterprise or SMB <50 employees).
+    Your goal is to maximize the quality and intent of leads—prioritize companies that are most likely to be ready to buy Midbound.ai based on their ICP fit and current market signals.
+    Research https://midbound.ai to understand the true ICP and value proposition, and use that to refine your analysis.
+    
+    Industries: ${industries.join(', ')}
+    
+    Provide detailed insights on:
+    1. Current market trends and growth drivers
+    2. Key challenges companies face  
+    3. Technology adoption patterns
+    4. Buying behavior and decision processes
+    5. Budget allocation trends
+    6. Competitive landscape
+    7. What signals indicate a company is ready to buy Midbound.ai now?
+    
+    Format as actionable insights for sales targeting.
+    `;
+    
+    const response = await this.openai.chat.completions.create({
+      model: "anthropic/claude-3.5-sonnet", // Use Claude via OpenRouter
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7
+    });
+    
+    const content = response.choices[0].message.content || '';
+    return this.parseResearchResponse(content);
+  }
+
+  private async enrichPersonas(personas: any): Promise<any> {
+    const allPersonas = [...personas.tier_1, ...personas.tier_2, ...personas.tier_3];
+    
+    const prompt = `
+    As a B2B sales psychology expert, analyze these target personas for SMB and mid-market B2B SaaS (not enterprise).
+    Your goal is to maximize lead quality and intent—focus on what makes a persona ready to buy Midbound.ai now, based on their role, pain points, and buying triggers.
+    Research https://midbound.ai to understand the true ICP and value proposition, and use that to refine your analysis.
+    
+    Personas: ${allPersonas.join(', ')}
+    
+    For each persona, provide:
+    1. Day-in-the-life scenarios
+    2. Key performance indicators they're measured on
+    3. Typical challenges and pain points
+    4. Decision-making process and influences
+    5. Preferred communication channels
+    6. Language patterns and terminology
+    7. What triggers them to evaluate new solutions
+    8. Common objections they have
+    9. What signals indicate this persona is ready to buy Midbound.ai now?
+    
+    Make this actionable for outreach and Apollo search criteria.
+    `;
+    
+    const response = await this.openai.chat.completions.create({
+      model: "anthropic/claude-3.5-sonnet", // Use Claude via OpenRouter
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7
+    });
+    
+    const content = response.choices[0].message.content || '';
+    return this.parsePersonaResponse(content);
+  }
+
+  private async enhanceCompanyCriteria(criteria: any): Promise<any> {
+    return {
+      ...criteria,
+      apollo_employee_ranges: this.parseEmployeeRange(criteria.employee_count),
+      apollo_locations: ["United States"],
+      apollo_technologies: criteria.tech_stack,
+      buying_triggers: [
+        "New funding rounds",
+        "Leadership changes", 
+        "Product launches",
+        "Market expansion",
+        "Technology implementations"
+      ]
+    };
+  }
+
+  private async optimizeMessaging(messaging: any): Promise<any> {
+    const prompt = `
+    Optimize these messaging angles for B2B SaaS outreach to SMB and mid-market companies (not enterprise).
+    Focus on maximizing lead quality and intent—speak to the pain points and buying triggers of companies most likely to buy Midbound.ai now.
+    Research https://midbound.ai to understand the true ICP and value proposition, and use that to refine your messaging.
+    
+    Current hooks: ${messaging.primary_hooks.join(', ')}
+    
+    Create:
+    1. Email subject lines that get opened
+    2. Pain-point focused opening lines
+    3. Value proposition variations
+    4. Social proof statements
+    5. Call-to-action options
+    
+    Make them specific to website visitor identification software for SMB/mid-market.
+    `;
+    
+    const response = await this.openai.chat.completions.create({
+      model: "anthropic/claude-3.5-sonnet", // Use Claude via OpenRouter
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7
+    });
+    
+    const content = response.choices[0].message.content || '';
+    return {
+      ...messaging,
+      optimized_subject_lines: this.extractSubjectLines(content),
+      pain_openers: this.extractPainOpeners(content),
+      value_props: this.extractValueProps(content),
+      social_proof: this.extractSocialProof(content)
+    };
+  }
+
+  private generateApolloParams(criteria: any): any {
+    return {
+      organization_num_employees_ranges: criteria.apollo_employee_ranges,
+      organization_industries: criteria.industries,
+      organization_locations: criteria.apollo_locations,
+      organization_technologies: criteria.apollo_technologies,
+      person_titles: this.expandPersonaTitles(),
+      person_seniorities: ["c_level", "vp", "director", "manager"]
+    };
+  }
+
+  private parseEmployeeRange(range: string): string[] {
+    // Strict SMB: 11-50, 51-100 only
+    if (range === "11-100" || range === "11-50" || range === "51-100") {
+      return ["11-50", "51-100"];
+    }
+    // Fallback for legacy or broader ranges
+    if (range === "11-500" || range === "50-500" || range === "50-1000" || range === "51-1000") {
+      return ["11-50", "51-100"];
+    }
+    return [range];
+  }
+
+  private expandPersonaTitles(): string[] {
+    return [
+      "Chief Marketing Officer", "CMO",
+      "VP Marketing", "Vice President Marketing",
+      "Director Marketing Operations", "Marketing Operations Director",
+      "Head of Growth", "VP Growth", "Growth Marketing Director",
+      "Chief Revenue Officer", "CRO", 
+      "VP Sales", "Vice President Sales",
+      "Revenue Operations Director", "VP RevOps",
+      "VP Demand Generation", "Demand Generation Director",
+      "Performance Marketing Manager", "PPC Manager",
+      "SDR Manager", "Sales Development Manager"
+    ];
+  }
+
+  private parseResearchResponse(content: string): any {
+    return {
+      trends: this.extractSection(content, "trends"),
+      challenges: this.extractSection(content, "challenges"), 
+      technology_adoption: this.extractSection(content, "technology"),
+      buying_behavior: this.extractSection(content, "buying"),
+      insights: content
+    };
+  }
+
+  private parsePersonaResponse(content: string): any {
+    return {
+      enhanced_profiles: content,
+      apollo_title_variations: this.expandPersonaTitles(),
+      key_triggers: [
+        "New funding rounds",
+        "Leadership changes", 
+        "Product launches",
+        "Market expansion",
+        "Technology implementations"
+      ],
+      objection_handling: [
+        "Budget constraints",
+        "Implementation complexity",
+        "Data privacy concerns",
+        "Integration challenges"
+      ]
+    };
+  }
+
+  private extractSection(content: string, keyword: string): string {
+    const lines = content.split('\n');
+    return lines.filter(line => 
+      line.toLowerCase().includes(keyword)
+    ).join('\n');
+  }
+
+  private extractSubjectLines(content: string): string[] {
+    return [
+      "4x ROI in 2 weeks - Midbound case study",
+      "Beat competitors to $20k deals",
+      "See who's on your website right now",
+      "Turn anonymous visitors into pipeline"
+    ];
+  }
+
+  private extractPainOpeners(content: string): string[] {
+    return [
+      "Struggling with high cost per SQO?",
+      "Tired of slow speed-to-lead?",
+      "Anonymous website traffic driving you crazy?",
+      "Losing deals to faster competitors?"
+    ];
+  }
+
+  private extractValueProps(content: string): string[] {
+    return [
+      "Identify website visitors at the person level",
+      "Real-time CRM integration",
+      "4x ROI within 2 weeks",
+      "Beat competitors to deals"
+    ];
+  }
+
+  private extractSocialProof(content: string): string[] {
+    return [
+      "Spellbook Legal closed $50k in 2 weeks",
+      "Agora Real Estate beat competitors to $20k deal",
+      "500+ companies trust Midbound"
+    ];
+  }
+
+  /**
+   * Generate an enhanced ICP by analyzing a website URL with the LLM.
+   * @param websiteUrl The client website to analyze (e.g., https://midbound.ai)
+   */
+  async generateICPFromWebsite(websiteUrl: string): Promise<any> {
+    console.log(`🌐 Researching ICP from website: ${websiteUrl}`);
+    const systemMessage = `You are a world-class B2B Go-To-Market strategist and sales researcher.\n\nYour sole job is to analyze B2B websites and infer who the company is trying to sell to — their Ideal Customer Profile (ICP).\n\nYou are not describing the company itself. You are reverse-engineering the **target customer** they are selling to, based on their:\n- product positioning\n- messaging and taglines\n- features and use cases\n- integrations\n- customer case studies\n- demo CTAs and pricing\n- job titles mentioned or implied\n\nYour output will be used to build lead lists, write outbound messaging, and feed into Apollo's filters.\n\nYou must return a structured, clean JSON object. Do not return explanations, comments, or markdown formatting.`;
+    const userMessage = `Visit and analyze the following company website:  \n${websiteUrl}\n\nBased only on the content found on that website, infer the Ideal Customer Profile (ICP) that this company is targeting for outbound.\n\nYour job is to describe the **target customer** — not the company itself.\n\n---\n\nReturn your output as a valid, well-structured JSON object using the following schema:\n\n{\n  "targetCompanySize": {\n    "employeeRange": "e.g. 11–50",\n    "revenueRange": "e.g. $2M–$10M"\n  },\n  "targetIndustries": [\n    "e.g. B2B SaaS",\n    "e.g. eCommerce Brands",\n    "e.g. Marketing Agencies"\n  ],\n  "buyerPersonas": [\n    {\n      "title": "e.g. VP of Marketing",\n      "role": "e.g. Marketing leadership",\n      "seniority": "Manager / Director / VP / CXO"\n    }\n  ],\n  "painPointsAndTriggers": [\n    "e.g. Manual outbound takes too much time",\n    "e.g. Struggling to personalize outreach at scale",\n    "e.g. Outbound team underperforming"\n  ],\n  "messagingAngles": [\n    "Automated workflows for lead personalization",\n    "AI-powered outbound",\n    "No manual research required"\n  ],\n  "caseStudiesOrProof": [\n    "e.g. Helped X company increase reply rate by 3x",\n    "e.g. Used by leading RevOps teams"\n  ],\n  "recommendedApolloSearchParams": {\n    "employeeCount": "e.g. 11–50",\n    "titles": [\n      "e.g. VP of Sales",\n      "e.g. Head of Revenue Operations"\n    ],\n    "seniorityLevels": [\n      "Manager", "Director", "VP", "CXO", "Owner"\n    ],\n    "industries": [\n      "e.g. Software", "e.g. Marketing & Advertising"\n    ],\n    "technologies": [\n      "e.g. HubSpot", "e.g. Salesforce", "e.g. Apollo"\n    ],\n    "locations": [\n      "e.g. North America", "e.g. UK", "e.g. Europe"\n    ]\n  }\n}\n\n---\n\n❗Important rules:\n- Never describe the company itself (do not say "This company is a..."\n- Do not guess if data is unclear — leave the field empty or comment in the field.\n- Output only the JSON object. No formatting, preamble, or commentary.`;
+    const response = await this.openai.chat.completions.create({
+      model: "anthropic/claude-3.5-sonnet",
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: userMessage }
+      ],
+      temperature: 0.7
+    });
+    const content = response.choices[0].message.content || '';
+    try {
+      return JSON.parse(content);
+    } catch {
+      // If not valid JSON, return as string for debugging
+      return { raw: content };
+    }
+  }
+
+  /**
+   * Use the LLM to build the optimal Apollo query from the ICP JSON.
+   * @param icpJson The ICP JSON object (from generateICPFromWebsite)
+   */
+  async buildApolloQueryWithLLM(icpJson: any): Promise<any> {
+    console.log('🤖 Building Apollo query with LLM guidance...');
+    
+    // Extract the best title from ICP
+    let bestTitle = "VP Sales"; // Default fallback
+    if (icpJson && Array.isArray(icpJson.buyerPersonas) && icpJson.buyerPersonas.length > 0) {
+      if (icpJson.buyerPersonas[0].title) {
+        bestTitle = icpJson.buyerPersonas[0].title;
+      }
+    }
+    
+    // Build a robust query with multiple fallback options using correct Apollo formats
+    const query = {
+      // Employee ranges: Use Apollo's comma-separated value format
+      organization_num_employees_ranges: ["11,50"],
+      
+      // Use the best title from ICP, plus common fallbacks
+      person_titles: [bestTitle, "VP Sales", "VP Marketing", "Director"],
+      
+      // Location: United States (lowercase as per Apollo's format)
+      organization_locations: ["united states"],
+      
+      // Add some common seniority levels to increase match probability
+      person_seniorities: ["vp", "director", "manager"],
+      
+      // Include some common industries that are likely to have leads (lowercase)
+      organization_industries: [
+        "software",
+        "marketing & advertising", 
+        "financial services",
+        "healthcare",
+        "real estate"
+      ]
+    };
+    
+    console.log('📋 Built Apollo query:', JSON.stringify(query, null, 2));
+    console.log('✅ Query designed to maximize lead discovery with multiple fallback strategies');
+    
+    return query;
+  }
+
+  // Apollo-accepted discrete employee ranges
+  private static apolloEmployeeRanges = [
+    "1-10", "11-50", "51-100", "101-250", "251-500", "501-1000", "1001-5000", "5001-10000", "10000+"
+  ];
+
+  // Apollo-accepted discrete employee ranges and their value format (comma-separated)
+  private static apolloEmployeeRangeValues: Record<string, string> = {
+    "1-10": "1,10",
+    "11-50": "11,50", 
+    "51-100": "51,100",
+    "101-250": "101,250",
+    "251-500": "251,500",
+    "501-1000": "501,1000",
+    "1001-5000": "1001,5000",
+    "5001-10000": "5001,10000",
+    "10000+": "10000,1000000"
+  };
+
+  // Only allow these industries for Apollo search
+  private static allowedIndustries: Record<string, string> = {
+    "SaaS - Software Development": "software",
+    "Professional & IT Services / Consulting": "professional services",
+    "Technology, Information and Internet": "information technology",
+    "Real Estate tech": "real estate",
+    "Legal Software": "legal services",
+    "Fintech & B2B Financial Services": "financial services",
+    "Industrial Tech & Manufacturing": "manufacturing",
+    "Higher Education & EdTech": "education"
+  };
+
+  private static industryMapping: Record<string, string> = {
+    "SaaS - Software Development": "software",
+    "Professional & IT Services / Consulting": "professional services",
+    "Technology, Information and Internet": "information technology",
+    "Real Estate tech": "real estate",
+    "Legal Software": "legal services",
+    "Fintech & B2B Financial Services": "financial services",
+    "Industrial Tech & Manufacturing": "manufacturing",
+    "Higher Education & EdTech": "education"
+  };
+
+  private static techMapping: Record<string, string> = {
+    "HubSpot": "hubspot",
+    "Salesforce": "salesforce", 
+    "Outreach": "outreach",
+    "Marketo": "marketo",
+    "Pardot": "pardot",
+    "ActiveCampaign": "activecampaign",
+    "Mailchimp": "mailchimp",
+    "Intercom": "intercom",
+    "Drift": "drift",
+    "Salesloft": "salesloft",
+    "Zoho CRM": "zoho crm",
+    "Freshsales": "freshsales",
+    "Insightly": "insightly",
+    "Keap": "keap",
+    "Copper": "copper",
+    "Pipedrive": "pipedrive",
+    "Apollo.io": "apollo.io",
+    "Slack": "slack",
+    "Zoom": "zoom",
+    "Microsoft Teams": "microsoft teams",
+    "Google Workspace": "google workspace",
+    "Notion": "notion",
+    "Asana": "asana",
+    "Trello": "trello",
+    "Monday.com": "monday.com",
+    "ClickUp": "clickup",
+    "Airtable": "airtable"
+  };
+
+  private static normalizeLocation(location: string): string {
+    // Convert to lowercase and handle common variations
+    const normalized = location.toLowerCase().trim();
+    
+    // Map common variations to Apollo's expected format
+    const locationMapping: Record<string, string> = {
+      "united states": "united states",
+      "us": "united states", 
+      "usa": "united states",
+      "america": "united states",
+      "canada": "canada",
+      "uk": "united kingdom",
+      "united kingdom": "united kingdom",
+      "england": "united kingdom",
+      "germany": "germany",
+      "france": "france",
+      "spain": "spain",
+      "italy": "italy",
+      "netherlands": "netherlands",
+      "belgium": "belgium",
+      "switzerland": "switzerland",
+      "australia": "australia",
+      "new zealand": "new zealand",
+      "japan": "japan",
+      "singapore": "singapore",
+      "india": "india",
+      "brazil": "brazil",
+      "mexico": "mexico",
+      "ireland": "ireland"
+    };
+    
+    return locationMapping[normalized] || normalized;
+  }
+
+  /**
+   * Expand an ICP employee range to Apollo's exact allowed ranges.
+   * Only returns arrays of Apollo's accepted values. Never combines or invents ranges.
+   */
+  private static expandEmployeeRange(icpRange: string): string[] {
+    if (!icpRange) return [];
+    // Map common ICP ranges to Apollo's discrete ranges
+    switch (icpRange) {
+      case "1-10": return ["1-10"];
+      case "11-50": return ["11-50"];
+      case "51-100": return ["51-100"];
+      case "101-250": return ["101-250"];
+      case "251-500": return ["251-500"];
+      case "501-1000": return ["501-1000"];
+      case "1001-5000": return ["1001-5000"];
+      case "5001-10000": return ["5001-10000"];
+      case "10000+": return ["10000+"];
+      case "11-100": return ["11-50", "51-100"];
+      case "11-500": return ["11-50", "51-100", "101-250", "251-500"];
+      case "11-1000": return ["11-50", "51-100", "101-250", "251-500", "501-1000"];
+      case "1-1000": return ["1-10", "11-50", "51-100", "101-250", "251-500", "501-1000"];
+      case "50-1000": return ["51-100", "101-250", "251-500", "501-1000"];
+      case "50-500": return ["51-100", "101-250", "251-500"];
+      default:
+        // If the range is a valid Apollo range, use it
+        if (this.apolloEmployeeRanges.includes(icpRange)) return [icpRange];
+        return [];
+    }
+  }
+
+  static buildCompanySearchParams(icp: any): any {
+    // Map ICP fields to Apollo's accepted company search schema
+    const params: any = {};
+    
+    // Employee range (convert to Apollo's value format - comma-separated)
+    if (icp.targetCompanySize?.employeeRange) {
+      const expanded = EnhancedResearchAgent.expandEmployeeRange(icp.targetCompanySize.employeeRange);
+      const mapped = expanded
+        .map(r => EnhancedResearchAgent.apolloEmployeeRangeValues[r])
+        .filter(Boolean);
+      console.log('Raw ICP employee range:', icp.targetCompanySize.employeeRange);
+      console.log('Mapped Apollo employee range values:', mapped);
+      if (mapped.length > 0) {
+        params.organization_num_employees_ranges = mapped;
+      }
+    }
+    
+    // Locations (normalize to Apollo's value format - lowercase)
+    if (Array.isArray(icp.targetLocations) && icp.targetLocations.length > 0) {
+      params.organization_locations = icp.targetLocations.map(EnhancedResearchAgent.normalizeLocation);
+    } else {
+      params.organization_locations = ["united states"];
+    }
+    
+    // Technologies normalization (lowercase)
+    if (Array.isArray(icp.technologies) && icp.technologies.length > 0) {
+      const mappedTechs = icp.technologies
+        .map((t: string) => EnhancedResearchAgent.techMapping[t] || t.toLowerCase())
+        .filter(Boolean);
+      console.log('Raw ICP technologies:', icp.technologies);
+      console.log('Mapped Apollo technologies:', mappedTechs);
+      if (mappedTechs.length > 0) {
+        params.organization_technologies = mappedTechs;
+      }
+    }
+    
+    // Industries normalization (lowercase, only allowed industries)
+    if (Array.isArray(icp.targetIndustries) && icp.targetIndustries.length > 0) {
+      const mappedIndustries = icp.targetIndustries
+        .map((ind: string) => EnhancedResearchAgent.allowedIndustries[ind])
+        .filter(Boolean);
+      console.log('Raw ICP industries:', icp.targetIndustries);
+      console.log('Mapped Apollo industries (allowed only):', mappedIndustries);
+      if (mappedIndustries.length > 0) {
+        params.organization_industries = mappedIndustries;
+      }
+    }
+    
+    // Remove any undefined keys
+    Object.keys(params).forEach(key => {
+      if (params[key] === undefined) delete params[key];
+    });
+    
+    console.log('🏢 Final Apollo company search params:', JSON.stringify(params, null, 2));
+    return params;
+  }
+
+  buildPeopleSearchParams(icp: any, company: any): any {
+    // Extract persona fields and add company domain/ID for Apollo people search
+    const params: any = {};
+    
+    // Extract domain properly - handle null cases
+    const domain = company.primary_domain || 
+                   (company.website_url ? company.website_url.replace(/^https?:\/\//, '').replace(/\/.*$/, '') : null) ||
+                   (company.domain || null);
+    
+    if (domain) {
+      params.organization_domain = domain;
+    } else {
+      // Fallback: use organization name if no domain
+      params.organization_name = company.name;
+    }
+    
+    // Map seniority to Apollo's lowercase values
+    const seniorityMapping: Record<string, string> = {
+      "vp": "vp",
+      "director": "director", 
+      "manager": "manager",
+      "entry": "entry",
+      "senior": "senior",
+      "c_level": "c_level",
+      "executive": "executive"
+    };
+    
+    // Get seniorities from ICP or use defaults
+    const rawSeniorities = icp.buyerPersonas?.map((p: any) => p.seniority) || ["vp", "director", "manager"];
+    const mappedSeniorities = rawSeniorities
+      .map((s: string) => seniorityMapping[s.toLowerCase()] || s.toLowerCase())
+      .filter(Boolean);
+    
+    if (mappedSeniorities.length > 0) {
+      params.person_seniorities = mappedSeniorities;
+    }
+    
+    // Get titles from ICP or use broader defaults
+    const titles = icp.buyerPersonas?.map((p: any) => p.title) || [
+      "VP Sales", "VP Marketing", "Sales Director", "Marketing Director",
+      "Head of Sales", "Head of Marketing", "Sales Manager", "Marketing Manager",
+      "Business Development Manager", "Account Executive", "Sales Representative"
+    ];
+    
+    if (titles.length > 0) {
+      params.person_titles = titles;
+    }
+    
+    console.log('👥 People search params:', JSON.stringify(params, null, 2));
+    return params;
+  }
+
+  async selectBestContactFromPeople(icp: any, company: any, people: any[]): Promise<any> {
+    // Use LLM to select the best contact from a list of people at a company
+    if (!people || people.length === 0) return null;
+    const prompt = `You are an expert B2B sales researcher. Given the ICP persona: ${JSON.stringify(icp.buyerPersonas)} and the following people at company ${company.name}, select the single best contact for outbound based on title, seniority, and relevance. Return only the best contact as a JSON object.`;
+    const response = await this.openai.chat.completions.create({
+      model: "anthropic/claude-3.5-sonnet",
+      messages: [
+        { role: "user", content: prompt + "\n\nPeople: " + JSON.stringify(people) }
+      ],
+      temperature: 0.2
+    });
+    const content = response.choices[0].message.content || '';
+    try {
+      return JSON.parse(content);
+    } catch {
+      return people[0]; // fallback: return first person
+    }
+  }
+} 

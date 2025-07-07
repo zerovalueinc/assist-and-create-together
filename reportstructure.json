@@ -1,0 +1,353 @@
+{
+  "canonical_report_mapping": {
+    "sections": [
+      {
+        "id": "company_overview",
+        "title": "Company Overview",
+        "icon": "building",
+        "order": 1,
+        "subsections": [
+          {
+            "id": "company_header",
+            "type": "header",
+            "fields": ["company_name"]
+          },
+          {
+            "id": "company_details",
+            "type": "two_column_grid",
+            "fields": [
+              {
+                "column": "left",
+                "fields": [
+                  "company_size",
+                  "founded", 
+                  "industry",
+                  "headquarters"
+                ]
+              },
+              {
+                "column": "right", 
+                "fields": [
+                  "revenue_range",
+                  "company_type",
+                  "funding_status"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "company_summary",
+            "type": "description",
+            "fields": ["summary"]
+          },
+          {
+            "id": "notable_clients",
+            "type": "client_list",
+            "fields": ["notable_clients"]
+          },
+          {
+            "id": "social_media",
+            "type": "social_links",
+            "fields": ["social_media"]
+          }
+        ]
+      },
+      {
+        "id": "market_intelligence",
+        "title": "Market Intelligence", 
+        "icon": "chart",
+        "order": 2,
+        "subsections": [
+          {
+            "id": "main_products",
+            "type": "list_grid",
+            "fields": ["main_products"]
+          },
+          {
+            "id": "target_market",
+            "type": "icp_section",
+            "fields": ["target_market"]
+          },
+          {
+            "id": "competitors",
+            "type": "competitor_grid",
+            "fields": ["direct_competitors"]
+          },
+          {
+            "id": "key_differentiators",
+            "type": "bullet_list",
+            "fields": ["key_differentiators"]
+          },
+          {
+            "id": "market_trends",
+            "type": "list_grid",
+            "fields": ["market_trends"]
+          }
+        ]
+      },
+      {
+        "id": "icp_ibp_framework",
+        "title": "Ideal Customer & Buyer Profiles",
+        "icon": "users",
+        "order": 3,
+        "subsections": [
+          {
+            "id": "ideal_customer_profile",
+            "type": "icp_section",
+            "fields": ["icp"]
+          },
+          {
+            "id": "buyer_personas",
+            "type": "buyer_personas",
+            "fields": ["buyer_personas"]
+          }
+        ]
+      },
+      {
+        "id": "sales_gtm_strategy",
+        "title": "Sales GTM Strategy",
+        "icon": "sales",
+        "order": 4,
+        "subsections": [
+          {
+            "id": "sales_opportunities",
+            "type": "opportunity_items",
+            "fields": ["sales_opportunities"]
+          },
+          {
+            "id": "gtm_recommendations",
+            "type": "two_column_grid",
+            "fields": ["gtm_recommendations"]
+          },
+          {
+            "id": "metrics",
+            "type": "metrics_grid",
+            "fields": ["metrics"]
+          }
+        ]
+      },
+      {
+        "id": "technology_stack",
+        "title": "Technology Stack",
+        "icon": "code",
+        "order": 5,
+        "subsections": [
+          {
+            "id": "backend_technologies",
+            "type": "tech_list",
+            "fields": ["backend_technologies"]
+          },
+          {
+            "id": "frontend_technologies", 
+            "type": "tech_list",
+            "fields": ["frontend_technologies"]
+          },
+          {
+            "id": "infrastructure",
+            "type": "tech_list",
+            "fields": ["infrastructure"]
+          },
+          {
+            "id": "key_platform_features",
+            "type": "bullet_list",
+            "fields": ["key_platform_features"]
+          },
+          {
+            "id": "integration_capabilities",
+            "type": "bullet_list", 
+            "fields": ["integration_capabilities"]
+          },
+          {
+            "id": "platform_compatibility",
+            "type": "bullet_list",
+            "fields": ["platform_compatibility"]
+          }
+        ]
+      }
+    ],
+    "field_mappings": {
+      "company_name": {
+        "type": "string",
+        "display": "Company Name",
+        "required": true
+      },
+      "company_size": {
+        "type": "string", 
+        "display": "Company Size",
+        "required": true
+      },
+      "founded": {
+        "type": "string",
+        "display": "Founded",
+        "required": true
+      },
+      "industry": {
+        "type": "string",
+        "display": "Industry", 
+        "required": true
+      },
+      "headquarters": {
+        "type": "string",
+        "display": "Headquarters",
+        "required": true
+      },
+      "revenue_range": {
+        "type": "string",
+        "display": "Revenue Range",
+        "required": true
+      },
+      "company_type": {
+        "type": "string",
+        "display": "Company Type",
+        "required": true
+      },
+      "funding_status": {
+        "type": "string",
+        "display": "Funding Status",
+        "required": false
+      },
+      "summary": {
+        "type": "text",
+        "display": "Company Summary",
+        "required": true
+      },
+      "notable_clients": {
+        "type": "array",
+        "display": "Notable Clients",
+        "required": false
+      },
+      "social_media": {
+        "type": "object",
+        "display": "Social Media",
+        "fields": ["twitter", "facebook", "linkedin"],
+        "required": false
+      },
+      "main_products": {
+        "type": "array",
+        "display": "Main Products",
+        "required": true
+      },
+      "target_market": {
+        "type": "object",
+        "display": "Target Market",
+        "fields": ["primary", "size_range", "industry_focus"],
+        "required": true
+      },
+      "direct_competitors": {
+        "type": "array",
+        "display": "Direct Competitors",
+        "required": true
+      },
+      "key_differentiators": {
+        "type": "array",
+        "display": "Key Differentiators",
+        "required": true
+      },
+      "market_trends": {
+        "type": "array",
+        "display": "Market Trends",
+        "required": true
+      },
+      "icp": {
+        "type": "object",
+        "display": "Ideal Customer Profile",
+        "fields": ["company_characteristics", "technology_profile"],
+        "required": true
+      },
+      "buyer_personas": {
+        "type": "array",
+        "display": "Buyer Personas",
+        "fields": ["title", "demographics", "pain_points", "success_metrics"],
+        "required": true
+      },
+      "sales_opportunities": {
+        "type": "array",
+        "display": "Sales Opportunities",
+        "fields": ["segment", "approach", "rationale"],
+        "required": true
+      },
+      "gtm_recommendations": {
+        "type": "object",
+        "display": "GTM Recommendations",
+        "fields": ["vertical_specific_solutions", "partner_ecosystem", "content_marketing", "sales_enablement"],
+        "required": true
+      },
+      "metrics": {
+        "type": "array",
+        "display": "Key Metrics",
+        "fields": ["label", "value"],
+        "required": true
+      },
+      "backend_technologies": {
+        "type": "array",
+        "display": "Backend Technologies",
+        "required": true
+      },
+      "frontend_technologies": {
+        "type": "array",
+        "display": "Frontend Technologies",
+        "required": true
+      },
+      "infrastructure": {
+        "type": "array",
+        "display": "Infrastructure",
+        "required": true
+      },
+      "key_platform_features": {
+        "type": "array",
+        "display": "Key Platform Features",
+        "required": true
+      },
+      "integration_capabilities": {
+        "type": "array",
+        "display": "Integration Capabilities",
+        "required": true
+      },
+      "platform_compatibility": {
+        "type": "array",
+        "display": "Platform Compatibility",
+        "required": true
+      }
+    },
+    "display_config": {
+      "section_styles": {
+        "company_overview": {
+          "icon": "building",
+          "color": "#4f46e5"
+        },
+        "market_intelligence": {
+          "icon": "chart",
+          "color": "#10b981"
+        },
+        "icp_ibp_framework": {
+          "icon": "users",
+          "color": "#f59e0b"
+        },
+        "sales_gtm_strategy": {
+          "icon": "sales",
+          "color": "#ef4444"
+        },
+        "technology_stack": {
+          "icon": "code",
+          "color": "#8b5cf6"
+        }
+      },
+      "component_types": {
+        "header": "CompanyHeader",
+        "two_column_grid": "TwoColumnGrid",
+        "description": "Description",
+        "client_list": "ClientList",
+        "social_links": "SocialLinks",
+        "list_grid": "ListGrid",
+        "icp_section": "ICPSection",
+        "competitor_grid": "CompetitorGrid",
+        "bullet_list": "BulletList",
+        "buyer_personas": "BuyerPersonas",
+        "opportunity_items": "OpportunityItems",
+        "metrics_grid": "MetricsGrid",
+        "tech_list": "TechList"
+      }
+    }
+  }
+}
+

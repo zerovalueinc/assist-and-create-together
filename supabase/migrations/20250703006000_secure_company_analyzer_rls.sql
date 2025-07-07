@@ -1,0 +1,2 @@
+-- This migration is no longer needed - the clean table is created in a later migration
+-- with proper RLS policies already included 

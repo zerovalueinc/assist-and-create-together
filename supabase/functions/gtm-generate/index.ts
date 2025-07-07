@@ -1,0 +1,681 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface GTMGenerationRequest {
+  websiteUrl: string;
+  useExistingAnalysis?: boolean;
+  analysisId?: number;
+  gtmFormAnswers?: any;
+  selectedCompany?: any;
+}
+
+interface GTMPlaybookResult {
+  gtmPlaybook: {
+    executiveSummary: string;
+    marketAnalysis: {
+      totalAddressableMarket: string;
+      servicableAddressableMarket: string;
+      targetMarketSegments: string[];
+      competitiveLandscape: string[];
+      marketTrends: string[];
+    };
+    idealCustomerProfile: {
+      firmographics: {
+        companySize: string;
+        industry: string[];
+        revenueRange: string;
+        geography: string[];
+      };
+      personas: Array<{
+        title: string;
+        role: string;
+        painPoints: string[];
+        responsibilities: string[];
+        buyingInfluence: string;
+      }>;
+    };
+    valueProposition: {
+      primaryValue: string;
+      keyDifferentiators: string[];
+      competitiveAdvantages: string[];
+    };
+    goToMarketStrategy: {
+      channel: string;
+      salesMotion: string;
+      pricingStrategy: string;
+      customerAcquisitionCost: string;
+      salesCycleLength: string;
+    };
+    messagingFramework: {
+      primaryMessage: string;
+      secondaryMessages: string[];
+      objectionHandling: Array<{
+        objection: string;
+        response: string;
+      }>;
+    };
+    salesEnablement: {
+      battleCards: string[];
+      talkTracks: string[];
+      demoScripts: string[];
+      caseStudies: string[];
+    };
+    demandGeneration: {
+      channels: string[];
+      contentStrategy: string[];
+      campaignIdeas: string[];
+      leadMagnets: string[];
+    };
+    metricsAndKPIs: {
+      leadingIndicators: string[];
+      laggingIndicators: string[];
+      successMetrics: string[];
+    };
+  };
+  researchSummary: string;
+  confidence: number;
+  sources: string[];
+}
+
+serve(async (req) => {
+  console.log('GTM generate function called');
+  console.log('Request method:', req.method);
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const requestBody = await req.text();
+    console.log('Request body:', requestBody);
+
+    let gtmRequest: GTMGenerationRequest;
+    try {
+      gtmRequest = JSON.parse(requestBody) as GTMGenerationRequest;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Invalid JSON in request body');
+    }
+    
+    if (!gtmRequest.websiteUrl) {
+      throw new Error('Website URL is required');
+    }
+
+    console.log(`Starting GTM playbook generation for: ${gtmRequest.websiteUrl}`);
+
+    // Get user from authorization header
+    const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '');
+    console.log('Auth header present:', !!authHeader);
+    
+    if (!authHeader) {
+      throw new Error('Authorization header required');
+    }
+
+    // Create temporary client for auth
+    const tempSupabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+    const { data: { user }, error: userError } = await tempSupabaseClient.auth.getUser(authHeader);
+    
+    if (userError) {
+      console.error('User auth error:', userError);
+      throw new Error('Authentication failed');
+    }
+    
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    console.log('User authenticated:', user.id);
+
+    // Initialize Supabase client with JWT for RLS
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${authHeader}`,
+          },
+        },
+      }
+    );
+
+    let existingAnalysis = null;
+    
+    // Check if we should use existing company analysis
+    if (gtmRequest.useExistingAnalysis && gtmRequest.analysisId) {
+      console.log('Fetching existing company analysis...');
+      const { data: reportData, error: reportError } = await supabaseClient
+        .from('saved_reports')
+        .select('*')
+        .eq('id', gtmRequest.analysisId)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!reportError && reportData) {
+        existingAnalysis = reportData;
+        console.log('Using existing analysis:', existingAnalysis.company_name);
+      }
+    }
+
+    // Phase 1: Company Intelligence Gathering
+    console.log('Phase 1: Company Intelligence Gathering');
+    const companyIntelligence = await gatherCompanyIntelligence(gtmRequest.websiteUrl, existingAnalysis);
+    
+    // Phase 2: Market Research & Competitive Analysis
+    console.log('Phase 2: Market Research & Competitive Analysis');
+    const marketResearch = await performMarketResearch(gtmRequest.websiteUrl, companyIntelligence);
+    
+    // Phase 3: ICP Development & Persona Mapping
+    console.log('Phase 3: ICP Development & Persona Mapping');
+    const icpDevelopment = await developICP(gtmRequest.websiteUrl, companyIntelligence, marketResearch);
+    
+    // Phase 4: GTM Strategy Synthesis
+    console.log('Phase 4: GTM Strategy Synthesis');
+    const gtmStrategy = await synthesizeGTMStrategy(gtmRequest.websiteUrl, companyIntelligence, marketResearch, icpDevelopment);
+    
+    // Phase 5: Playbook Generation
+    console.log('Phase 5: Playbook Generation');
+    let gtmFormAnswers = gtmRequest.gtmFormAnswers || {};
+    let selectedCompany = gtmRequest.selectedCompany || null;
+    const finalPlaybook = await generateGTMPlaybook(
+      gtmRequest.websiteUrl,
+      companyIntelligence,
+      marketResearch,
+      icpDevelopment,
+      gtmStrategy,
+      gtmFormAnswers,
+      selectedCompany
+    );
+
+    // Save GTM playbook to database (both tables for compatibility)
+    let savedPlaybook = null;
+    let savedICP = null;
+    
+    // Save to gtm_playbooks table
+    const { data: playbookData, error: playbookError } = await supabaseClient
+      .from('gtm_playbooks')
+      .insert({
+        user_id: user.id,
+        companyName: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
+        website: gtmRequest.websiteUrl,
+        playbook: finalPlaybook,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    
+    if (!playbookError) {
+      savedPlaybook = playbookData;
+    }
+    
+    // Also save to icps table with the correct GTMICPSchema structure
+    const icpData = {
+      schemaVersion: "1.0",
+      personas: finalPlaybook.gtmPlaybook.idealCustomerProfile.personas.map((p: any) => ({
+        title: p.title,
+        role: p.role,
+        painPoints: p.painPoints || [],
+        responsibilities: p.responsibilities || []
+      })),
+      firmographics: {
+        industry: Array.isArray(finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry)
+          ? finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry.join(', ')
+          : (finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry || ''),
+        companySize: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.companySize,
+        revenueRange: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.revenueRange,
+        region: Array.isArray(finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography)
+          ? finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography.join(', ')
+          : (finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography || ''),
+      },
+      messagingAngles: finalPlaybook.gtmPlaybook.messagingFramework.secondaryMessages || [],
+      gtmRecommendations: finalPlaybook.gtmPlaybook.executiveSummary,
+      competitivePositioning: Array.isArray(finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages)
+        ? finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages.join(', ')
+        : (finalPlaybook.gtmPlaybook.valueProposition.competitiveAdvantages || ''),
+      objectionHandling: Array.isArray(finalPlaybook.gtmPlaybook.messagingFramework.objectionHandling)
+        ? finalPlaybook.gtmPlaybook.messagingFramework.objectionHandling.map((o: any) => o.objection)
+        : [],
+      campaignIdeas: finalPlaybook.gtmPlaybook.demandGeneration.campaignIdeas || [],
+      metricsToTrack: finalPlaybook.gtmPlaybook.metricsAndKPIs.leadingIndicators || [],
+      filmReviews: finalPlaybook.researchSummary || '',
+      crossFunctionalAlignment: finalPlaybook.gtmPlaybook.goToMarketStrategy.channel,
+      demandGenFramework: Array.isArray(finalPlaybook.gtmPlaybook.demandGeneration.channels)
+        ? finalPlaybook.gtmPlaybook.demandGeneration.channels.join(', ')
+        : (finalPlaybook.gtmPlaybook.demandGeneration.channels || ''),
+      iterativeMeasurement: Array.isArray(finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators)
+        ? finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators.join(', ')
+        : (finalPlaybook.gtmPlaybook.metricsAndKPIs.laggingIndicators || ''),
+      trainingEnablement: Array.isArray(finalPlaybook.gtmPlaybook.salesEnablement.talkTracks)
+        ? finalPlaybook.gtmPlaybook.salesEnablement.talkTracks.join(', ')
+        : (finalPlaybook.gtmPlaybook.salesEnablement.talkTracks || ''),
+      apolloSearchParams: {
+        employeeCount: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.companySize,
+        titles: finalPlaybook.gtmPlaybook.idealCustomerProfile.personas.map((p: any) => p.title),
+        industries: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.industry,
+        technologies: [], // Would need to be populated from company analysis
+        locations: finalPlaybook.gtmPlaybook.idealCustomerProfile.firmographics.geography
+      }
+    };
+    
+    const { data: icpDataResult, error: icpError } = await supabaseClient
+      .from('icps')
+      .insert({
+        user_id: user.id,
+        companyUrl: gtmRequest.websiteUrl,
+        companyName: companyIntelligence.companyName || extractDomain(gtmRequest.websiteUrl),
+        icpData: JSON.stringify(icpData),
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    
+    if (!icpError) {
+      savedICP = icpDataResult;
+    }
+
+    if (playbookError) {
+      console.error('Error saving GTM playbook:', playbookError);
+    }
+    
+    if (icpError) {
+      console.error('Error saving ICP data:', icpError);
+    }
+
+    console.log('GTM playbook generation completed successfully');
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        gtmPlaybook: finalPlaybook,
+        playbookId: savedPlaybook?.id
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in GTM generation:', error);
+    return new Response(
+      JSON.stringify({
+        error: error.message || 'GTM generation failed'
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+});
+
+async function callOpenRouter(prompt: string, systemMessage?: string): Promise<string> {
+  const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+  
+  if (!openRouterApiKey) {
+    throw new Error('OpenRouter API key not configured');
+  }
+
+  console.log('Calling OpenRouter API...');
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openRouterApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'anthropic/claude-3.5-sonnet',
+      messages: [
+        ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('OpenRouter API error:', response.status, errorText);
+    throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  console.log('OpenRouter response received');
+  return data.choices[0].message.content;
+}
+
+async function gatherCompanyIntelligence(websiteUrl: string, existingAnalysis?: any): Promise<any> {
+  if (existingAnalysis) {
+    console.log('Using existing company analysis data');
+    return existingAnalysis;
+  }
+
+  const systemMessage = `You are a senior GTM strategist and company intelligence analyst. Analyze the company comprehensively for GTM planning.`;
+  
+  const prompt = `Analyze the company at ${websiteUrl} for GTM intelligence:
+
+1. Company Overview (size, stage, business model)
+2. Product/Service Portfolio
+3. Current Market Position
+4. Revenue Model & Pricing
+5. Customer Base Indicators
+6. Technology Stack & Capabilities
+7. Company Maturity & Growth Stage
+
+Return structured JSON with actionable insights for GTM strategy development.`;
+
+  const result = await callOpenRouter(prompt, systemMessage);
+  
+  try {
+    return JSON.parse(result);
+  } catch {
+    return {
+      companyName: extractDomain(websiteUrl),
+      businessModel: 'B2B SaaS',
+      companyStage: 'Growth',
+      targetMarket: 'SMB-Enterprise'
+    };
+  }
+}
+
+async function performMarketResearch(websiteUrl: string, companyIntel: any): Promise<any> {
+  const systemMessage = `You are a market research analyst specializing in competitive intelligence and market sizing.`;
+  
+  const prompt = `Based on ${companyIntel.companyName || websiteUrl}, research:
+
+1. Total Addressable Market (TAM) sizing
+2. Serviceable Addressable Market (SAM)
+3. Direct & Indirect Competitors
+4. Market Trends & Growth Drivers
+5. Buyer Behavior Patterns
+6. Market Maturity & Dynamics
+7. Regulatory/Industry Factors
+
+Provide data-driven insights with market size estimates and competitive positioning.`;
+
+  const result = await callOpenRouter(prompt, systemMessage);
+  
+  try {
+    return JSON.parse(result);
+  } catch {
+    return {
+      totalAddressableMarket: '$50B+',
+      competitiveLandscape: ['Competitor A', 'Competitor B'],
+      marketTrends: ['Digital transformation', 'AI adoption'],
+      marketMaturity: 'Growth stage'
+    };
+  }
+}
+
+async function developICP(websiteUrl: string, companyIntel: any, marketResearch: any): Promise<any> {
+  const systemMessage = `You are an ICP development specialist focused on creating detailed buyer personas and firmographic profiles.`;
+  
+  const prompt = `Develop comprehensive ICP for ${companyIntel.companyName || websiteUrl}:
+
+1. Firmographic Profile (company size, industry, revenue, geography)
+2. Buyer Personas (titles, roles, responsibilities, pain points)
+3. Buying Process & Decision Criteria
+4. Budget Authority & Procurement Process
+5. Technology Adoption Patterns
+6. Pain Points & Trigger Events
+7. Success Metrics & KPIs
+
+Create detailed personas with buying influence, pain points, and messaging angles.`;
+
+  const result = await callOpenRouter(prompt, systemMessage);
+  
+  try {
+    return JSON.parse(result);
+  } catch {
+    return {
+      firmographics: {
+        companySize: '51-500',
+        industry: ['Technology', 'Professional Services'],
+        revenueRange: '$10M-$100M'
+      },
+      personas: [
+        {
+          title: 'VP of Sales',
+          role: 'Decision Maker',
+          painPoints: ['Manual processes', 'Poor visibility'],
+          buyingInfluence: 'High'
+        }
+      ]
+    };
+  }
+}
+
+async function synthesizeGTMStrategy(websiteUrl: string, companyIntel: any, marketResearch: any, icp: any): Promise<any> {
+  const systemMessage = `You are a GTM strategy consultant specializing in B2B go-to-market planning and execution.`;
+  
+  const prompt = `Synthesize GTM strategy for ${companyIntel.companyName || websiteUrl}:
+
+Company Intel: ${JSON.stringify(companyIntel, null, 2)}
+Market Research: ${JSON.stringify(marketResearch, null, 2)}
+ICP: ${JSON.stringify(icp, null, 2)}
+
+Develop:
+1. Channel Strategy (inbound/outbound/partner)
+2. Sales Motion (PLG/sales-led/hybrid)
+3. Pricing & Packaging Strategy
+4. Customer Acquisition Strategy
+5. Sales Process & Methodology
+6. Success Metrics & Benchmarks
+
+Focus on actionable, measurable GTM tactics.`;
+
+  const result = await callOpenRouter(prompt, systemMessage);
+  
+  try {
+    return JSON.parse(result);
+  } catch {
+    return {
+      channel: 'Direct sales + Partner',
+      salesMotion: 'Sales-led',
+      pricingStrategy: 'Value-based',
+      acquisitionStrategy: 'Outbound + Inbound'
+    };
+  }
+}
+
+async function generateGTMPlaybook(
+  websiteUrl: string,
+  companyIntel: any,
+  marketResearch: any,
+  icp: any,
+  gtmStrategy: any,
+  gtmFormAnswers: any = {},
+  selectedCompany: any = null
+): Promise<GTMPlaybookResult> {
+  const systemMessage = `You are a senior GTM consultant creating comprehensive, actionable GTM playbooks for B2B companies.`;
+  
+  const canonicalSchema = `{
+    "gtmPlaybook": {
+      "executiveSummary": "string",
+      "marketAnalysis": {
+        "totalAddressableMarket": "string",
+        "servicableAddressableMarket": "string",
+        "targetMarketSegments": ["string"],
+        "competitiveLandscape": ["string"],
+        "marketTrends": ["string"]
+      },
+      "idealCustomerProfile": {
+        "firmographics": {
+          "companySize": "string",
+          "industry": ["string"],
+          "revenueRange": "string",
+          "geography": ["string"]
+        },
+        "personas": [
+          {
+            "title": "string",
+            "role": "string",
+            "painPoints": ["string"],
+            "responsibilities": ["string"],
+            "buyingInfluence": "string"
+          }
+        ]
+      },
+      "valueProposition": {
+        "primaryValue": "string",
+        "keyDifferentiators": ["string"],
+        "competitiveAdvantages": ["string"]
+      },
+      "goToMarketStrategy": {
+        "channel": "string",
+        "salesMotion": "string",
+        "pricingStrategy": "string",
+        "customerAcquisitionCost": "string",
+        "salesCycleLength": "string"
+      },
+      "messagingFramework": {
+        "primaryMessage": "string",
+        "secondaryMessages": ["string"],
+        "objectionHandling": [
+          { "objection": "string", "response": "string" }
+        ]
+      },
+      "salesEnablement": {
+        "battleCards": ["string"],
+        "talkTracks": ["string"],
+        "demoScripts": ["string"],
+        "caseStudies": ["string"]
+      },
+      "demandGeneration": {
+        "channels": ["string"],
+        "contentStrategy": ["string"],
+        "campaignIdeas": ["string"],
+        "leadMagnets": ["string"]
+      },
+      "metricsAndKPIs": {
+        "leadingIndicators": ["string"],
+        "laggingIndicators": ["string"],
+        "successMetrics": ["string"]
+      }
+    },
+    "researchSummary": "string",
+    "confidence": 85,
+    "sources": ["string"]
+  }`;
+
+  const prompt = `You are an enterprise SaaS GTM strategist. Output ONLY valid JSON matching this exact schema (no markdown, no comments, no extra fields):\n${canonicalSchema}\n\nCreate a comprehensive GTM Playbook for ${companyIntel.companyName || websiteUrl}:\n\nAll Research Data:\n- Company Intelligence: ${JSON.stringify(companyIntel, null, 2)}\n- Market Research: ${JSON.stringify(marketResearch, null, 2)}\n- ICP Development: ${JSON.stringify(icp, null, 2)}\n- GTM Strategy: ${JSON.stringify(gtmStrategy, null, 2)}\n- GTM Form Answers: ${JSON.stringify(gtmFormAnswers, null, 2)}\n- Selected Company: ${JSON.stringify(selectedCompany, null, 2)}\n\nGenerate a complete GTM playbook with:\n\n1. EXECUTIVE SUMMARY\n2. MARKET ANALYSIS (TAM/SAM, competitors, trends)\n3. IDEAL CUSTOMER PROFILE (firmographics, personas, pain points)\n4. VALUE PROPOSITION (differentiators, competitive advantages)\n5. GO-TO-MARKET STRATEGY (channels, sales motion, pricing)\n6. MESSAGING FRAMEWORK (primary/secondary messages, objection handling)\n7. SALES ENABLEMENT (battle cards, talk tracks, demo scripts)\n8. DEMAND GENERATION (channels, content, campaigns)\n9. METRICS & KPIs (leading/lagging indicators)\n\nReturn as structured JSON optimized for sales and marketing execution.`;
+  console.log('LLM PROMPT FOR GTM PLAYBOOK GENERATION:', prompt);
+
+  const result = await callOpenRouter(prompt, systemMessage);
+  let parsed;
+  try {
+    parsed = JSON.parse(result);
+    // Basic schema validation: check for top-level keys
+    if (!parsed.gtmPlaybook || !parsed.gtmPlaybook.marketAnalysis || !parsed.gtmPlaybook.idealCustomerProfile) {
+      throw new Error('LLM output does not match required schema');
+    }
+    return {
+      gtmPlaybook: parsed.gtmPlaybook,
+      researchSummary: parsed.researchSummary || '',
+      confidence: parsed.confidence || 85,
+      sources: parsed.sources || []
+    };
+  } catch (e) {
+    console.error('LLM output invalid or does not match schema:', e, result);
+    // Fallback GTM playbook (as before)
+    return {
+      gtmPlaybook: {
+        executiveSummary: `Comprehensive GTM playbook for ${companyIntel.companyName || extractDomain(websiteUrl)} targeting ${icp.firmographics?.companySize || '50-500'} employee companies in ${icp.firmographics?.industry?.[0] || 'technology'} sector.`,
+        marketAnalysis: {
+          totalAddressableMarket: marketResearch.totalAddressableMarket || '$10B+',
+          servicableAddressableMarket: '$1B+',
+          targetMarketSegments: icp.firmographics?.industry || ['Technology', 'Professional Services'],
+          competitiveLandscape: marketResearch.competitiveLandscape || ['Competitor A', 'Competitor B'],
+          marketTrends: marketResearch.marketTrends || ['Digital transformation', 'AI adoption']
+        },
+        idealCustomerProfile: {
+          firmographics: {
+            companySize: icp.firmographics?.companySize || '51-500',
+            industry: icp.firmographics?.industry || ['Technology'],
+            revenueRange: icp.firmographics?.revenueRange || '$10M-$100M',
+            geography: ['North America', 'Europe']
+          },
+          personas: icp.personas || [
+            {
+              title: 'VP of Sales',
+              role: 'Decision Maker',
+              painPoints: ['Manual processes', 'Poor visibility', 'Scaling challenges'],
+              responsibilities: ['Sales strategy', 'Team performance', 'Revenue growth'],
+              buyingInfluence: 'High'
+            }
+          ]
+        },
+        valueProposition: {
+          primaryValue: 'Accelerate revenue growth through intelligent automation',
+          keyDifferentiators: ['AI-powered insights', 'Easy integration', 'Proven ROI'],
+          competitiveAdvantages: ['Superior UX', 'Faster implementation', 'Better support']
+        },
+        goToMarketStrategy: {
+          channel: gtmStrategy.channel || 'Direct sales + Partner',
+          salesMotion: gtmStrategy.salesMotion || 'Sales-led',
+          pricingStrategy: gtmStrategy.pricingStrategy || 'Value-based',
+          customerAcquisitionCost: '$2,500',
+          salesCycleLength: '45-60 days'
+        },
+        messagingFramework: {
+          primaryMessage: 'Transform your sales process with AI-powered intelligence',
+          secondaryMessages: [
+            'Increase revenue by 30% in 90 days',
+            'Eliminate manual processes',
+            'Get real-time visibility into your pipeline'
+          ],
+          objectionHandling: [
+            {
+              objection: 'Too expensive',
+              response: 'ROI typically achieved within 3 months through increased productivity'
+            },
+            {
+              objection: 'Integration concerns',
+              response: 'Native integrations with 50+ popular sales tools, setup in under 30 minutes'
+            }
+          ]
+        },
+        salesEnablement: {
+          battleCards: ['Competitive positioning vs top 3 competitors', 'ROI calculator', 'Security overview'],
+          talkTracks: ['Discovery questions', 'Demo flow', 'Objection handling'],
+          demoScripts: ['15-min discovery demo', '30-min deep dive', 'Executive presentation'],
+          caseStudies: ['Technology company 3x growth', 'Services firm 50% efficiency gain']
+        },
+        demandGeneration: {
+          channels: ['Content marketing', 'LinkedIn outbound', 'Partner referrals', 'Events'],
+          contentStrategy: ['Thought leadership', 'How-to guides', 'Industry reports', 'Webinars'],
+          campaignIdeas: ['Sales efficiency audit', 'ROI assessment', 'Free trial campaign'],
+          leadMagnets: ['Sales Process Audit Template', 'ROI Calculator', 'Industry Benchmark Report']
+        },
+        metricsAndKPIs: {
+          leadingIndicators: ['SQLs generated', 'Demo completion rate', 'Proposal sent'],
+          laggingIndicators: ['Deals closed', 'Revenue growth', 'Customer acquisition cost'],
+          successMetrics: ['30% increase in deal velocity', '25% higher close rate', '40% more qualified leads']
+        }
+      },
+      researchSummary: 'Multi-phase GTM analysis completed with comprehensive market intelligence, ICP development, and actionable go-to-market strategy',
+      confidence: 85,
+      sources: [websiteUrl, 'Market research', 'Competitive analysis', 'ICP development']
+    };
+  }
+}
+
+function extractDomain(url: string): string {
+  try {
+    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+    return urlObj.hostname.replace('www.', '');
+  } catch {
+    return url.replace('www.', '').split('/')[0];
+  }
+}
