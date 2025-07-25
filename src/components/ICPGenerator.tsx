@@ -288,43 +288,43 @@ const ICPGenerator = () => {
     console.log('Opening saved playbook:', playbook);
     console.log('Playbook structure:', {
       id: playbook.id,
-      companyName: playbook.companyName,
-      website: playbook.website,
-      playbook: playbook.playbook,
-      playbookKeys: playbook.playbook ? Object.keys(playbook.playbook) : 'No playbook field'
+      companyName: playbook.company_name,
+      website: playbook.website_url,
+      playbook_data: playbook.playbook_data,
+      playbookKeys: playbook.playbook_data ? Object.keys(playbook.playbook_data) : 'No playbook_data field'
     });
     console.log('Full playbook object:', JSON.stringify(playbook, null, 2));
-    console.log('Playbook.playbook field:', JSON.stringify(playbook.playbook, null, 2));
+    console.log('Playbook.playbook_data field:', JSON.stringify(playbook.playbook_data, null, 2));
     
-    // The playbook.playbook field contains the full GTM playbook structure
+    // The playbook.playbook_data field contains the full GTM playbook structure
     // We need to extract the gtmPlaybook from it
     let gtmPlaybookData = null;
-    let researchSummary = 'Saved GTM Playbook';
-    let confidence = 85;
-    let sources = ['Saved Analysis'];
+    let researchSummary = playbook.research_summary || 'Saved GTM Playbook';
+    let confidence = playbook.confidence || 85;
+    let sources = playbook.sources || ['Saved Analysis'];
     
-    if (playbook.playbook) {
-      // The playbook field contains the full structure with gtmPlaybook nested inside
-      if (playbook.playbook.gtmPlaybook) {
-        gtmPlaybookData = playbook.playbook.gtmPlaybook;
-        researchSummary = playbook.playbook.researchSummary || researchSummary;
-        confidence = playbook.playbook.confidence || confidence;
-        sources = playbook.playbook.sources || sources;
-      } else if (playbook.playbook.executiveSummary) {
+    if (playbook.playbook_data) {
+      // The playbook_data field contains the full structure with gtmPlaybook nested inside
+      if (playbook.playbook_data.gtmPlaybook) {
+        gtmPlaybookData = playbook.playbook_data.gtmPlaybook;
+        researchSummary = playbook.playbook_data.researchSummary || researchSummary;
+        confidence = playbook.playbook_data.confidence || confidence;
+        sources = playbook.playbook_data.sources || sources;
+      } else if (playbook.playbook_data.executiveSummary) {
         // If it has executiveSummary, it's already a gtmPlaybook structure
-        gtmPlaybookData = playbook.playbook;
+        gtmPlaybookData = playbook.playbook_data;
       } else {
-        // If no gtmPlaybook field, the playbook itself might be the gtmPlaybook
-        gtmPlaybookData = playbook.playbook;
+        // If no gtmPlaybook field, the playbook_data itself might be the gtmPlaybook
+        gtmPlaybookData = playbook.playbook_data;
       }
     }
     
-    // Also check for other possible field names
-    if (!gtmPlaybookData && playbook.playbook_data) {
-      gtmPlaybookData = playbook.playbook_data.gtmPlaybook || playbook.playbook_data;
-      researchSummary = playbook.playbook_data.researchSummary || researchSummary;
-      confidence = playbook.playbook_data.confidence || confidence;
-      sources = playbook.playbook_data.sources || sources;
+    // Also check for other possible field names (backward compatibility)
+    if (!gtmPlaybookData && playbook.playbook) {
+      gtmPlaybookData = playbook.playbook.gtmPlaybook || playbook.playbook;
+      researchSummary = playbook.playbook.researchSummary || researchSummary;
+      confidence = playbook.playbook.confidence || confidence;
+      sources = playbook.playbook.sources || sources;
     }
     
     if (!gtmPlaybookData && playbook.icp_data) {
@@ -343,9 +343,9 @@ const ICPGenerator = () => {
     
     // Create a company object for the modal
     const companyData = {
-      companyName: playbook.companyName,
-      website: playbook.website,
-      companyUrl: playbook.website,
+      companyName: playbook.company_name,
+      website: playbook.website_url,
+      companyUrl: playbook.website_url,
     };
     setPlaybookData(modalData);
     setSelectedCompany(companyData);
@@ -426,12 +426,12 @@ const ICPGenerator = () => {
                   size="sm"
                 >
                   <img 
-                    src={`https://www.google.com/s2/favicons?domain=${playbook.website?.replace(/^https?:\/\//, '') || ''}`} 
+                    src={`https://www.google.com/s2/favicons?domain=${playbook.website_url?.replace(/^https?:\/\//, '') || ''}`} 
                     alt="favicon" 
                     className="w-4 h-4 mr-1" 
                     onError={e => { e.currentTarget.src = '/favicon.ico'; }} 
                   />
-                  {playbook.companyName || 'Untitled Playbook'}
+                  {playbook.company_name || 'Untitled Playbook'}
                 </Button>
               ))}
             </div>

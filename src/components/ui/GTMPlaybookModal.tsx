@@ -12,26 +12,27 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
   if (playbookData) {
     // Log the full playbookData for debugging
     console.log('[GTMPlaybookModal] Received playbookData:', JSON.stringify(playbookData, null, 2));
-    // Handle legacy playbook_data structure
-    if (playbookData.playbook_data) {
+    
+    // Handle the expected modal structure (from openSavedPlaybook)
+    if (playbookData.gtmPlaybook) {
+      gtmPlaybook = playbookData.gtmPlaybook;
+      researchSummary = playbookData.researchSummary;
+      confidence = playbookData.confidence;
+      sources = playbookData.sources;
+    }
+    // Handle direct database structure (playbook_data field)
+    else if (playbookData.playbook_data) {
       gtmPlaybook = playbookData.playbook_data.gtmPlaybook || playbookData.playbook_data;
       researchSummary = playbookData.playbook_data.researchSummary || playbookData.research_summary;
       confidence = playbookData.playbook_data.confidence || playbookData.confidence;
       sources = playbookData.playbook_data.sources || playbookData.sources;
     }
-    // Handle new playbook structure
+    // Handle legacy playbook structure (backward compatibility)
     else if (playbookData.playbook) {
       gtmPlaybook = playbookData.playbook.gtmPlaybook || playbookData.playbook;
       researchSummary = playbookData.playbook.researchSummary || playbookData.research_summary;
       confidence = playbookData.playbook.confidence || playbookData.confidence;
       sources = playbookData.playbook.sources || playbookData.sources;
-    }
-    // Handle direct gtmPlaybook structure (for backward compatibility)
-    else if (playbookData.gtmPlaybook) {
-      gtmPlaybook = playbookData.gtmPlaybook;
-      researchSummary = playbookData.researchSummary;
-      confidence = playbookData.confidence;
-      sources = playbookData.sources;
     }
   }
 
@@ -102,7 +103,7 @@ export function GTMPlaybookModal({ open, onClose, playbookData, company }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl font-bold">
             <Rocket className="h-6 w-6 text-primary" />
-            {company?.companyName || company?.company_name} — Enterprise GTM Playbook
+            {company?.companyName || company?.company_name || 'Company'} — Enterprise GTM Playbook
           </DialogTitle>
           <div className="text-muted-foreground text-sm flex flex-wrap gap-4 items-center mt-2">
             <span>Confidence: {confidence || 85}%</span>
