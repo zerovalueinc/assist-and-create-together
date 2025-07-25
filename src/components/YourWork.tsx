@@ -163,8 +163,8 @@ export default function YourWork() {
                       className="flex items-center gap-2 px-3 py-1 text-sm"
                       size="sm"
                     >
-                      <img src={`https://www.google.com/s2/favicons?domain=${item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
-                      {item.companyName || 'Untitled GTM Playbook'}
+                      <img src={`https://www.google.com/s2/favicons?domain=${item.website_url || item.companyUrl || item.url || ''}`} alt="favicon" className="w-4 h-4 mr-1" onError={e => { e.currentTarget.src = '/favicon.ico'; }} />
+                      {item.company_name || item.companyName || 'Untitled GTM Playbook'}
                     </Button>
                   ))}
                 </div>
